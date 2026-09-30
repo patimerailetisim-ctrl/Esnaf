@@ -398,6 +398,13 @@ namespace Esnaf.Tests.Content
             CollectionAssert.AreEqual(new[] { "screen", "camera" }, c.Checks.Select(x => x.Attribute).ToArray());
             CollectionAssert.AreEqual(new[] { "replaced_aftermarket" }, c.Checks[0].DefectValues.ToArray());
             CollectionAssert.AreEqual(new[] { "spotted", "faulty" }, c.Checks[1].DefectValues.ToArray());
+            // UA11: yanlış alarmda varsayılan kusur ve kusursuz değer
+            Assert.AreEqual("replaced_aftermarket", c.Checks[0].FalseAlarmValue);
+            Assert.AreEqual("original", c.Checks[0].CleanValue);
+            Assert.AreEqual("spotted", c.Checks[1].FalseAlarmValue);
+            Assert.AreEqual("ok", c.Checks[1].CleanValue);
+            Assert.AreEqual("appraisal.finding.screen_replaced", c.Checks[0].WordingKey);
+            Assert.AreEqual("appraisal.finding.camera_problem", c.Checks[1].WordingKey);
         }
 
         private static long[] Fees(AppraisalLevel level)

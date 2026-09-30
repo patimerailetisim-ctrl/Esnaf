@@ -73,6 +73,10 @@ namespace Esnaf.Tests.Appraisal
 
             Assert.Throws<ArgumentException>(() => k.Add(Result(1, 11, "s1")));
             Assert.Throws<ArgumentNullException>(() => k.Add(null));
+            AppraisalResult leaked;
+            Assert.IsFalse(k.TryGet(11, "s1", out leaked), "başarısız ekleme hiçbir iz bırakmamalı (atomik)");
+            Assert.AreEqual(1, k.All.Count);
+            Assert.DoesNotThrow(() => k.Add(Result(2, 11, "s1")), "aynı ürün/seviye, farklı kimlikle sonradan eklenebilmeli");
         }
 
         [Test]
@@ -84,6 +88,18 @@ namespace Esnaf.Tests.Appraisal
             Assert.IsFalse(k.All is System.Collections.Generic.List<AppraisalResult>);
             Assert.IsFalse(k.ForInstance(10) is System.Collections.Generic.List<AppraisalResult>);
             Assert.AreNotSame(k.ForInstance(10), k.ForInstance(10));
+        }
+
+        [Test]
+        public void Check_MatchesValuesCaseSensitively()
+        {
+            var check = new AppraisalCheck("camera", new[] { "spotted", "faulty" }, "spotted", "ok", "w");
+
+            Assert.IsTrue(check.IsDefect("faulty"));
+            Assert.IsFalse(check.IsDefect("Faulty"));
+            Assert.IsFalse(check.IsDefect("ok"));
+            Assert.IsFalse(check.IsDefect(null));
+            Assert.Throws<ArgumentNullException>(() => new AppraisalCheck("camera", null, "spotted", "ok", "w"));
         }
 
         [Test]

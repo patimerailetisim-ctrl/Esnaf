@@ -42,7 +42,15 @@ Yeni tasarım değildir. GDD v0.3 Bölüm 10.1 Gün 6 satırı, v0.2 Bölüm 5 (
 4. Değer aralığı = gözlenen değer × (1 ± yarı genişlik): S1 ±%10, S2 ±%5, S3 ±%2,5; uçlar 10 TL'ye yuvarlanır.
 Bu formül v0.2 5.4 tablosundaki tüm aralıkları üretir (S1 21.680–26.490, kaçırınca 22.810–27.880, S2 22.020–24.340, S3 21.750–22.860; tabloda 100'e yuvarlı). Değer, ekspertiz, defter golden'ları gibi sayılar tam eşitlikle; v0.2'nin "≈" yazılı yuvarlanmış sayıları ±100 TL toleransla (UA3'ün devamı) karşılaştırılır.
 
-**UA10 — Aralık merkezi kayması ve değer gürültüsü.** v0.2 "aralığın merkezi rastgele sapmayla kaydırılır" der ve kapsama hedeflerini (S1 %85, S2 %92, S3 %96) "simülasyonla ayarlanacak" diye bırakır. Bu yüzden iki ayar parametresi veridedir: `centerShift` (pil/kasa merkezinin, yarı genişliğin bu oranına kadar kayması) ve `valueNoise` (gözlenen değere ±oran gürültü). Örnek tablo bu ikisi 0 iken oluşur; gerçek dosyadaki değerler kapsama testiyle (10.000 deneme) kalibre edilmiştir.
+**UA10 — Aralık merkezi kayması ve değer gürültüsü.** v0.2 "aralığın merkezi rastgele sapmayla kaydırılır" der ve kapsama hedeflerini (S1 %85, S2 %92, S3 %96) "simülasyonla ayarlanacak" diye bırakır. Bu yüzden iki ayar parametresi veridedir: `centerShift` (pil/kasa merkezinin, yarı genişliğin bu oranına kadar kayması) ve `valueNoise` (gözlenen değere ±oran gürültü). Örnek tablo bu ikisi 0 iken oluşur; gerçek dosyadaki değerler kapsama testiyle (10.000 deneme, Gün 5+ doğal ürün karışımı) kalibre edilmiştir:
+
+| Seviye | `centerShift` | `valueNoise` | Ölçülen kapsama | Hedef (v0.2 5.3) |
+|--------|---------------|--------------|-----------------|------------------|
+| S1 | 0,5 | 0,09 | ≈ %85,4 | %85 ± 3 |
+| S2 | 0,5 | 0 | ≈ %91,6 | %92 ± 3 |
+| S3 | 0,6 | 0,022 | ≈ %95,5 | %96 ± 3 |
+
+Gürültüsüz ölçüm S1'de ≈ %92, S3'te ≈ %99 çıktığı için (kusuru yakalama olasılıkları tabloda sabit) yalnızca bu iki seviyeye gürültü eklendi. Seviyeler arası sıra (S1 < S2 < S3) bir testle korunur.
 
 **UA11 — Hangi kusurlar "kontrol edilir".** v0.2 5.2'nin kategorik bulguları: ekran (`replaced_aftermarket`) ve kamera (`spotted`, `faulty`). Yanlış alarmda varsayılan kusur: ekran `replaced_aftermarket`, kamera `spotted`.
 

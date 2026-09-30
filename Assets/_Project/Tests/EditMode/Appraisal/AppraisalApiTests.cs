@@ -288,6 +288,97 @@ namespace Esnaf.Tests.Appraisal
             }
         }
 
+        [Test]
+        public void GetAppraisals_ReturnsOnlyThatListingsResults()
+        {
+            GameSession s = New(12UL);
+            PassDays(s, 2);
+            long a = s.Market.Listings.Where(l => l.DayListed == 3).ElementAt(0).ListingId;
+            long b = s.Market.Listings.Where(l => l.DayListed == 3).ElementAt(1).ListingId;
+            s.Api.StartAppraisal(a, "s1");
+            s.Api.StartAppraisal(b, "s0");
+            s.Api.StartAppraisal(b, "s1");
+
+            Assert.AreEqual(1, s.Api.GetAppraisals(a).Count);
+            Assert.AreEqual(2, s.Api.GetAppraisals(b).Count);
+            Assert.IsTrue(s.Api.GetAppraisals(a).All(v => v.ListingId == a));
+            Assert.IsTrue(s.Api.GetAppraisals(b).All(v => v.ListingId == b));
+        }
+
+        [Test]
+        public void Views_CarryTheLevelsEvidencePower_ForLowerLevelsToo()
+        {
+            GameSession s = New(13UL);
+            PassDays(s, 4);
+            int checkedCards = 0;
+            foreach (MarketListing l in s.Market.Listings.Where(x => x.DayListed == 5))
+            {
+                foreach (string level in new[] { "s0", "s1", "s2" })
+                {
+                    AppraisalView v = s.Api.StartAppraisal(l.ListingId, level).Value;
+                    double power = s.Content.Appraisal.GetLevel(level).EvidencePower;
+                    foreach (CardView c in v.Cards)
+                    {
+                        Assert.AreEqual(power, c.EvidencePower, 1e-12, level);
+                        checkedCards++;
+                    }
+
+                    foreach (FindingView f in v.Findings)
+                    {
+                        Assert.AreEqual(power, f.EvidencePower, 1e-12, level);
+                    }
+                }
+            }
+
+            Assert.Greater(checkedCards, 0);
+        }
+
+        [Test]
+        public void Results_UseTheSessionsGameSeed()
+        {
+            GameSession s = New(77UL);
+            long listing = GuidedListingId(s);
+
+            AppraisalView v = s.Api.StartAppraisal(listing, "s0").Value;
+
+            AppraisalResult r;
+            Assert.IsTrue(s.Knowledge.TryGetById(v.ResultId, out r));
+            Assert.AreEqual(AppraisalSeed.Compute(77UL, r.InstanceId, "s0"), r.Seed);
+        }
+
+        [Test]
+        public void Digest_CarriesTheFee_AndTheHiddenFalseAlarmFlags()
+        {
+            GameSession s = New(42UL);
+            PassDays(s, 2);
+            long listing = FreshListingId(s);
+            AppraisalView v = s.Api.StartAppraisal(listing, "s1").Value;
+            string feeField = Describe(s, "A|").Split('|')[5];
+            Assert.AreEqual(v.Fee.Tl.ToString(), feeField, "ücret özette");
+            Assert.IsTrue(v.Fee.IsPositive);
+
+            // Gizli yanlış-alarm bayrakları (bulgu ve kart) özete girer: elle bir sonuç eklenir.
+            s.Knowledge.Add(new AppraisalResult(
+                99, 12345, "phone.x", "s2", 4, Money.Zero, 5UL,
+                new[]
+                {
+                    new AttributeFinding("camera", "w", true, AppraisalConfidence.Medium, 0.7, true),
+                    new AttributeFinding("screen", "w", true, AppraisalConfidence.Medium, 0.7, false)
+                },
+                null, null, null,
+                new[] { new TrumpCard("camera", "w", AppraisalConfidence.Medium, 0.7, Money.FromTl(1770), true) }));
+
+            string line = GameStateDigest.Describe(s).Split('\n').Single(l => l.StartsWith("A|99|", StringComparison.Ordinal));
+            string[] f = line.Split('|');
+            Assert.AreEqual("camera:True:True:Medium;screen:True:False:Medium", f[7], "bulgu bayrakları");
+            Assert.AreEqual("camera:1770:True", f[11], "kart bayrağı");
+        }
+
+        private static string Describe(GameSession s, string prefix)
+        {
+            return GameStateDigest.Describe(s).Split('\n').First(l => l.StartsWith(prefix, StringComparison.Ordinal));
+        }
+
         // ---------- determinizm (I6) ve özet ----------
 
         [Test]
