@@ -13,6 +13,8 @@ namespace Esnaf.Domain.Content
     {
         private readonly ReadOnlyCollection<ProductDefinition> _products;
         private readonly Dictionary<string, ProductDefinition> _productsById;
+        private readonly ReadOnlyCollection<ConditionProfile> _conditionProfiles;
+        private readonly Dictionary<string, ConditionProfile> _profilesById;
 
         /// <summary>Dosyadaki sırayla, salt okunur.</summary>
         public IReadOnlyList<ProductDefinition> Products
@@ -20,7 +22,17 @@ namespace Esnaf.Domain.Content
             get { return _products; }
         }
 
-        private ContentDatabase(IEnumerable<ProductDefinition> products)
+        /// <summary>Değer formülünün çarpan tabloları (value_tables.json).</summary>
+        public ValueTables ValueTables { get; }
+
+        /// <summary>Durum profilleri, dosyadaki sırayla, salt okunur.</summary>
+        public IReadOnlyList<ConditionProfile> ConditionProfiles
+        {
+            get { return _conditionProfiles; }
+        }
+
+        private ContentDatabase(
+            IEnumerable<ProductDefinition> products, ValueTables valueTables, IEnumerable<ConditionProfile> conditionProfiles)
         {
             var list = new List<ProductDefinition>(products);
             _productsById = new Dictionary<string, ProductDefinition>(list.Count, StringComparer.Ordinal);
@@ -30,6 +42,27 @@ namespace Esnaf.Domain.Content
             }
 
             _products = new ReadOnlyCollection<ProductDefinition>(list);
+
+            ValueTables = valueTables;
+            var profileList = new List<ConditionProfile>(conditionProfiles);
+            _profilesById = new Dictionary<string, ConditionProfile>(profileList.Count, StringComparer.Ordinal);
+            for (int i = 0; i < profileList.Count; i++)
+            {
+                _profilesById.Add(profileList[i].Id, profileList[i]);
+            }
+
+            _conditionProfiles = new ReadOnlyCollection<ConditionProfile>(profileList);
+        }
+
+        public bool TryGetConditionProfile(string id, out ConditionProfile profile)
+        {
+            if (id == null)
+            {
+                profile = null;
+                return false;
+            }
+
+            return _profilesById.TryGetValue(id, out profile);
         }
 
         public bool TryGetProduct(string id, out ProductDefinition product)
@@ -84,6 +117,36 @@ namespace Esnaf.Domain.Content
                 }
             }
 
+            // Değer tabloları
+            ValueTables valueTables = null;
+            if (!source.TryGetText(ContentFileNames.ValueTables, out text))
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.ValueTables, "Content file not found."));
+            }
+            else
+            {
+                valueTables = ContentParser.ParseValueTables(ContentFileNames.ValueTables, text, issues);
+                if (valueTables != null)
+                {
+                    ContentValidator.ValidateValueTables(valueTables, ContentFileNames.ValueTables, issues);
+                }
+            }
+
+            // Durum profilleri (ekran/kamera değerleri tablolarla çapraz denetlenir; tablo yüklenemediyse çapraz denetim atlanır)
+            IReadOnlyList<ConditionProfile> conditionProfiles = null;
+            if (!source.TryGetText(ContentFileNames.ConditionProfiles, out text))
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.ConditionProfiles, "Content file not found."));
+            }
+            else
+            {
+                conditionProfiles = ContentParser.ParseConditionProfiles(ContentFileNames.ConditionProfiles, text, issues);
+                if (conditionProfiles != null && valueTables != null)
+                {
+                    ContentValidator.ValidateConditionProfiles(conditionProfiles, valueTables, ContentFileNames.ConditionProfiles, issues);
+                }
+            }
+
             // ID manifesti
             IReadOnlyList<string> manifestIds = null;
             if (source.TryGetText(ContentFileNames.IdManifest, out text))
@@ -107,12 +170,12 @@ namespace Esnaf.Domain.Content
                 ContentValidator.ValidateManifest(manifestIds, contentIds, ContentFileNames.IdManifest, issues);
             }
 
-            if (HasError(issues) || products == null)
+            if (HasError(issues) || products == null || valueTables == null || conditionProfiles == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
-            return new ContentLoadResult(new ContentDatabase(products), issues);
+            return new ContentLoadResult(new ContentDatabase(products, valueTables, conditionProfiles), issues);
         }
 
         private static bool HasError(IList<ContentIssue> issues)

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "id": "clean",
+      "name": "Temiz",
+      "weight": 25,
+      "availableFromDay": 1,
+      "battery": { "min": 88, "max": 98 },
+      "body": { "min": 88, "max": 100 },
+      "screen": [ { "value": "original", "weight": 1 } ],
+      "camera": [ { "value": "ok", "weight": 1 } ],
+      "boxChance": 0.75,
+      "invoiceChance": 0.60
+    },
+    {
+      "id": "used",
+      "name": "Kullanılmış",
+      "weight": 35,
+      "availableFromDay": 1,
+      "battery": { "min": 76, "max": 88 },
+      "body": { "min": 70, "max": 88 },
+      "screen": [ { "value": "original", "weight": 3 }, { "value": "scratched", "weight": 2 } ],
+      "camera": [ { "value": "ok", "weight": 1 } ],
+      "boxChance": 0.35,
+      "invoiceChance": 0.25
+    },
+    {
+      "id": "worn",
+      "name": "Yıpranmış",
+      "weight": 20,
+      "availableFromDay": 1,
+      "battery": { "min": 60, "max": 76 },
+      "body": { "min": 50, "max": 72 },
+      "screen": [ { "value": "scratched", "weight": 1 } ],
+      "camera": [ { "value": "ok", "weight": 3 }, { "value": "spotted", "weight": 2 } ],
+      "boxChance": 0.10,
+      "invoiceChance": 0.05
+    },
+    {
+      "id": "repaired",
+      "name": "Tamirli",
+      "weight": 15,
+      "availableFromDay": 1,
+      "battery": { "min": 70, "max": 88 },
+      "body": { "min": 75, "max": 90 },
+      "screen": [ { "value": "replaced_aftermarket", "weight": 1 } ],
+      "camera": [ { "value": "ok", "weight": 1 } ],
+      "boxChance": 0.05,
+      "invoiceChance": 0.02
+    },
+    {
+      "id": "problematic",
+      "name": "Sorunlu",
+      "weight": 5,
+      "availableFromDay": 5,
+      "battery": { "min": 50, "max": 68 },
+      "body": { "min": 50, "max": 70 },
+      "screen": [ { "value": "replaced_aftermarket", "weight": 1 }, { "value": "cracked", "weight": 1 } ],
+      "camera": [ { "value": "spotted", "weight": 1 }, { "value": "faulty", "weight": 1 } ],
+      "boxChance": 0.05,
+      "invoiceChance": 0.0
+    }
+  ]
+}

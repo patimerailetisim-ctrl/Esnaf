@@ -74,6 +74,142 @@ namespace Esnaf.Domain.Content
             return valid ? ids : null;
         }
 
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde çarpan tabloları.</returns>
+        public static ValueTables ParseValueTables(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            ValueTablesFileDto file = Deserialize<ValueTablesFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            const string root = "value tables";
+            bool ok = true;
+
+            var ageBands = new List<AgeBand>();
+            if (Require(fileName, root, "age", file.Age != null, issues))
+            {
+                for (int i = 0; i < file.Age.Count; i++)
+                {
+                    AgeBandDto band = file.Age[i];
+                    string field = "age[" + i + "]";
+                    if (!Require(fileName, root, field, band != null, issues))
+                    {
+                        ok = false;
+                        continue;
+                    }
+
+                    bool bandOk = Require(fileName, root, field + ".fromMonths", band.FromMonths.HasValue, issues);
+                    bandOk &= Require(fileName, root, field + ".mult", band.Mult.HasValue, issues);
+                    if (bandOk)
+                    {
+                        ageBands.Add(new AgeBand(band.FromMonths.Value, band.Mult.Value));
+                    }
+
+                    ok &= bandOk;
+                }
+            }
+            else
+            {
+                ok = false;
+            }
+
+            int batteryFull = 0;
+            double batteryPenalty = 0.0;
+            if (Require(fileName, root, "battery", file.Battery != null, issues))
+            {
+                bool batteryOk = Require(fileName, root, "battery.fullAtOrAbove", file.Battery.FullAtOrAbove.HasValue, issues);
+                batteryOk &= Require(fileName, root, "battery.penaltyPerPoint", file.Battery.PenaltyPerPoint.HasValue, issues);
+                if (batteryOk)
+                {
+                    batteryFull = file.Battery.FullAtOrAbove.Value;
+                    batteryPenalty = file.Battery.PenaltyPerPoint.Value;
+                }
+
+                ok &= batteryOk;
+            }
+            else
+            {
+                ok = false;
+            }
+
+            double bodyBase = 0.0;
+            double bodySpan = 0.0;
+            if (Require(fileName, root, "body", file.Body != null, issues))
+            {
+                bool bodyOk = Require(fileName, root, "body.base", file.Body.Base.HasValue, issues);
+                bodyOk &= Require(fileName, root, "body.span", file.Body.Span.HasValue, issues);
+                if (bodyOk)
+                {
+                    bodyBase = file.Body.Base.Value;
+                    bodySpan = file.Body.Span.Value;
+                }
+
+                ok &= bodyOk;
+            }
+            else
+            {
+                ok = false;
+            }
+
+            List<IdMultiplier> screen = MapIdMultipliers(fileName, root, "screen", file.Screen, issues, ref ok);
+            List<IdMultiplier> camera = MapIdMultipliers(fileName, root, "camera", file.Camera, issues, ref ok);
+
+            double boxBonus = 0.0;
+            double invoiceBonus = 0.0;
+            if (Require(fileName, root, "package", file.Package != null, issues))
+            {
+                bool packageOk = Require(fileName, root, "package.boxBonus", file.Package.BoxBonus.HasValue, issues);
+                packageOk &= Require(fileName, root, "package.invoiceBonus", file.Package.InvoiceBonus.HasValue, issues);
+                if (packageOk)
+                {
+                    boxBonus = file.Package.BoxBonus.Value;
+                    invoiceBonus = file.Package.InvoiceBonus.Value;
+                }
+
+                ok &= packageOk;
+            }
+            else
+            {
+                ok = false;
+            }
+
+            if (!ok)
+            {
+                return null;
+            }
+
+            return new ValueTables(ageBands, batteryFull, batteryPenalty, bodyBase, bodySpan, screen, camera, boxBonus, invoiceBonus);
+        }
+
+        /// <returns>Yapısal hata varsa null; aksi halde (kısmi de olabilir) profil listesi.</returns>
+        public static IReadOnlyList<ConditionProfile> ParseConditionProfiles(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            ConditionProfilesFileDto file = Deserialize<ConditionProfilesFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            if (file.Profiles == null)
+            {
+                issues.Add(FieldMissing(fileName, "profiles"));
+                return null;
+            }
+
+            var profiles = new List<ConditionProfile>(file.Profiles.Count);
+            for (int i = 0; i < file.Profiles.Count; i++)
+            {
+                ConditionProfile profile = MapProfile(fileName, i, file.Profiles[i], issues);
+                if (profile != null)
+                {
+                    profiles.Add(profile);
+                }
+            }
+
+            return profiles;
+        }
+
         // ---- ortak ----
 
         private static T Deserialize<T>(string fileName, string json, ICollection<ContentIssue> issues) where T : class
@@ -231,6 +367,145 @@ namespace Esnaf.Domain.Content
                 dto.AgeMonths.Max.Value,
                 dto.IconKey ?? dto.Id,
                 dto.Deprecated ?? false);
+        }
+
+        private static List<IdMultiplier> MapIdMultipliers(
+            string fileName, string label, string field, List<IdMultiplierDto> dtos, ICollection<ContentIssue> issues, ref bool ok)
+        {
+            var result = new List<IdMultiplier>();
+            if (!Require(fileName, label, field, dtos != null, issues))
+            {
+                ok = false;
+                return result;
+            }
+
+            for (int i = 0; i < dtos.Count; i++)
+            {
+                IdMultiplierDto dto = dtos[i];
+                string entry = field + "[" + i + "]";
+                if (!Require(fileName, label, entry, dto != null, issues))
+                {
+                    ok = false;
+                    continue;
+                }
+
+                bool entryOk = Require(fileName, label, entry + ".id", dto.Id != null, issues);
+                entryOk &= Require(fileName, label, entry + ".mult", dto.Mult.HasValue, issues);
+                if (entryOk)
+                {
+                    result.Add(new IdMultiplier(dto.Id, dto.Mult.Value));
+                }
+
+                ok &= entryOk;
+            }
+
+            return result;
+        }
+
+        private static ConditionProfile MapProfile(string fileName, int index, ConditionProfileDto dto, ICollection<ContentIssue> issues)
+        {
+            string label = "profiles[" + index + "]";
+            if (dto == null)
+            {
+                issues.Add(FieldMissing(fileName, label));
+                return null;
+            }
+
+            if (dto.Id != null)
+            {
+                label += " (" + dto.Id + ")";
+            }
+
+            bool ok = true;
+            ok &= Require(fileName, label, "id", dto.Id != null, issues);
+            ok &= Require(fileName, label, "name", dto.Name != null, issues);
+            ok &= Require(fileName, label, "weight", dto.Weight.HasValue, issues);
+            ok &= Require(fileName, label, "availableFromDay", dto.AvailableFromDay.HasValue, issues);
+            ok &= Require(fileName, label, "boxChance", dto.BoxChance.HasValue, issues);
+            ok &= Require(fileName, label, "invoiceChance", dto.InvoiceChance.HasValue, issues);
+
+            int batteryMin = 0;
+            int batteryMax = 0;
+            ok &= MapRange(fileName, label, "battery", dto.Battery, issues, out batteryMin, out batteryMax);
+            int bodyMin = 0;
+            int bodyMax = 0;
+            ok &= MapRange(fileName, label, "body", dto.Body, issues, out bodyMin, out bodyMax);
+
+            List<WeightedValue> screen = MapChoices(fileName, label, "screen", dto.Screen, issues, ref ok);
+            List<WeightedValue> camera = MapChoices(fileName, label, "camera", dto.Camera, issues, ref ok);
+
+            if (!ok)
+            {
+                return null;
+            }
+
+            return new ConditionProfile(
+                dto.Id,
+                dto.Name,
+                dto.Weight.Value,
+                dto.AvailableFromDay.Value,
+                batteryMin,
+                batteryMax,
+                bodyMin,
+                bodyMax,
+                screen,
+                camera,
+                dto.BoxChance.Value,
+                dto.InvoiceChance.Value);
+        }
+
+        private static bool MapRange(
+            string fileName, string label, string field, IntRangeDto range, ICollection<ContentIssue> issues, out int min, out int max)
+        {
+            min = 0;
+            max = 0;
+            if (!Require(fileName, label, field, range != null, issues))
+            {
+                return false;
+            }
+
+            bool ok = Require(fileName, label, field + ".min", range.Min.HasValue, issues);
+            ok &= Require(fileName, label, field + ".max", range.Max.HasValue, issues);
+            if (ok)
+            {
+                min = range.Min.Value;
+                max = range.Max.Value;
+            }
+
+            return ok;
+        }
+
+        private static List<WeightedValue> MapChoices(
+            string fileName, string label, string field, List<WeightedValueDto> dtos, ICollection<ContentIssue> issues, ref bool ok)
+        {
+            var result = new List<WeightedValue>();
+            if (!Require(fileName, label, field, dtos != null, issues))
+            {
+                ok = false;
+                return result;
+            }
+
+            for (int i = 0; i < dtos.Count; i++)
+            {
+                WeightedValueDto dto = dtos[i];
+                string entry = field + "[" + i + "]";
+                if (!Require(fileName, label, entry, dto != null, issues))
+                {
+                    ok = false;
+                    continue;
+                }
+
+                bool entryOk = Require(fileName, label, entry + ".value", dto.Value != null, issues);
+                entryOk &= Require(fileName, label, entry + ".weight", dto.Weight.HasValue, issues);
+                if (entryOk)
+                {
+                    result.Add(new WeightedValue(dto.Value, dto.Weight.Value));
+                }
+
+                ok &= entryOk;
+            }
+
+            return result;
         }
 
         private static bool Require(string fileName, string label, string field, bool present, ICollection<ContentIssue> issues)

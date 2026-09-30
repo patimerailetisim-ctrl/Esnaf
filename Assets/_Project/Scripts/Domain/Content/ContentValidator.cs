@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Esnaf.Domain.Phone;
 using Esnaf.Domain.Products;
 
 namespace Esnaf.Domain.Content
@@ -35,6 +36,257 @@ namespace Esnaf.Domain.Content
             for (int i = 0; i < products.Count; i++)
             {
                 ValidateProduct(products[i], options, fileName, seenIds, issues);
+            }
+        }
+
+        /// <summary>Çarpan tablolarının kuralları (GDD v0.2 4.2). Tüm sorunlar toplanır.</summary>
+        public static void ValidateValueTables(ValueTables tables, string fileName, ICollection<ContentIssue> issues)
+        {
+            // Yaş bantları
+            IReadOnlyList<AgeBand> bands = tables.AgeBands;
+            if (bands.Count == 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.ValueTablesAgeEmpty, fileName, "age: at least one band is required."));
+            }
+            else
+            {
+                if (bands[0].FromMonths != 0)
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.ValueTablesAgeFirstNotZero,
+                        fileName,
+                        "age: the first band must start at 0 months (found " + bands[0].FromMonths + ")."));
+                }
+
+                for (int i = 0; i < bands.Count; i++)
+                {
+                    if (i > 0 && bands[i].FromMonths <= bands[i - 1].FromMonths)
+                    {
+                        issues.Add(ContentIssue.Error(
+                            ContentIssueCodes.ValueTablesAgeNotIncreasing,
+                            fileName,
+                            "age: band " + i + " (fromMonths " + bands[i].FromMonths + ") must start after the previous band (" + bands[i - 1].FromMonths + ")."));
+                    }
+
+                    if (!(bands[i].Multiplier > 0.0))
+                    {
+                        issues.Add(ContentIssue.Error(
+                            ContentIssueCodes.ValueTablesAgeMultNotPositive, fileName, "age: band " + i + " multiplier must be greater than 0."));
+                    }
+                }
+            }
+
+            // Pil: 0..100 ve %0 pilde bile çarpan pozitif kalmalı
+            if (tables.BatteryFullAtOrAbove < 0
+                || tables.BatteryFullAtOrAbove > 100
+                || !(tables.BatteryPenaltyPerPoint > 0.0)
+                || !(1.0 - tables.BatteryPenaltyPerPoint * tables.BatteryFullAtOrAbove > 0.0))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.ValueTablesBatteryInvalid,
+                    fileName,
+                    "battery: fullAtOrAbove must be 0..100, penaltyPerPoint > 0, and the multiplier at 0% must stay positive."));
+            }
+
+            // Kasa
+            if (!(tables.BodyBase > 0.0) || !(tables.BodySpan >= 0.0))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.ValueTablesBodyInvalid, fileName, "body: base must be > 0 and span must be >= 0."));
+            }
+
+            ValidateIdMultipliers(
+                tables.ScreenMultipliers,
+                PhoneAttributes.RequiredScreenIds,
+                "screen",
+                ContentIssueCodes.ValueTablesScreenMissingId,
+                ContentIssueCodes.ValueTablesScreenDuplicate,
+                ContentIssueCodes.ValueTablesScreenMultNotPositive,
+                fileName,
+                issues);
+            ValidateIdMultipliers(
+                tables.CameraMultipliers,
+                PhoneAttributes.RequiredCameraIds,
+                "camera",
+                ContentIssueCodes.ValueTablesCameraMissingId,
+                ContentIssueCodes.ValueTablesCameraDuplicate,
+                ContentIssueCodes.ValueTablesCameraMultNotPositive,
+                fileName,
+                issues);
+
+            // Paket
+            if (!(tables.BoxBonus >= 0.0) || !(tables.InvoiceBonus >= 0.0))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.ValueTablesPackageNegative, fileName, "package: boxBonus and invoiceBonus cannot be negative."));
+            }
+        }
+
+        /// <summary>
+        /// Durum profillerinin kuralları (GDD v0.2 4.3). Ekran/kamera değerleri çarpan tablolarıyla ÇAPRAZ denetlenir.
+        /// </summary>
+        public static void ValidateConditionProfiles(
+            IReadOnlyList<ConditionProfile> profiles,
+            ValueTables tables,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            if (profiles.Count == 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.ProfilesEmpty, fileName, "The file contains no condition profiles."));
+                return;
+            }
+
+            var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            bool anyOnDayOne = false;
+            for (int i = 0; i < profiles.Count; i++)
+            {
+                ConditionProfile profile = profiles[i];
+                string label = string.IsNullOrWhiteSpace(profile.Id) ? "profiles[" + i + "]" : profile.Id;
+
+                if (string.IsNullOrWhiteSpace(profile.Id))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.ProfileIdEmpty, fileName, label + ": id is empty."));
+                }
+                else if (!seenIds.Add(profile.Id))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.ProfileIdDuplicate, fileName, label + ": duplicate id."));
+                }
+
+                if (profile.Weight <= 0)
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.ProfileWeightNotPositive, fileName, label + ": weight must be greater than 0."));
+                }
+
+                if (profile.AvailableFromDay < 1)
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.ProfileDayInvalid, fileName, label + ": availableFromDay must be at least 1."));
+                }
+                else if (profile.AvailableFromDay == 1)
+                {
+                    anyOnDayOne = true;
+                }
+
+                ValidateRange(profile.BatteryMin, profile.BatteryMax, label, "battery", fileName, issues);
+                ValidateRange(profile.BodyMin, profile.BodyMax, label, "body", fileName, issues);
+
+                ValidateChoices(profile.ScreenChoices, "screen", label, tables.TryGetScreenMultiplier, fileName, issues);
+                ValidateChoices(profile.CameraChoices, "camera", label, tables.TryGetCameraMultiplier, fileName, issues);
+
+                ValidateChance(profile.BoxChance, label, "boxChance", fileName, issues);
+                ValidateChance(profile.InvoiceChance, label, "invoiceChance", fileName, issues);
+            }
+
+            if (!anyOnDayOne)
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.ProfilesNoDayOne, fileName, "At least one profile must be available on day 1."));
+            }
+        }
+
+        private static void ValidateIdMultipliers(
+            IReadOnlyList<IdMultiplier> entries,
+            IReadOnlyList<string> requiredIds,
+            string section,
+            string missingCode,
+            string duplicateCode,
+            string multiplierCode,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < entries.Count; i++)
+            {
+                IdMultiplier entry = entries[i];
+                if (entry.Id == null || !seen.Add(entry.Id))
+                {
+                    issues.Add(ContentIssue.Error(duplicateCode, fileName, section + ": id '" + entry.Id + "' is empty or listed more than once."));
+                }
+
+                if (!(entry.Multiplier > 0.0))
+                {
+                    issues.Add(ContentIssue.Error(
+                        multiplierCode, fileName, section + ": '" + entry.Id + "' multiplier must be greater than 0."));
+                }
+            }
+
+            for (int i = 0; i < requiredIds.Count; i++)
+            {
+                if (!seen.Contains(requiredIds[i]))
+                {
+                    issues.Add(ContentIssue.Error(
+                        missingCode, fileName, section + ": required id '" + requiredIds[i] + "' is missing."));
+                }
+            }
+        }
+
+        private delegate bool TryGetMultiplier(string id, out double multiplier);
+
+        private static void ValidateRange(int min, int max, string label, string field, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (min < 0 || max > 100 || min > max)
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.ProfileRangeInvalid,
+                    fileName,
+                    label + ": " + field + " range " + min + ".." + max + " must satisfy 0 <= min <= max <= 100."));
+            }
+        }
+
+        private static void ValidateChoices(
+            IReadOnlyList<WeightedValue> choices,
+            string field,
+            string label,
+            TryGetMultiplier lookup,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            if (choices.Count == 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.ProfileChoicesEmpty, fileName, label + ": " + field + " has no choices."));
+                return;
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < choices.Count; i++)
+            {
+                WeightedValue choice = choices[i];
+
+                if (choice.Weight <= 0)
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.ProfileChoiceWeightNotPositive,
+                        fileName,
+                        label + ": " + field + " choice '" + choice.Value + "' needs a weight greater than 0."));
+                }
+
+                if (choice.Value == null || !seen.Add(choice.Value))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.ProfileChoiceDuplicate,
+                        fileName,
+                        label + ": " + field + " choice '" + choice.Value + "' is empty or listed more than once."));
+                }
+
+                double ignored;
+                if (!lookup(choice.Value, out ignored))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.ProfileChoiceUnknownValue,
+                        fileName,
+                        label + ": " + field + " value '" + choice.Value + "' does not exist in value_tables.json."));
+                }
+            }
+        }
+
+        private static void ValidateChance(double chance, string label, string field, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (!(chance >= 0.0 && chance <= 1.0))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.ProfileChanceRange, fileName, label + ": " + field + " must be between 0 and 1."));
             }
         }
 

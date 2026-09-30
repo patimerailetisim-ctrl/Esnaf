@@ -91,6 +91,7 @@ namespace Esnaf.Tests.Content
         public void MalformedProductsFile_Fails_WithSyntaxError()
         {
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, "{ broken")
                 .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one"));
 
@@ -104,6 +105,7 @@ namespace Esnaf.Tests.Content
         public void DuplicateIds_Fail()
         {
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson, ContentFixtures.ValidModelJson))
                 .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one"));
 
@@ -118,6 +120,7 @@ namespace Esnaf.Tests.Content
         {
             string badPrice = ContentFixtures.ValidModelJson.Replace("\"basePrice\": 10000", "\"basePrice\": 10005");
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(badPrice))
                 .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one"));
 
@@ -131,6 +134,7 @@ namespace Esnaf.Tests.Content
         public void Errors_InBothFiles_AreAggregated()
         {
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, "{ broken")
                 .Add(ContentFileNames.IdManifest, "{ also broken");
 
@@ -190,6 +194,7 @@ namespace Esnaf.Tests.Content
         public void ManifestMismatch_Fails_EvenWhenNotRequired_IfManifestIsPresent()
         {
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson))
                 .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.other"));
 
@@ -204,6 +209,7 @@ namespace Esnaf.Tests.Content
         public void RemovedProduct_IsCaughtByManifest()
         {
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson))
                 .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one", "phone.test_two"));
 
@@ -221,6 +227,7 @@ namespace Esnaf.Tests.Content
             string deprecated = ContentFixtures.ModelWithId("phone.test_two")
                 .Replace("\"ageMonths\"", "\"deprecated\": true, \"ageMonths\"");
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson, deprecated))
                 .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one", "phone.test_two"));
 
@@ -237,6 +244,7 @@ namespace Esnaf.Tests.Content
             // ama gerçek sorun (eksik alan) dışında "manifest.id_missing_in_content" gürültüsü OLMAMALI.
             string bad = ContentFixtures.ModelWithId("phone.test_two").Replace("\"brand\": \"Testco\",", string.Empty);
             var source = new DictionaryContentSource()
+                .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson, bad))
                 .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one", "phone.test_two"));
 
@@ -245,6 +253,101 @@ namespace Esnaf.Tests.Content
             Assert.IsFalse(result.IsSuccess);
             ContentIssue issue = result.Issues.Single();
             Assert.AreEqual(ContentIssueCodes.FieldMissing, issue.Code);
+        }
+
+        // ---------- Gün 3: değer tabloları ve durum profilleri ----------
+
+        [Test]
+        public void ValidContent_ExposesValueTablesAndConditionProfiles()
+        {
+            ContentDatabase db = ContentDatabase.Load(ContentFixtures.ValidSource()).Database;
+
+            Assert.IsNotNull(db.ValueTables);
+            Assert.AreEqual(6, db.ValueTables.AgeBands.Count);
+            Assert.AreEqual(new[] { "alpha", "beta" }, db.ConditionProfiles.Select(p => p.Id).ToArray());
+            Assert.IsFalse(db.ConditionProfiles is List<ConditionProfile>);
+
+            ConditionProfile beta;
+            Assert.IsTrue(db.TryGetConditionProfile("beta", out beta));
+            Assert.AreEqual(3, beta.AvailableFromDay);
+            Assert.IsFalse(db.TryGetConditionProfile("gamma", out beta));
+            Assert.IsFalse(db.TryGetConditionProfile(null, out beta));
+        }
+
+        [Test]
+        public void MissingValueTablesFile_Fails()
+        {
+            DictionaryContentSource source = ContentFixtures.ValidSource();
+            source.Remove(ContentFileNames.ValueTables);
+
+            ContentLoadResult result = ContentDatabase.Load(source);
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsTrue(result.Issues.Any(i => i.Code == ContentIssueCodes.FileMissing && i.File == ContentFileNames.ValueTables));
+        }
+
+        [Test]
+        public void MissingConditionProfilesFile_Fails()
+        {
+            DictionaryContentSource source = ContentFixtures.ValidSource();
+            source.Remove(ContentFileNames.ConditionProfiles);
+
+            ContentLoadResult result = ContentDatabase.Load(source);
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsTrue(result.Issues.Any(i => i.Code == ContentIssueCodes.FileMissing && i.File == ContentFileNames.ConditionProfiles));
+        }
+
+        [Test]
+        public void ProfileReferencingUnknownScreenValue_FailsAtLoad_CrossFileCheck()
+        {
+            DictionaryContentSource source = ContentFixtures.ValidSource();
+            source.Add(ContentFileNames.ConditionProfiles, ContentFixtures.ProfilesJson.Replace("\"original\"", "\"smashed\""));
+
+            ContentLoadResult result = ContentDatabase.Load(source);
+
+            Assert.IsFalse(result.IsSuccess);
+            ContentIssue issue = result.Issues.Single();
+            Assert.AreEqual(ContentIssueCodes.ProfileChoiceUnknownValue, issue.Code);
+            Assert.AreEqual(ContentFileNames.ConditionProfiles, issue.File);
+        }
+
+        [Test]
+        public void InvalidValueTables_FailAtLoad_WithValidatorIssue()
+        {
+            DictionaryContentSource source = ContentFixtures.ValidSource();
+            source.Add(ContentFileNames.ValueTables, ContentFixtures.ValueTablesJson.Replace("\"fromMonths\": 0", "\"fromMonths\": 1"));
+
+            ContentLoadResult result = ContentDatabase.Load(source);
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsTrue(result.Issues.Any(i => i.Code == ContentIssueCodes.ValueTablesAgeFirstNotZero));
+        }
+
+        [Test]
+        public void UnparsableValueTables_DoNotCauseProfileCrossCheckNoise()
+        {
+            DictionaryContentSource source = ContentFixtures.ValidSource();
+            source.Add(ContentFileNames.ValueTables, "{ broken");
+
+            ContentLoadResult result = ContentDatabase.Load(source);
+
+            Assert.IsFalse(result.IsSuccess);
+            ContentIssue issue = result.Issues.Single();
+            Assert.AreEqual(ContentIssueCodes.FileSyntax, issue.Code);
+            Assert.AreEqual(ContentFileNames.ValueTables, issue.File);
+        }
+
+        [Test]
+        public void ProfilesWithoutDayOneEntry_FailAtLoad()
+        {
+            DictionaryContentSource source = ContentFixtures.ValidSource();
+            source.Add(ContentFileNames.ConditionProfiles, ContentFixtures.ProfilesJson.Replace("\"availableFromDay\": 1", "\"availableFromDay\": 2"));
+
+            ContentLoadResult result = ContentDatabase.Load(source);
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsTrue(result.Issues.Any(i => i.Code == ContentIssueCodes.ProfilesNoDayOne));
         }
     }
 }

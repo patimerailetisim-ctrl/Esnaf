@@ -72,6 +72,35 @@ namespace Esnaf.Domain.Content
         public const string ProductAgeNegative = "product.age.negative";
         public const string ProductAgeMinGreaterThanMax = "product.age.min_greater_than_max";
 
+        // Değer tabloları (value_tables.json)
+        public const string ValueTablesAgeEmpty = "value_tables.age.empty";
+        public const string ValueTablesAgeFirstNotZero = "value_tables.age.first_not_zero";
+        public const string ValueTablesAgeNotIncreasing = "value_tables.age.not_increasing";
+        public const string ValueTablesAgeMultNotPositive = "value_tables.age.mult_not_positive";
+        public const string ValueTablesBatteryInvalid = "value_tables.battery.invalid";
+        public const string ValueTablesBodyInvalid = "value_tables.body.invalid";
+        public const string ValueTablesScreenMissingId = "value_tables.screen.missing_id";
+        public const string ValueTablesScreenDuplicate = "value_tables.screen.duplicate";
+        public const string ValueTablesScreenMultNotPositive = "value_tables.screen.mult_not_positive";
+        public const string ValueTablesCameraMissingId = "value_tables.camera.missing_id";
+        public const string ValueTablesCameraDuplicate = "value_tables.camera.duplicate";
+        public const string ValueTablesCameraMultNotPositive = "value_tables.camera.mult_not_positive";
+        public const string ValueTablesPackageNegative = "value_tables.package.negative";
+
+        // Durum profilleri (condition_profiles.json)
+        public const string ProfilesEmpty = "profiles.empty";
+        public const string ProfilesNoDayOne = "profiles.no_day_one";
+        public const string ProfileIdEmpty = "profile.id.empty";
+        public const string ProfileIdDuplicate = "profile.id.duplicate";
+        public const string ProfileWeightNotPositive = "profile.weight.not_positive";
+        public const string ProfileDayInvalid = "profile.available_from_day.invalid";
+        public const string ProfileRangeInvalid = "profile.range.invalid";
+        public const string ProfileChoicesEmpty = "profile.choices.empty";
+        public const string ProfileChoiceWeightNotPositive = "profile.choice.weight_not_positive";
+        public const string ProfileChoiceUnknownValue = "profile.choice.unknown_value";
+        public const string ProfileChoiceDuplicate = "profile.choice.duplicate";
+        public const string ProfileChanceRange = "profile.chance.range";
+
         // ID manifesti
         public const string ManifestDuplicate = "manifest.duplicate";
         public const string ManifestIdMissingInContent = "manifest.id_missing_in_content";

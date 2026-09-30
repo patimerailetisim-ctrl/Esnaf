@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "age": [
+    { "fromMonths": 0, "mult": 1.10 },
+    { "fromMonths": 7, "mult": 1.00 },
+    { "fromMonths": 13, "mult": 0.88 },
+    { "fromMonths": 25, "mult": 0.77 },
+    { "fromMonths": 37, "mult": 0.68 },
+    { "fromMonths": 49, "mult": 0.60 }
+  ],
+  "battery": { "fullAtOrAbove": 90, "penaltyPerPoint": 0.006 },
+  "body": { "base": 0.80, "span": 0.20 },
+  "screen": [
+    { "id": "original", "mult": 1.00 },
+    { "id": "scratched", "mult": 0.96 },
+    { "id": "replaced_aftermarket", "mult": 0.88 },
+    { "id": "cracked", "mult": 0.75 }
+  ],
+  "camera": [
+    { "id": "ok", "mult": 1.00 },
+    { "id": "spotted", "mult": 0.93 },
+    { "id": "faulty", "mult": 0.82 }
+  ],
+  "package": { "boxBonus": 0.02, "invoiceBonus": 0.02 }
+}
