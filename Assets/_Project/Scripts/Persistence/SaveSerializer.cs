@@ -11,7 +11,7 @@ using Newtonsoft.Json.Serialization;
 namespace Esnaf.Persistence
 {
     /// <summary>
-    /// Kayıt dosyasının metin biçimi (GDD v0.3 6.2): <c>{ header, payload }</c>. Sağlama, <c>payload</c> düğümünün KANONİK (girintisiz) metninin
+    /// Kayıt dosyasının metin biçimi (GDD v0.3 6.2): <c>{ header, payload }</c>. Sağlama, <c>payload</c> düğümünün KANONİK (girintisiz, çalışma zamanından bağımsız: bkz. CanonicalJson) metninin
     /// SHA-256 özetidir: dosya girintili yazılsa da, boşlukları değişse de aynı çıkar. Sağlama bozulmayı fark etmek içindir, hile önleme değil.
     /// Okuma sırası: ayrıştır → biçim → sürüm → sağlama → migrasyon → tipli nesne. Yazma belirlenimcidir (aynı durum → aynı metin).
     /// </summary>
@@ -89,7 +89,7 @@ namespace Esnaf.Persistence
                 CreatedAtUtc = meta.CreatedAtUtc,
                 SavedAtUtc = meta.SavedAtUtc,
                 PlayTimeSeconds = meta.PlayTimeSeconds,
-                Checksum = ComputeChecksum(payload.ToString(Formatting.None)),
+                Checksum = ComputeChecksum(CanonicalJson.Write(payload, false)),
                 Preview = preview
             };
 
@@ -98,7 +98,7 @@ namespace Esnaf.Persistence
                 ["header"] = JObject.FromObject(header, Json),
                 ["payload"] = payload
             };
-            return root.ToString(Formatting.Indented);
+            return CanonicalJson.Write(root, true);
         }
 
         /// <summary>Yalnızca başlığı okur (önizleme): yükü doğrulamaz. Hatalar: save.parse, save.format.</summary>
@@ -184,7 +184,7 @@ namespace Esnaf.Persistence
                 return Result<ParsedSave>.Fail("save.version_newer", "The save was made by a newer version; update the game.");
             }
 
-            string actual = ComputeChecksum(payload.ToString(Formatting.None));
+            string actual = ComputeChecksum(CanonicalJson.Write(payload, false));
             if (!string.Equals(actual, header.Checksum, StringComparison.Ordinal))
             {
                 return Result<ParsedSave>.Fail("save.checksum", "The payload does not match its checksum.");

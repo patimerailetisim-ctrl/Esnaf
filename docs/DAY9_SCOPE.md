@@ -95,3 +95,16 @@ Snapshot/Persistence/AutoSaver/AutoSaveStep aralıklarında gerçek survivor yok
 - `SaveSerializer` L55: `StringBuilder` başlangıç kapasitesi; yalnızca bellek ayırma, çıktı aynı.
 - `FileSaveStorage` `Flush(true)`→`Flush(false)`: OS düzeyinde diske yazma zorlaması, test ortamında gözlemlenemez (davranışsal olarak eşdeğer).
 Manuel mutasyon: `AutoSaveStep` farklı EventBus'a bağlandı → 6 test düştü; `AutoSaveRequested(day+1)` → 2 test düştü.
+
+## Düzeltme: çalışma zamanından bağımsız kanonik JSON (Windows/Unity doğrulaması sonrası)
+
+**Sorun:** Unity'de `save_v1.json` fikstürü `save.checksum` ile reddedildi. Sağlama, yükün yeniden üretilen kanonik metnine bağlıdır ve Newtonsoft double'ı çalışma zamanının `ToString("R")`'ı ile yazar: eski Mono "R" 15 hane dener, olmazsa 17 hane yazar (`0.51208716694934375`); modern .NET en kısa gidiş-dönüş metni yazar (`0.5120871669493438`). Fikstürdeki 35 farklı ondalıklı sayının 18'i farklı metne dönüyordu → farklı SHA-256. Diğer kayıt testleri aynı çalışma zamanında yazıp okuduğu için geçiyordu.
+
+**Çözüm:** `Persistence/CanonicalJson` — sağlama ve dosya metni artık kendi yazıcımızla üretilir (`SaveSerializer.Serialize` ve `Parse`). Sağlama doğrulaması aynen duruyor.
+- double: tam değerden (BigInteger) hesaplanan EN KISA (1..17 hane) ondalık metin; adayın aralık içinde kalması tam sayıyla doğrulanır (ayrıştırıcıya/çalışma zamanına bağlı değil); tam yarıda çifte yuvarlanır. Kültür kullanılmaz. Sayılar JSON'da SAYI olarak kalır; long/ulong double'a çevrilmez.
+- Biçim modern .NET "R" + Newtonsoft ile bire bir aynıdır (ondalık üs ≥17 veya ≤-5 → `d.dddE±XX`, aksi halde ondalık; tam sayı değerli double'a `.0`). 3.000.000 rastgele double (rastgele bit desenleri, tam yarılar dahil) .NET "R" ile karşılaştırıldı: 0 fark.
+- Satır sonu her zaman `\n`, girinti iki boşluk, metinler JSON.NET sabit kaçışıyla.
+
+**Geriye uyumluluk:** Kayıt sürümü v1 olarak KALDI; migrasyon/sürüm değişmedi. Fikstür (`save_v1.json`) DEĞİŞMEDİ: yeni kanonik yazıcı .NET ile yazılmış dosyanın sağlamasını aynen üretir. Bir sayının başka yazımı (örn. 17 haneli) aynı kanonik metni verdiği için Mono ile yazılmış bir v1 dosyası da okunur.
+
+**Mutation (CanonicalJson, SaveSerializer):** gerçek survivor yok. Eşdeğer mutantlar: `shift >= 0`→`> 0` ve `p >= 0`→`> 0`, `candNum/candDen` için `p <= 0`/`p >= 0` (p=0'da 10^0=1, sonuç aynı); `diff.Sign >= 0`→`> 0` (diff=0'da mutlak fark 0, sınır kullanılmaz); `exp10 < 0`→`<= 0` (bilimsel gösterim yalnızca üs ≥17 veya ≤-5'te, üs 0 ulaşılamaz); `expField > 1`→`>= 1` (yalnızca DBL_MIN etkilenir, çıktı aynı: altın test); `Math.Floor/Ceiling` ve `CompareToPowerOfTen` sınır mutantları (tahmin sonrası iki düzeltme döngüsü ve taşma yolu aynı k/basamakları üretir). Gereksiz `|| diff.IsZero` koşulu (cmp<0 zaten kapsar) koddan kaldırıldı.
