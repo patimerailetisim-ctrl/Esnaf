@@ -30,7 +30,7 @@ Bu repodaki kod ve testler bulut ortamında yazıldı ve **.NET ile çalıştır
    - **Newtonsoft Json:** `+` → *Add package by name* → `com.unity.nuget.newtonsoft-json`
    - **Test Framework** yüklü olmalı.
 5. Unity'de konsolda **kırmızı hata olmamalı.** Olursa hata metnini ilet.
-6. **Window → General → Test Runner → EditMode → Run All.** Beklenen: `Esnaf.Domain.Tests` altında **tüm testler geçer** (Core: 96, Day 8 sonrası toplam: 2171).
+6. **Window → General → Test Runner → EditMode → Run All.** Beklenen: `Esnaf.Domain.Tests` altında **tüm testler geçer** (Core: 96, Day 9 sonrası toplam: 2171).
 7. Unity'nin oluşturduğu dosyaları commit'le (`.meta`, `Packages/manifest.json`, `ProjectSettings/`).
 
 ## 3. Testleri Unity'siz çalıştırma
