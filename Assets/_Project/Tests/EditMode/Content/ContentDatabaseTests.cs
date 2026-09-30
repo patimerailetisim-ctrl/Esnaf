@@ -195,8 +195,8 @@ namespace Esnaf.Tests.Content
         {
             var source = new DictionaryContentSource()
                 .AddValidTables()
-                .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson))
-                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.other"));
+                .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson, ContentFixtures.ModelWithId("phone.test_two")))
+                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestWithNpcs("phone.other"));
 
             ContentLoadResult result = ContentDatabase.Load(source, new ContentLoadOptions { RequireManifest = false });
 
@@ -210,15 +210,15 @@ namespace Esnaf.Tests.Content
         {
             var source = new DictionaryContentSource()
                 .AddValidTables()
-                .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson))
-                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one", "phone.test_two"));
+                .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson, ContentFixtures.ModelWithId("phone.test_two")))
+                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestWithNpcs("phone.test_one", "phone.test_two", "phone.test_three"));
 
             ContentLoadResult result = ContentDatabase.Load(source);
 
             Assert.IsFalse(result.IsSuccess);
             ContentIssue issue = result.Issues.Single();
             Assert.AreEqual(ContentIssueCodes.ManifestIdMissingInContent, issue.Code);
-            StringAssert.Contains("phone.test_two", issue.Message);
+            StringAssert.Contains("phone.test_three", issue.Message);
         }
 
         [Test]
@@ -229,7 +229,7 @@ namespace Esnaf.Tests.Content
             var source = new DictionaryContentSource()
                 .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson, deprecated))
-                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one", "phone.test_two"));
+                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestWithNpcs("phone.test_one", "phone.test_two"));
 
             ContentLoadResult result = ContentDatabase.Load(source);
 
@@ -246,7 +246,7 @@ namespace Esnaf.Tests.Content
             var source = new DictionaryContentSource()
                 .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ContentFixtures.ModelsFile(ContentFixtures.ValidModelJson, bad))
-                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestFile("phone.test_one", "phone.test_two"));
+                .Add(ContentFileNames.IdManifest, ContentFixtures.ManifestWithNpcs("phone.test_one", "phone.test_two"));
 
             ContentLoadResult result = ContentDatabase.Load(source);
 

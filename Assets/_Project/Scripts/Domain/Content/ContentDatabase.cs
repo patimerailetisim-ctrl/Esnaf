@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Esnaf.Domain.Economy;
+using Esnaf.Domain.Market;
+using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 
 namespace Esnaf.Domain.Content
@@ -16,6 +18,8 @@ namespace Esnaf.Domain.Content
         private readonly Dictionary<string, ProductDefinition> _productsById;
         private readonly ReadOnlyCollection<ConditionProfile> _conditionProfiles;
         private readonly Dictionary<string, ConditionProfile> _profilesById;
+        private readonly ReadOnlyCollection<NpcDefinition> _npcs;
+        private readonly Dictionary<string, NpcDefinition> _npcsById;
 
         /// <summary>Dosyadaki sırayla, salt okunur.</summary>
         public IReadOnlyList<ProductDefinition> Products
@@ -32,6 +36,15 @@ namespace Esnaf.Domain.Content
         /// <summary>Ekonomi sabitleri (economy_constants.json).</summary>
         public EconomyConstants EconomyConstants { get; }
 
+        /// <summary>Pazar (ilan üretimi) sabitleri (economy_constants.json "market" bölümü).</summary>
+        public MarketConstants MarketConstants { get; }
+
+        /// <summary>NPC tanımları (npc_profiles.json), dosyadaki sırayla, salt okunur.</summary>
+        public IReadOnlyList<NpcDefinition> Npcs
+        {
+            get { return _npcs; }
+        }
+
         /// <summary>Durum profilleri, dosyadaki sırayla, salt okunur.</summary>
         public IReadOnlyList<ConditionProfile> ConditionProfiles
         {
@@ -43,10 +56,21 @@ namespace Esnaf.Domain.Content
             ValueTables valueTables,
             IEnumerable<ConditionProfile> conditionProfiles,
             TransactionTypes transactionTypes,
-            EconomyConstants economyConstants)
+            EconomyConstants economyConstants,
+            MarketConstants marketConstants,
+            IEnumerable<NpcDefinition> npcs)
         {
             TransactionTypes = transactionTypes;
             EconomyConstants = economyConstants;
+            MarketConstants = marketConstants;
+            var npcList = new List<NpcDefinition>(npcs);
+            _npcsById = new Dictionary<string, NpcDefinition>(npcList.Count, StringComparer.Ordinal);
+            for (int i = 0; i < npcList.Count; i++)
+            {
+                _npcsById.Add(npcList[i].Id, npcList[i]);
+            }
+
+            _npcs = new ReadOnlyCollection<NpcDefinition>(npcList);
             var list = new List<ProductDefinition>(products);
             _productsById = new Dictionary<string, ProductDefinition>(list.Count, StringComparer.Ordinal);
             for (int i = 0; i < list.Count; i++)
@@ -76,6 +100,29 @@ namespace Esnaf.Domain.Content
             }
 
             return _profilesById.TryGetValue(id, out profile);
+        }
+
+        public bool TryGetNpc(string id, out NpcDefinition npc)
+        {
+            if (id == null)
+            {
+                npc = null;
+                return false;
+            }
+
+            return _npcsById.TryGetValue(id, out npc);
+        }
+
+        /// <summary>ID yoksa KeyNotFoundException (programcı hatası).</summary>
+        public NpcDefinition GetNpc(string id)
+        {
+            NpcDefinition npc;
+            if (!TryGetNpc(id, out npc))
+            {
+                throw new KeyNotFoundException("Unknown NPC id '" + id + "'.");
+            }
+
+            return npc;
         }
 
         public bool TryGetProduct(string id, out ProductDefinition product)
@@ -175,8 +222,9 @@ namespace Esnaf.Domain.Content
                 }
             }
 
-            // Ekonomi sabitleri
+            // Ekonomi sabitleri (+ pazar bölümü)
             EconomyConstants economyConstants = null;
+            MarketConstants marketConstants = null;
             if (!source.TryGetText(ContentFileNames.EconomyConstants, out text))
             {
                 issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.EconomyConstants, "Content file not found."));
@@ -188,6 +236,30 @@ namespace Esnaf.Domain.Content
                 {
                     ContentValidator.ValidateEconomyConstants(economyConstants, ContentFileNames.EconomyConstants, issues);
                 }
+
+                marketConstants = ContentParser.ParseMarketConstants(ContentFileNames.EconomyConstants, text, issues);
+            }
+
+            // NPC profilleri
+            IReadOnlyList<NpcDefinition> npcs = null;
+            if (!source.TryGetText(ContentFileNames.NpcProfiles, out text))
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.NpcProfiles, "Content file not found."));
+            }
+            else
+            {
+                npcs = ContentParser.ParseNpcs(ContentFileNames.NpcProfiles, text, issues);
+                if (npcs != null)
+                {
+                    ContentValidator.ValidateNpcs(npcs, ContentFileNames.NpcProfiles, issues);
+                }
+            }
+
+            // Pazar kuralları ürünlere, NPC'lere ve değer tablolarına başvurur; önceki dosyalar temizse çapraz denetlenir
+            // (bozuk bir dosyanın ardından art arda gelen başvuru hatası gürültüsünü önler).
+            if (marketConstants != null && npcs != null && products != null && valueTables != null && !HasError(issues))
+            {
+                ContentValidator.ValidateMarket(marketConstants, npcs, products, valueTables, ContentFileNames.EconomyConstants, issues);
             }
 
             // ID manifesti
@@ -202,12 +274,17 @@ namespace Esnaf.Domain.Content
             }
 
             // Manifest karşılaştırması yalnızca önceki adımlar temizse yapılır (art arda gelen gürültüyü önler).
-            if (products != null && manifestIds != null && !HasError(issues))
+            if (products != null && npcs != null && manifestIds != null && !HasError(issues))
             {
-                var contentIds = new List<string>(products.Count);
+                var contentIds = new List<string>(products.Count + npcs.Count);
                 for (int i = 0; i < products.Count; i++)
                 {
                     contentIds.Add(products[i].Id);
+                }
+
+                for (int i = 0; i < npcs.Count; i++)
+                {
+                    contentIds.Add(npcs[i].Id);
                 }
 
                 ContentValidator.ValidateManifest(manifestIds, contentIds, ContentFileNames.IdManifest, issues);
@@ -218,13 +295,17 @@ namespace Esnaf.Domain.Content
                 || valueTables == null
                 || conditionProfiles == null
                 || transactionTypes == null
-                || economyConstants == null)
+                || economyConstants == null
+                || marketConstants == null
+                || npcs == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
             return new ContentLoadResult(
-                new ContentDatabase(products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants), issues);
+                new ContentDatabase(
+                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs),
+                issues);
         }
 
         private static bool HasError(IList<ContentIssue> issues)

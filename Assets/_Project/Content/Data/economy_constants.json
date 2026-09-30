@@ -2,5 +2,51 @@
   "schemaVersion": 1,
   "openingCapital": 250000,
   "dailyExpense": { "fromDay": 3, "amount": 500 },
-  "initialShelfCapacity": 6
+  "initialShelfCapacity": 6,
+  "market": {
+    "listingCounts": [
+      { "fromDay": 1, "min": 3, "max": 3 },
+      { "fromDay": 2, "min": 5, "max": 5 },
+      { "fromDay": 3, "min": 6, "max": 6 },
+      { "fromDay": 5, "min": 7, "max": 8 }
+    ],
+    "listingLifetimeDays": { "min": 2, "max": 4 },
+    "segmentWeights": [
+      { "fromDay": 1, "entry": 30, "mid": 40, "upper": 15 },
+      { "fromDay": 5, "entry": 30, "mid": 40, "upper": 30 }
+    ],
+    "modelAvailability": [
+      { "id": "phone.elma_e14_pro_max", "fromDay": 5 }
+    ],
+    "learningFriendlySellers": { "untilDay": 4, "share": 0.45 },
+    "opportunity": { "fromDay": 2, "minPerDay": 2, "maxRejectRatio": 0.90 },
+    "jackpot": {
+      "rejectRatioBelow": 0.85,
+      "maxPerDay": [ { "fromDay": 1, "max": 1 }, { "fromDay": 6, "max": 2 } ]
+    },
+    "trap": {
+      "fromDay": 5,
+      "minPerDay": 1,
+      "maxPerDay": [ { "fromDay": 6, "max": 2 } ],
+      "valueRatio": 1.15
+    },
+    "askingPriceStep": 50,
+    "hiddenDefects": [
+      { "attribute": "screen", "hiddenValues": [ "replaced_aftermarket" ], "cleanValue": "original" },
+      { "attribute": "camera", "hiddenValues": [ "spotted", "faulty" ], "cleanValue": "ok" }
+    ],
+    "guidedListing": {
+      "sellerNpcId": "npc.ayse",
+      "definitionId": "phone.yildiz_y5",
+      "storageGb": 64,
+      "ageMonths": 24,
+      "battery": 95,
+      "body": 100,
+      "screen": "original",
+      "camera": "ok",
+      "box": false,
+      "invoice": false,
+      "rejectPrice": 4750
+    }
+  }
 }

@@ -10,6 +10,16 @@
     "phone.elma_e11",
     "phone.samsun_vega_s21",
     "phone.elma_e13_pro",
-    "phone.elma_e14_pro_max"
+    "phone.elma_e14_pro_max",
+    "npc.kemal",
+    "npc.selin",
+    "npc.murat",
+    "npc.hatice",
+    "npc.berk",
+    "npc.ozan",
+    "npc.riza",
+    "npc.nermin",
+    "npc.cengiz",
+    "npc.ayse"
   ]
 }

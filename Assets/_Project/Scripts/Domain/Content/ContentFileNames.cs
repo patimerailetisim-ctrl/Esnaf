@@ -9,6 +9,7 @@ namespace Esnaf.Domain.Content
         public const string ConditionProfiles = "condition_profiles.json";
         public const string TransactionTypes = "transaction_types.json";
         public const string EconomyConstants = "economy_constants.json";
+        public const string NpcProfiles = "npc_profiles.json";
 
         /// <summary>Her içerik dosyasının en üstündeki "schemaVersion" değeri bu olmalı.</summary>
         public const int SupportedSchemaVersion = 1;

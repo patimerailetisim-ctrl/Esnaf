@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
+using Esnaf.Domain.Market;
+using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 
 namespace Esnaf.Tests.Support
@@ -59,10 +61,44 @@ namespace Esnaf.Tests.Support
             " { \"id\": \"daily_expense\", \"displayKey\": \"ledger.type.daily_expense\", \"category\": \"expense\", \"direction\": \"outflow\", \"profitEffect\": \"expense\" }," +
             " { \"id\": \"investment\", \"displayKey\": \"ledger.type.investment\", \"category\": \"investment\", \"direction\": \"outflow\", \"profitEffect\": \"none\" } ] }";
 
-        /// <summary>Başlangıç sermayesi 250.000; günlük gider Gün 3'ten itibaren 500; başlangıç raf kapasitesi 6.</summary>
+        /// <summary>
+        /// Başlangıç sermayesi 250.000; günlük gider Gün 3'ten itibaren 500; başlangıç raf kapasitesi 6; pazar kuralları
+        /// (gerçek dosyadaki GDD sayılarıyla aynı yapı; modeller test modelleridir).
+        /// </summary>
         public const string EconomyConstantsJson =
             "{ \"schemaVersion\": 1, \"openingCapital\": 250000," +
-            " \"dailyExpense\": { \"fromDay\": 3, \"amount\": 500 }, \"initialShelfCapacity\": 6 }";
+            " \"dailyExpense\": { \"fromDay\": 3, \"amount\": 500 }, \"initialShelfCapacity\": 6," +
+            " \"market\": " + MarketJson + " }";
+
+        /// <summary>economy_constants.json içindeki "market" bölümünün test kopyası.</summary>
+        public const string MarketJson =
+            "{ \"listingCounts\": [ { \"fromDay\": 1, \"min\": 3, \"max\": 3 }, { \"fromDay\": 2, \"min\": 5, \"max\": 5 }," +
+            " { \"fromDay\": 3, \"min\": 6, \"max\": 6 }, { \"fromDay\": 5, \"min\": 7, \"max\": 8 } ]," +
+            " \"listingLifetimeDays\": { \"min\": 2, \"max\": 4 }," +
+            " \"segmentWeights\": [ { \"fromDay\": 1, \"entry\": 30, \"mid\": 40, \"upper\": 15 }, { \"fromDay\": 5, \"entry\": 30, \"mid\": 40, \"upper\": 30 } ]," +
+            " \"modelAvailability\": [ { \"id\": \"phone.test_two\", \"fromDay\": 5 } ]," +
+            " \"learningFriendlySellers\": { \"untilDay\": 4, \"share\": 0.45 }," +
+            " \"opportunity\": { \"fromDay\": 2, \"minPerDay\": 2, \"maxRejectRatio\": 0.90 }," +
+            " \"jackpot\": { \"rejectRatioBelow\": 0.85, \"maxPerDay\": [ { \"fromDay\": 1, \"max\": 1 }, { \"fromDay\": 6, \"max\": 2 } ] }," +
+            " \"trap\": { \"fromDay\": 5, \"minPerDay\": 1, \"maxPerDay\": [ { \"fromDay\": 6, \"max\": 2 } ], \"valueRatio\": 1.15 }," +
+            " \"askingPriceStep\": 50," +
+            " \"hiddenDefects\": [ { \"attribute\": \"screen\", \"hiddenValues\": [ \"replaced_aftermarket\" ], \"cleanValue\": \"original\" }," +
+            " { \"attribute\": \"camera\", \"hiddenValues\": [ \"spotted\", \"faulty\" ], \"cleanValue\": \"ok\" } ]," +
+            " \"guidedListing\": { \"sellerNpcId\": \"npc.test_honest\", \"definitionId\": \"phone.test_one\", \"storageGb\": 128, \"ageMonths\": 12," +
+            " \"battery\": 95, \"body\": 100, \"screen\": \"original\", \"camera\": \"ok\", \"box\": false, \"invoice\": false, \"rejectPrice\": 4750 } }";
+
+        /// <summary>Üç test NPC'si: dürüst (Gün 1), aceleci (Gün 2), kusur saklayan (Gün 3).</summary>
+        public const string NpcProfilesJson =
+            "{ \"schemaVersion\": 1, \"npcs\": [" +
+            " { \"id\": \"npc.test_honest\", \"name\": \"Dürüst Test\", \"personality\": \"honest\"," +
+            "   \"seller\": { \"availableFromDay\": 1, \"askMultiplier\": 1.10, \"rejectRatio\": 0.94, \"patience\": 4, \"valueSigma\": 0.05, \"urgency\": 0.3, \"persuasion\": 0.9, \"learningFriendly\": true }," +
+            "   \"customer\": { \"openingOfferRatio\": 0.90, \"valueRatio\": 1.00, \"patience\": 4 } }," +
+            " { \"id\": \"npc.test_hurried\", \"name\": \"Aceleci Test\", \"personality\": \"hurried\"," +
+            "   \"seller\": { \"availableFromDay\": 2, \"askMultiplier\": 1.05, \"rejectRatio\": 0.82, \"patience\": 3, \"valueSigma\": 0.12, \"urgency\": 0.9, \"persuasion\": 0.9, \"learningFriendly\": true }," +
+            "   \"customer\": { \"openingOfferRatio\": 0.92, \"valueRatio\": 1.00, \"patience\": 3 } }," +
+            " { \"id\": \"npc.test_liar\", \"name\": \"Saklayan Test\", \"personality\": \"hurried_indebted\"," +
+            "   \"seller\": { \"availableFromDay\": 3, \"askMultiplier\": 1.02, \"rejectRatio\": 0.78, \"patience\": 2, \"valueSigma\": 0.15, \"urgency\": 1.0, \"persuasion\": 0.9, \"concealChance\": 0.6, \"urgentLabelFromDay\": 6 }," +
+            "   \"customer\": { \"openingOfferRatio\": 0.85, \"valueRatio\": 0.95, \"patience\": 3, \"valueSigma\": 0.30, \"packageRatio\": 1.12 } } ] }";
 
         public static string ModelWithId(string id)
         {
@@ -85,13 +121,24 @@ namespace Esnaf.Tests.Support
             return "{ \"schemaVersion\": 1, \"ids\": [" + string.Join(",", quoted) + "] }";
         }
 
+        /// <summary>Fixture NPC kimlikleri (manifest için).</summary>
+        public static readonly string[] NpcIds = { "npc.test_honest", "npc.test_hurried", "npc.test_liar" };
+
+        /// <summary>Verilen ürün kimliklerine fixture NPC kimliklerini ekleyerek manifest dosyası üretir.</summary>
+        public static string ManifestWithNpcs(params string[] productIds)
+        {
+            var all = new List<string>(productIds);
+            all.AddRange(NpcIds);
+            return ManifestFile(all.ToArray());
+        }
+
         /// <summary>İki geçerli model (phone.test_one, phone.test_two), eşleşen manifest ve geçerli çarpan/profil tabloları.</summary>
         public static DictionaryContentSource ValidSource()
         {
             return new DictionaryContentSource()
                 .AddValidTables()
                 .Add(ContentFileNames.PhoneModels, ModelsFile(ValidModelJson, ModelWithId("phone.test_two")))
-                .Add(ContentFileNames.IdManifest, ManifestFile("phone.test_one", "phone.test_two"));
+                .Add(ContentFileNames.IdManifest, ManifestWithNpcs("phone.test_one", "phone.test_two"));
         }
 
         /// <summary>Test JSON'undan çarpan tablolarını ayrıştırır (ayrıştırma hatasız olmalı).</summary>
@@ -131,6 +178,32 @@ namespace Esnaf.Tests.Support
             }
 
             return new TransactionTypes(types);
+        }
+
+        /// <summary>Test JSON'undan NPC tanımlarını ayrıştırır.</summary>
+        public static IReadOnlyList<NpcDefinition> Npcs()
+        {
+            var issues = new List<ContentIssue>();
+            IReadOnlyList<NpcDefinition> npcs = ContentParser.ParseNpcs(ContentFileNames.NpcProfiles, NpcProfilesJson, issues);
+            if (npcs == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture npcs are invalid: " + string.Join("; ", issues));
+            }
+
+            return npcs;
+        }
+
+        /// <summary>Test JSON'undan pazar sabitlerini ayrıştırır.</summary>
+        public static MarketConstants Market()
+        {
+            var issues = new List<ContentIssue>();
+            MarketConstants market = ContentParser.ParseMarketConstants(ContentFileNames.EconomyConstants, EconomyConstantsJson, issues);
+            if (market == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture market constants are invalid: " + string.Join("; ", issues));
+            }
+
+            return market;
         }
 
         /// <summary>Test JSON'undan ekonomi sabitlerini ayrıştırır.</summary>
@@ -208,14 +281,15 @@ namespace Esnaf.Tests.Support
 
     public static class ContentFixtureExtensions
     {
-        /// <summary>Kaynağa geçerli value_tables, condition_profiles, transaction_types ve economy_constants dosyalarını ekler.</summary>
+        /// <summary>Kaynağa geçerli value_tables, condition_profiles, transaction_types, economy_constants ve npc_profiles dosyalarını ekler.</summary>
         public static DictionaryContentSource AddValidTables(this DictionaryContentSource source)
         {
             return source
                 .Add(ContentFileNames.ValueTables, ContentFixtures.ValueTablesJson)
                 .Add(ContentFileNames.ConditionProfiles, ContentFixtures.ProfilesJson)
                 .Add(ContentFileNames.TransactionTypes, ContentFixtures.TransactionTypesJson)
-                .Add(ContentFileNames.EconomyConstants, ContentFixtures.EconomyConstantsJson);
+                .Add(ContentFileNames.EconomyConstants, ContentFixtures.EconomyConstantsJson)
+                .Add(ContentFileNames.NpcProfiles, ContentFixtures.NpcProfilesJson);
         }
     }
 }

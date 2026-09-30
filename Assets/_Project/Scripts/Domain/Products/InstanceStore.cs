@@ -50,6 +50,20 @@ namespace Esnaf.Domain.Products
             _ordered.Add(instance);
         }
 
+        /// <summary>Örneği depodan siler (örn. süresi dolan ilanın, hiç alınmamış ürünü). Yoksa false.</summary>
+        public bool Remove(long instanceId)
+        {
+            ProductInstance instance;
+            if (!_byId.TryGetValue(instanceId, out instance))
+            {
+                return false;
+            }
+
+            _byId.Remove(instanceId);
+            _ordered.Remove(instance);
+            return true;
+        }
+
         public bool TryGet(long instanceId, out ProductInstance instance)
         {
             return _byId.TryGetValue(instanceId, out instance);

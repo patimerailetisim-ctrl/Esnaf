@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Esnaf.Domain.Economy;
+using Esnaf.Domain.Market;
+using Esnaf.Domain.Npc;
 using Esnaf.Domain.Phone;
 using Esnaf.Domain.Products;
 
@@ -18,8 +20,14 @@ namespace Esnaf.Domain.Content
         private const int MaxReleaseYear = 2100;
         private const double MultiplierTolerance = 1e-9;
 
+        /// <summary>v0.2 10.4: müşteri Max'ı ≤ V × 1,25 (aşırı prim yok).</summary>
+        private const double MaxCustomerValueRatio = 1.25;
+
         // "sektor.ad" (küçük harf, rakam, alt çizgi). Örn: phone.elma_e13_pro
         private static readonly Regex IdFormat = new Regex("^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
+
+        // NPC kimliği: "npc.kemal" (küçük harf, rakam, alt çizgi; harfle başlar).
+        private static readonly Regex NpcIdFormat = new Regex("^npc\\.[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
 
         // Defter türü kimliği: küçük harf, rakam, alt çizgi (örn. daily_expense).
         private static readonly Regex TransactionTypeIdFormat = new Regex("^[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
@@ -419,6 +427,519 @@ namespace Esnaf.Domain.Content
                     fileName,
                     "Core transaction type '" + id + "' must be category " + category + ", direction " + direction + ", profitEffect " + effect + "."));
             }
+        }
+
+        // ---------- NPC profilleri (npc_profiles.json) ----------
+
+        public static void ValidateNpcs(IReadOnlyList<NpcDefinition> npcs, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (npcs.Count == 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.NpcListEmpty, fileName, "The file contains no NPCs."));
+                return;
+            }
+
+            var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < npcs.Count; i++)
+            {
+                NpcDefinition npc = npcs[i];
+                string label = string.IsNullOrWhiteSpace(npc.Id) ? "npcs[" + i + "]" : npc.Id;
+
+                if (string.IsNullOrEmpty(npc.Id) || !NpcIdFormat.IsMatch(npc.Id))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.NpcIdFormat, fileName, label + ": id '" + npc.Id + "' must look like npc.kemal (lowercase letters, digits, underscore)."));
+                }
+                else if (!seenIds.Add(npc.Id))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.NpcIdDuplicate, fileName, label + ": duplicate id."));
+                }
+
+                if (string.IsNullOrWhiteSpace(npc.Name))
+                {
+                    NpcField(issues, fileName, label, "name", "must not be empty.");
+                }
+
+                if (string.IsNullOrWhiteSpace(npc.Personality))
+                {
+                    NpcField(issues, fileName, label, "personality", "must not be empty.");
+                }
+
+                ValidateSeller(npc.Seller, label, fileName, issues);
+                ValidateCustomer(npc.Customer, label, fileName, issues);
+            }
+        }
+
+        private static void ValidateSeller(NpcSellerRole s, string label, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (s.AvailableFromDay < 1)
+            {
+                NpcField(issues, fileName, label, "seller.availableFromDay", "must be at least 1.");
+            }
+
+            if (s.AskMultiplier <= 0.0)
+            {
+                NpcField(issues, fileName, label, "seller.askMultiplier", "must be greater than 0.");
+            }
+
+            if (s.RejectRatio <= 0.0 || s.RejectRatio > 1.0 || (s.AskMultiplier > 0.0 && s.RejectRatio >= s.AskMultiplier))
+            {
+                NpcField(issues, fileName, label, "seller.rejectRatio", "must be in (0, 1] and below askMultiplier.");
+            }
+
+            if (s.Patience < 1)
+            {
+                NpcField(issues, fileName, label, "seller.patience", "must be at least 1.");
+            }
+
+            bool sigmaOk = s.ValueSigma >= 0.0 && s.ValueSigma < 1.0;
+            if (!sigmaOk)
+            {
+                NpcField(issues, fileName, label, "seller.valueSigma", "must be in [0, 1).");
+            }
+            else if (Math.Abs(s.ValueBias) > s.ValueSigma)
+            {
+                NpcField(issues, fileName, label, "seller.valueBias", "must not exceed valueSigma in size.");
+            }
+
+            if (s.Urgency < 0.0 || s.Urgency > 1.0)
+            {
+                NpcField(issues, fileName, label, "seller.urgency", "must be in [0, 1].");
+            }
+
+            if (s.Persuasion < 0.0 || s.Persuasion > 1.0)
+            {
+                NpcField(issues, fileName, label, "seller.persuasion", "must be in [0, 1].");
+            }
+
+            if (s.ConcealChance < 0.0 || s.ConcealChance > 1.0)
+            {
+                NpcField(issues, fileName, label, "seller.concealChance", "must be in [0, 1].");
+            }
+
+            if (s.UrgentLabelFromDay.HasValue && s.UrgentLabelFromDay.Value < 1)
+            {
+                NpcField(issues, fileName, label, "seller.urgentLabelFromDay", "must be at least 1.");
+            }
+        }
+
+        private static void ValidateCustomer(NpcCustomerRole c, string label, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (c.OpeningOfferRatio <= 0.0 || c.OpeningOfferRatio > 1.0)
+            {
+                NpcField(issues, fileName, label, "customer.openingOfferRatio", "must be in (0, 1].");
+            }
+
+            if (c.ValueRatio <= 0.0 || c.ValueRatio > MaxCustomerValueRatio)
+            {
+                NpcField(issues, fileName, label, "customer.valueRatio", "must be in (0, " + MaxCustomerValueRatio + "].");
+            }
+
+            if (c.Patience < 1)
+            {
+                NpcField(issues, fileName, label, "customer.patience", "must be at least 1.");
+            }
+
+            if (c.ValueSigma < 0.0 || c.ValueSigma >= 1.0)
+            {
+                NpcField(issues, fileName, label, "customer.valueSigma", "must be in [0, 1).");
+            }
+
+            if (c.PackageRatio < 1.0)
+            {
+                NpcField(issues, fileName, label, "customer.packageRatio", "must be at least 1.");
+            }
+        }
+
+        private static void NpcField(ICollection<ContentIssue> issues, string fileName, string label, string field, string rule)
+        {
+            issues.Add(ContentIssue.Error(ContentIssueCodes.NpcFieldInvalid, fileName, label + ": " + field + " " + rule));
+        }
+
+        // ---------- pazar sabitleri (economy_constants.json "market" bölümü) ----------
+
+        public static void ValidateMarket(
+            MarketConstants market,
+            IReadOnlyList<NpcDefinition> npcs,
+            IReadOnlyList<ProductDefinition> products,
+            ValueTables tables,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            ValidateListingCounts(market, fileName, issues);
+
+            if (market.LifetimeMinDays < 1)
+            {
+                MarketField(issues, fileName, "listingLifetimeDays.min", "must be at least 1.");
+            }
+
+            if (market.LifetimeMaxDays < market.LifetimeMinDays)
+            {
+                MarketField(issues, fileName, "listingLifetimeDays.max", "must not be below min.");
+            }
+
+            ValidateSegmentWeights(market, fileName, issues);
+            ValidateModelAvailability(market, products, fileName, issues);
+
+            if (market.LearningFriendlyUntilDay < 1)
+            {
+                MarketField(issues, fileName, "learningFriendlySellers.untilDay", "must be at least 1.");
+            }
+
+            if (market.LearningFriendlyShare < 0.0 || market.LearningFriendlyShare > 1.0)
+            {
+                MarketField(issues, fileName, "learningFriendlySellers.share", "must be in [0, 1].");
+            }
+
+            if (market.OpportunityFromDay < 1)
+            {
+                MarketField(issues, fileName, "opportunity.fromDay", "must be at least 1.");
+            }
+
+            if (market.MinOpportunitiesPerDay < 0)
+            {
+                MarketField(issues, fileName, "opportunity.minPerDay", "must not be negative.");
+            }
+
+            if (market.OpportunityMaxRejectRatio <= 0.0 || market.OpportunityMaxRejectRatio > 1.0)
+            {
+                MarketField(issues, fileName, "opportunity.maxRejectRatio", "must be in (0, 1].");
+            }
+
+            if (market.JackpotRejectRatioBelow <= 0.0 || market.JackpotRejectRatioBelow > 1.0)
+            {
+                MarketField(issues, fileName, "jackpot.rejectRatioBelow", "must be in (0, 1].");
+            }
+
+            ValidateQuotaBands(market.JackpotMaxPerDay, "jackpot.maxPerDay", true, 0, fileName, issues);
+
+            if (market.TrapFromDay < 1)
+            {
+                MarketField(issues, fileName, "trap.fromDay", "must be at least 1.");
+            }
+
+            if (market.TrapMinPerDay < 0)
+            {
+                MarketField(issues, fileName, "trap.minPerDay", "must not be negative.");
+            }
+
+            if (market.TrapValueRatio <= 1.0)
+            {
+                MarketField(issues, fileName, "trap.valueRatio", "must be greater than 1.");
+            }
+
+            ValidateQuotaBands(market.TrapMaxPerDay, "trap.maxPerDay", false, Math.Max(market.TrapMinPerDay, 0), fileName, issues);
+
+            if (market.AskingPriceStep < 10 || market.AskingPriceStep % 10 != 0)
+            {
+                MarketField(issues, fileName, "askingPriceStep", "must be a positive multiple of 10 TL.");
+            }
+
+            ValidateHiddenDefects(market, tables, fileName, issues);
+            ValidateGuidedListing(market, npcs, products, tables, fileName, issues);
+            ValidateTrapSeller(market, npcs, fileName, issues);
+        }
+
+        private static void ValidateListingCounts(MarketConstants market, string fileName, ICollection<ContentIssue> issues)
+        {
+            IReadOnlyList<ListingCountBand> bands = market.ListingCounts;
+            if (bands.Count == 0)
+            {
+                MarketField(issues, fileName, "listingCounts", "needs at least one band.");
+                return;
+            }
+
+            for (int i = 0; i < bands.Count; i++)
+            {
+                string f = "listingCounts[" + i + "]";
+                if (i == 0 ? bands[i].FromDay != 1 : bands[i].FromDay <= bands[i - 1].FromDay)
+                {
+                    MarketField(issues, fileName, f + ".fromDay", i == 0 ? "of the first band must be 1." : "must be greater than the previous band's fromDay.");
+                }
+
+                if (bands[i].Min < 1)
+                {
+                    MarketField(issues, fileName, f + ".min", "must be at least 1.");
+                }
+
+                if (bands[i].Max < bands[i].Min)
+                {
+                    MarketField(issues, fileName, f + ".max", "must not be below min.");
+                }
+            }
+        }
+
+        private static void ValidateSegmentWeights(MarketConstants market, string fileName, ICollection<ContentIssue> issues)
+        {
+            IReadOnlyList<SegmentWeightBand> bands = market.SegmentWeights;
+            if (bands.Count == 0)
+            {
+                MarketField(issues, fileName, "segmentWeights", "needs at least one band.");
+                return;
+            }
+
+            for (int i = 0; i < bands.Count; i++)
+            {
+                string f = "segmentWeights[" + i + "]";
+                if (i == 0 ? bands[i].FromDay != 1 : bands[i].FromDay <= bands[i - 1].FromDay)
+                {
+                    MarketField(issues, fileName, f + ".fromDay", i == 0 ? "of the first band must be 1." : "must be greater than the previous band's fromDay.");
+                }
+
+                if (bands[i].Entry < 0)
+                {
+                    MarketField(issues, fileName, f + ".entry", "must not be negative.");
+                }
+
+                if (bands[i].Mid < 0)
+                {
+                    MarketField(issues, fileName, f + ".mid", "must not be negative.");
+                }
+
+                if (bands[i].Upper < 0)
+                {
+                    MarketField(issues, fileName, f + ".upper", "must not be negative.");
+                }
+
+                if (bands[i].Entry + bands[i].Mid + bands[i].Upper <= 0)
+                {
+                    MarketField(issues, fileName, f, "needs a total weight greater than 0.");
+                }
+            }
+        }
+
+        private static void ValidateModelAvailability(
+            MarketConstants market,
+            IReadOnlyList<ProductDefinition> products,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            var knownIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < products.Count; i++)
+            {
+                knownIds.Add(products[i].Id);
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < market.ModelAvailability.Count; i++)
+            {
+                ModelAvailabilityRule rule = market.ModelAvailability[i];
+                string f = "modelAvailability[" + i + "]";
+                if (!knownIds.Contains(rule.DefinitionId))
+                {
+                    MarketReference(issues, fileName, f + ".id", rule.DefinitionId);
+                }
+                else if (!seen.Add(rule.DefinitionId))
+                {
+                    MarketField(issues, fileName, f + ".id", "'" + rule.DefinitionId + "' is listed more than once.");
+                }
+
+                if (rule.FromDay < 1)
+                {
+                    MarketField(issues, fileName, f + ".fromDay", "must be at least 1.");
+                }
+            }
+        }
+
+        private static void ValidateQuotaBands(
+            IReadOnlyList<QuotaBand> bands,
+            string field,
+            bool mustStartAtDayOne,
+            int minMax,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            if (bands.Count == 0 && mustStartAtDayOne)
+            {
+                MarketField(issues, fileName, field, "needs at least one band.");
+                return;
+            }
+
+            for (int i = 0; i < bands.Count; i++)
+            {
+                string f = field + "[" + i + "]";
+                if (i == 0 ? (mustStartAtDayOne ? bands[i].FromDay != 1 : bands[i].FromDay < 1) : bands[i].FromDay <= bands[i - 1].FromDay)
+                {
+                    MarketField(issues, fileName, f + ".fromDay", i == 0 ? "of the first band is invalid." : "must be greater than the previous band's fromDay.");
+                }
+
+                if (bands[i].Max < minMax)
+                {
+                    MarketField(issues, fileName, f + ".max", "must be at least " + minMax + ".");
+                }
+            }
+        }
+
+        private static void ValidateHiddenDefects(MarketConstants market, ValueTables tables, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (market.HiddenDefects.Count == 0)
+            {
+                MarketField(issues, fileName, "hiddenDefects", "needs at least one rule.");
+                return;
+            }
+
+            for (int i = 0; i < market.HiddenDefects.Count; i++)
+            {
+                HiddenDefectRule rule = market.HiddenDefects[i];
+                string f = "hiddenDefects[" + i + "]";
+
+                TryGetMultiplier lookup;
+                if (rule.Attribute == PhoneAttributes.Screen)
+                {
+                    lookup = tables.TryGetScreenMultiplier;
+                }
+                else if (rule.Attribute == PhoneAttributes.Camera)
+                {
+                    lookup = tables.TryGetCameraMultiplier;
+                }
+                else
+                {
+                    MarketField(issues, fileName, f + ".attribute", "must be 'screen' or 'camera'.");
+                    continue;
+                }
+
+                if (rule.HiddenValues.Count == 0)
+                {
+                    MarketField(issues, fileName, f + ".hiddenValues", "needs at least one value.");
+                }
+
+                double ignored;
+                for (int v = 0; v < rule.HiddenValues.Count; v++)
+                {
+                    if (!lookup(rule.HiddenValues[v], out ignored))
+                    {
+                        MarketField(issues, fileName, f + ".hiddenValues", "'" + rule.HiddenValues[v] + "' is not a known " + rule.Attribute + " id.");
+                    }
+                }
+
+                if (!lookup(rule.CleanValue, out ignored))
+                {
+                    MarketField(issues, fileName, f + ".cleanValue", "'" + rule.CleanValue + "' is not a known " + rule.Attribute + " id.");
+                }
+                else if (rule.IsHidden(rule.CleanValue))
+                {
+                    MarketField(issues, fileName, f + ".cleanValue", "must not be one of the hidden values.");
+                }
+            }
+        }
+
+        private static void ValidateGuidedListing(
+            MarketConstants market,
+            IReadOnlyList<NpcDefinition> npcs,
+            IReadOnlyList<ProductDefinition> products,
+            ValueTables tables,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            GuidedListingSpec g = market.GuidedListing;
+
+            NpcDefinition seller = null;
+            for (int i = 0; i < npcs.Count; i++)
+            {
+                if (npcs[i].Id == g.SellerNpcId)
+                {
+                    seller = npcs[i];
+                }
+            }
+
+            if (seller == null)
+            {
+                MarketReference(issues, fileName, "guidedListing.sellerNpcId", g.SellerNpcId);
+            }
+            else if (seller.Seller.AvailableFromDay > 1)
+            {
+                MarketField(issues, fileName, "guidedListing.sellerNpcId", "'" + g.SellerNpcId + "' is not available as a seller on day 1.");
+            }
+
+            ProductDefinition product = null;
+            for (int i = 0; i < products.Count; i++)
+            {
+                if (products[i].Id == g.DefinitionId)
+                {
+                    product = products[i];
+                }
+            }
+
+            if (product == null)
+            {
+                MarketReference(issues, fileName, "guidedListing.definitionId", g.DefinitionId);
+            }
+            else
+            {
+                if (!market.IsModelAvailable(product.Id, 1))
+                {
+                    MarketField(issues, fileName, "guidedListing.definitionId", "'" + product.Id + "' is not available on day 1.");
+                }
+
+                double ignoredMultiplier;
+                if (!product.TryGetStorageMultiplier(g.StorageGb, out ignoredMultiplier))
+                {
+                    MarketField(issues, fileName, "guidedListing.storageGb", g.StorageGb + " GB is not offered by " + product.Id + ".");
+                }
+
+                if (g.AgeMonths < product.MinAgeMonths || g.AgeMonths > product.MaxAgeMonths)
+                {
+                    MarketField(issues, fileName, "guidedListing.ageMonths", "must be within the model's age range " + product.MinAgeMonths + "-" + product.MaxAgeMonths + ".");
+                }
+            }
+
+            if (g.Battery < 0 || g.Battery > 100)
+            {
+                MarketField(issues, fileName, "guidedListing.battery", "must be in [0, 100].");
+            }
+
+            if (g.Body < 0 || g.Body > 100)
+            {
+                MarketField(issues, fileName, "guidedListing.body", "must be in [0, 100].");
+            }
+
+            double ignored;
+            if (!tables.TryGetScreenMultiplier(g.Screen, out ignored))
+            {
+                MarketField(issues, fileName, "guidedListing.screen", "'" + g.Screen + "' is not a known screen id.");
+            }
+
+            if (!tables.TryGetCameraMultiplier(g.Camera, out ignored))
+            {
+                MarketField(issues, fileName, "guidedListing.camera", "'" + g.Camera + "' is not a known camera id.");
+            }
+
+            if (!g.RejectPrice.IsPositive || !g.RejectPrice.IsRoundedTo10)
+            {
+                MarketField(issues, fileName, "guidedListing.rejectPrice", "must be positive and a multiple of 10 TL.");
+            }
+        }
+
+        private static void ValidateTrapSeller(MarketConstants market, IReadOnlyList<NpcDefinition> npcs, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (market.TrapMinPerDay <= 0 || market.TrapFromDay < 1)
+            {
+                return; // zorunlu tuzak yok ya da trap.fromDay zaten geçersiz olarak raporlandı
+            }
+
+            for (int i = 0; i < npcs.Count; i++)
+            {
+                if (npcs[i].Seller.ConcealChance > 0.0 && npcs[i].Seller.AvailableFromDay <= market.TrapFromDay)
+                {
+                    return;
+                }
+            }
+
+            issues.Add(ContentIssue.Error(
+                ContentIssueCodes.MarketTrapSellerMissing,
+                fileName,
+                "Traps are required from day " + market.TrapFromDay + " but no seller with concealChance > 0 is available by then."));
+        }
+
+        private static void MarketField(ICollection<ContentIssue> issues, string fileName, string field, string rule)
+        {
+            issues.Add(ContentIssue.Error(ContentIssueCodes.MarketFieldInvalid, fileName, "market." + field + " " + rule));
+        }
+
+        private static void MarketReference(ICollection<ContentIssue> issues, string fileName, string field, string id)
+        {
+            issues.Add(ContentIssue.Error(
+                ContentIssueCodes.MarketReferenceMissing, fileName, "market." + field + " refers to unknown id '" + id + "'."));
         }
 
         /// <param name="manifestIds">content_id_manifest.json içindeki ID'ler.</param>

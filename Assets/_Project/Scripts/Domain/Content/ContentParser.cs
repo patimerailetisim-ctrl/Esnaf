@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Economy;
+using Esnaf.Domain.Market;
+using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -269,6 +271,56 @@ namespace Esnaf.Domain.Content
                 file.DailyExpense.FromDay.Value,
                 Money.FromTl(file.DailyExpense.Amount.Value),
                 file.InitialShelfCapacity.Value);
+        }
+
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde NPC tanımları (dosyadaki sırayla).</returns>
+        public static IReadOnlyList<NpcDefinition> ParseNpcs(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            NpcProfilesFileDto file = Deserialize<NpcProfilesFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            if (file.Npcs == null)
+            {
+                issues.Add(FieldMissing(fileName, "npcs"));
+                return null;
+            }
+
+            var npcs = new List<NpcDefinition>(file.Npcs.Count);
+            bool allOk = true;
+            for (int i = 0; i < file.Npcs.Count; i++)
+            {
+                NpcDefinition npc = MapNpc(fileName, i, file.Npcs[i], issues);
+                if (npc != null)
+                {
+                    npcs.Add(npc);
+                }
+                else
+                {
+                    allOk = false;
+                }
+            }
+
+            return allOk ? npcs : null;
+        }
+
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde economy_constants.json içindeki "market" bölümü.</returns>
+        public static MarketConstants ParseMarketConstants(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            EconomyConstantsFileDto file = Deserialize<EconomyConstantsFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            if (!Require(fileName, "economy constants", "market", file.Market != null, issues))
+            {
+                return null;
+            }
+
+            return MapMarket(fileName, file.Market, issues);
         }
 
         // ---- ortak ----
@@ -626,6 +678,360 @@ namespace Esnaf.Domain.Content
             }
 
             return new TransactionType(dto.Id, dto.DisplayKey, category, direction, effect);
+        }
+
+        private static NpcDefinition MapNpc(string fileName, int index, NpcDto dto, ICollection<ContentIssue> issues)
+        {
+            string label = "npcs[" + index + "]";
+            if (dto == null)
+            {
+                issues.Add(FieldMissing(fileName, label));
+                return null;
+            }
+
+            if (dto.Id != null)
+            {
+                label += " (" + dto.Id + ")";
+            }
+
+            bool ok = Require(fileName, label, "id", dto.Id != null, issues);
+            ok &= Require(fileName, label, "name", dto.Name != null, issues);
+            ok &= Require(fileName, label, "personality", dto.Personality != null, issues);
+
+            NpcSellerRole seller = null;
+            if (Require(fileName, label, "seller", dto.Seller != null, issues))
+            {
+                seller = MapSeller(fileName, label, dto.Seller, issues);
+            }
+
+            NpcCustomerRole customer = null;
+            if (Require(fileName, label, "customer", dto.Customer != null, issues))
+            {
+                customer = MapCustomer(fileName, label, dto.Customer, issues);
+            }
+
+            if (!ok || seller == null || customer == null)
+            {
+                return null;
+            }
+
+            return new NpcDefinition(dto.Id, dto.Name, dto.Personality, seller, customer);
+        }
+
+        private static NpcSellerRole MapSeller(string fileName, string label, NpcSellerDto dto, ICollection<ContentIssue> issues)
+        {
+            bool ok = Require(fileName, label, "seller.availableFromDay", dto.AvailableFromDay.HasValue, issues);
+            ok &= Require(fileName, label, "seller.askMultiplier", dto.AskMultiplier.HasValue, issues);
+            ok &= Require(fileName, label, "seller.rejectRatio", dto.RejectRatio.HasValue, issues);
+            ok &= Require(fileName, label, "seller.patience", dto.Patience.HasValue, issues);
+            ok &= Require(fileName, label, "seller.valueSigma", dto.ValueSigma.HasValue, issues);
+            ok &= Require(fileName, label, "seller.urgency", dto.Urgency.HasValue, issues);
+            ok &= Require(fileName, label, "seller.persuasion", dto.Persuasion.HasValue, issues);
+            if (!ok)
+            {
+                return null;
+            }
+
+            return new NpcSellerRole(
+                dto.AvailableFromDay.Value,
+                dto.AskMultiplier.Value,
+                dto.RejectRatio.Value,
+                dto.Patience.Value,
+                dto.ValueSigma.Value,
+                dto.ValueBias ?? 0.0,
+                dto.Urgency.Value,
+                dto.Persuasion.Value,
+                dto.ConcealChance ?? 0.0,
+                dto.LearningFriendly ?? false,
+                dto.UrgentLabelFromDay);
+        }
+
+        private static NpcCustomerRole MapCustomer(string fileName, string label, NpcCustomerDto dto, ICollection<ContentIssue> issues)
+        {
+            bool ok = Require(fileName, label, "customer.openingOfferRatio", dto.OpeningOfferRatio.HasValue, issues);
+            ok &= Require(fileName, label, "customer.valueRatio", dto.ValueRatio.HasValue, issues);
+            ok &= Require(fileName, label, "customer.patience", dto.Patience.HasValue, issues);
+            if (!ok)
+            {
+                return null;
+            }
+
+            return new NpcCustomerRole(
+                dto.OpeningOfferRatio.Value,
+                dto.ValueRatio.Value,
+                dto.Patience.Value,
+                dto.ValueSigma ?? 0.0,
+                dto.PackageRatio ?? 1.0);
+        }
+
+        private static MarketConstants MapMarket(string fileName, MarketDto dto, ICollection<ContentIssue> issues)
+        {
+            const string root = "market";
+            bool ok = true;
+
+            var counts = new List<ListingCountBand>();
+            if (Require(fileName, root, "listingCounts", dto.ListingCounts != null, issues))
+            {
+                for (int i = 0; i < dto.ListingCounts.Count; i++)
+                {
+                    ListingCountDto e = dto.ListingCounts[i];
+                    string f = "listingCounts[" + i + "]";
+                    bool entryOk = Require(fileName, root, f, e != null, issues);
+                    if (entryOk)
+                    {
+                        entryOk &= Require(fileName, root, f + ".fromDay", e.FromDay.HasValue, issues);
+                        entryOk &= Require(fileName, root, f + ".min", e.Min.HasValue, issues);
+                        entryOk &= Require(fileName, root, f + ".max", e.Max.HasValue, issues);
+                    }
+
+                    if (entryOk)
+                    {
+                        counts.Add(new ListingCountBand(e.FromDay.Value, e.Min.Value, e.Max.Value));
+                    }
+
+                    ok &= entryOk;
+                }
+            }
+            else
+            {
+                ok = false;
+            }
+
+            bool lifetimeOk = Require(fileName, root, "listingLifetimeDays", dto.ListingLifetimeDays != null, issues);
+            if (lifetimeOk)
+            {
+                lifetimeOk &= Require(fileName, root, "listingLifetimeDays.min", dto.ListingLifetimeDays.Min.HasValue, issues);
+                lifetimeOk &= Require(fileName, root, "listingLifetimeDays.max", dto.ListingLifetimeDays.Max.HasValue, issues);
+            }
+
+            ok &= lifetimeOk;
+
+            var weights = new List<SegmentWeightBand>();
+            if (Require(fileName, root, "segmentWeights", dto.SegmentWeights != null, issues))
+            {
+                for (int i = 0; i < dto.SegmentWeights.Count; i++)
+                {
+                    SegmentWeightDto e = dto.SegmentWeights[i];
+                    string f = "segmentWeights[" + i + "]";
+                    bool entryOk = Require(fileName, root, f, e != null, issues);
+                    if (entryOk)
+                    {
+                        entryOk &= Require(fileName, root, f + ".fromDay", e.FromDay.HasValue, issues);
+                        entryOk &= Require(fileName, root, f + ".entry", e.Entry.HasValue, issues);
+                        entryOk &= Require(fileName, root, f + ".mid", e.Mid.HasValue, issues);
+                        entryOk &= Require(fileName, root, f + ".upper", e.Upper.HasValue, issues);
+                    }
+
+                    if (entryOk)
+                    {
+                        weights.Add(new SegmentWeightBand(e.FromDay.Value, e.Entry.Value, e.Mid.Value, e.Upper.Value));
+                    }
+
+                    ok &= entryOk;
+                }
+            }
+            else
+            {
+                ok = false;
+            }
+
+            var availability = new List<ModelAvailabilityRule>();
+            if (Require(fileName, root, "modelAvailability", dto.ModelAvailability != null, issues))
+            {
+                for (int i = 0; i < dto.ModelAvailability.Count; i++)
+                {
+                    ModelAvailabilityDto e = dto.ModelAvailability[i];
+                    string f = "modelAvailability[" + i + "]";
+                    bool entryOk = Require(fileName, root, f, e != null, issues);
+                    if (entryOk)
+                    {
+                        entryOk &= Require(fileName, root, f + ".id", e.Id != null, issues);
+                        entryOk &= Require(fileName, root, f + ".fromDay", e.FromDay.HasValue, issues);
+                    }
+
+                    if (entryOk)
+                    {
+                        availability.Add(new ModelAvailabilityRule(e.Id, e.FromDay.Value));
+                    }
+
+                    ok &= entryOk;
+                }
+            }
+            else
+            {
+                ok = false;
+            }
+
+            bool friendlyOk = Require(fileName, root, "learningFriendlySellers", dto.LearningFriendlySellers != null, issues);
+            if (friendlyOk)
+            {
+                friendlyOk &= Require(fileName, root, "learningFriendlySellers.untilDay", dto.LearningFriendlySellers.UntilDay.HasValue, issues);
+                friendlyOk &= Require(fileName, root, "learningFriendlySellers.share", dto.LearningFriendlySellers.Share.HasValue, issues);
+            }
+
+            ok &= friendlyOk;
+
+            bool opportunityOk = Require(fileName, root, "opportunity", dto.Opportunity != null, issues);
+            if (opportunityOk)
+            {
+                opportunityOk &= Require(fileName, root, "opportunity.fromDay", dto.Opportunity.FromDay.HasValue, issues);
+                opportunityOk &= Require(fileName, root, "opportunity.minPerDay", dto.Opportunity.MinPerDay.HasValue, issues);
+                opportunityOk &= Require(fileName, root, "opportunity.maxRejectRatio", dto.Opportunity.MaxRejectRatio.HasValue, issues);
+            }
+
+            ok &= opportunityOk;
+
+            var jackpotBands = new List<QuotaBand>();
+            bool jackpotOk = Require(fileName, root, "jackpot", dto.Jackpot != null, issues);
+            if (jackpotOk)
+            {
+                jackpotOk &= Require(fileName, root, "jackpot.rejectRatioBelow", dto.Jackpot.RejectRatioBelow.HasValue, issues);
+                jackpotOk &= MapQuotaBands(fileName, root, "jackpot.maxPerDay", dto.Jackpot.MaxPerDay, jackpotBands, issues);
+            }
+
+            ok &= jackpotOk;
+
+            var trapBands = new List<QuotaBand>();
+            bool trapOk = Require(fileName, root, "trap", dto.Trap != null, issues);
+            if (trapOk)
+            {
+                trapOk &= Require(fileName, root, "trap.fromDay", dto.Trap.FromDay.HasValue, issues);
+                trapOk &= Require(fileName, root, "trap.minPerDay", dto.Trap.MinPerDay.HasValue, issues);
+                trapOk &= MapQuotaBands(fileName, root, "trap.maxPerDay", dto.Trap.MaxPerDay, trapBands, issues);
+                trapOk &= Require(fileName, root, "trap.valueRatio", dto.Trap.ValueRatio.HasValue, issues);
+            }
+
+            ok &= trapOk;
+
+            ok &= Require(fileName, root, "askingPriceStep", dto.AskingPriceStep.HasValue, issues);
+
+            var hidden = new List<HiddenDefectRule>();
+            if (Require(fileName, root, "hiddenDefects", dto.HiddenDefects != null, issues))
+            {
+                for (int i = 0; i < dto.HiddenDefects.Count; i++)
+                {
+                    HiddenDefectDto e = dto.HiddenDefects[i];
+                    string f = "hiddenDefects[" + i + "]";
+                    bool entryOk = Require(fileName, root, f, e != null, issues);
+                    if (entryOk)
+                    {
+                        entryOk &= Require(fileName, root, f + ".attribute", e.Attribute != null, issues);
+                        entryOk &= Require(fileName, root, f + ".hiddenValues", e.HiddenValues != null, issues);
+                        entryOk &= Require(fileName, root, f + ".cleanValue", e.CleanValue != null, issues);
+                    }
+
+                    if (entryOk)
+                    {
+                        hidden.Add(new HiddenDefectRule(e.Attribute, e.HiddenValues, e.CleanValue));
+                    }
+
+                    ok &= entryOk;
+                }
+            }
+            else
+            {
+                ok = false;
+            }
+
+            GuidedListingSpec guided = null;
+            if (Require(fileName, root, "guidedListing", dto.GuidedListing != null, issues))
+            {
+                guided = MapGuided(fileName, root, dto.GuidedListing, issues);
+            }
+
+            if (!ok || guided == null)
+            {
+                return null;
+            }
+
+            return new MarketConstants(
+                counts,
+                dto.ListingLifetimeDays.Min.Value,
+                dto.ListingLifetimeDays.Max.Value,
+                weights,
+                availability,
+                dto.LearningFriendlySellers.UntilDay.Value,
+                dto.LearningFriendlySellers.Share.Value,
+                dto.Opportunity.FromDay.Value,
+                dto.Opportunity.MinPerDay.Value,
+                dto.Opportunity.MaxRejectRatio.Value,
+                dto.Jackpot.RejectRatioBelow.Value,
+                jackpotBands,
+                dto.Trap.FromDay.Value,
+                dto.Trap.MinPerDay.Value,
+                trapBands,
+                dto.Trap.ValueRatio.Value,
+                dto.AskingPriceStep.Value,
+                hidden,
+                guided);
+        }
+
+        private static bool MapQuotaBands(
+            string fileName,
+            string root,
+            string field,
+            List<QuotaDto> dtos,
+            List<QuotaBand> result,
+            ICollection<ContentIssue> issues)
+        {
+            if (!Require(fileName, root, field, dtos != null, issues))
+            {
+                return false;
+            }
+
+            bool ok = true;
+            for (int i = 0; i < dtos.Count; i++)
+            {
+                QuotaDto e = dtos[i];
+                string f = field + "[" + i + "]";
+                bool entryOk = Require(fileName, root, f, e != null, issues);
+                if (entryOk)
+                {
+                    entryOk &= Require(fileName, root, f + ".fromDay", e.FromDay.HasValue, issues);
+                    entryOk &= Require(fileName, root, f + ".max", e.Max.HasValue, issues);
+                }
+
+                if (entryOk)
+                {
+                    result.Add(new QuotaBand(e.FromDay.Value, e.Max.Value));
+                }
+
+                ok &= entryOk;
+            }
+
+            return ok;
+        }
+
+        private static GuidedListingSpec MapGuided(string fileName, string root, GuidedListingDto dto, ICollection<ContentIssue> issues)
+        {
+            bool ok = Require(fileName, root, "guidedListing.sellerNpcId", dto.SellerNpcId != null, issues);
+            ok &= Require(fileName, root, "guidedListing.definitionId", dto.DefinitionId != null, issues);
+            ok &= Require(fileName, root, "guidedListing.storageGb", dto.StorageGb.HasValue, issues);
+            ok &= Require(fileName, root, "guidedListing.ageMonths", dto.AgeMonths.HasValue, issues);
+            ok &= Require(fileName, root, "guidedListing.battery", dto.Battery.HasValue, issues);
+            ok &= Require(fileName, root, "guidedListing.body", dto.Body.HasValue, issues);
+            ok &= Require(fileName, root, "guidedListing.screen", dto.Screen != null, issues);
+            ok &= Require(fileName, root, "guidedListing.camera", dto.Camera != null, issues);
+            ok &= Require(fileName, root, "guidedListing.box", dto.Box.HasValue, issues);
+            ok &= Require(fileName, root, "guidedListing.invoice", dto.Invoice.HasValue, issues);
+            ok &= Require(fileName, root, "guidedListing.rejectPrice", dto.RejectPrice.HasValue, issues);
+            if (!ok)
+            {
+                return null;
+            }
+
+            return new GuidedListingSpec(
+                dto.SellerNpcId,
+                dto.DefinitionId,
+                dto.StorageGb.Value,
+                dto.AgeMonths.Value,
+                dto.Battery.Value,
+                dto.Body.Value,
+                dto.Screen,
+                dto.Camera,
+                dto.Box.Value,
+                dto.Invoice.Value,
+                Money.FromTl(dto.RejectPrice.Value));
         }
 
         private static bool Require(string fileName, string label, string field, bool present, ICollection<ContentIssue> issues)

@@ -118,6 +118,17 @@ namespace Esnaf.Domain.Content
         public const string EconomyDailyExpenseInvalid = "economy.daily_expense.invalid";
         public const string EconomyShelfCapacityInvalid = "economy.shelf_capacity.invalid";
 
+        // NPC profilleri (npc_profiles.json)
+        public const string NpcListEmpty = "npcs.empty";
+        public const string NpcIdFormat = "npc.id.format";
+        public const string NpcIdDuplicate = "npc.id.duplicate";
+        public const string NpcFieldInvalid = "npc.field.invalid";
+
+        // Pazar sabitleri (economy_constants.json "market" bölümü)
+        public const string MarketFieldInvalid = "market.field.invalid";
+        public const string MarketReferenceMissing = "market.reference.missing";
+        public const string MarketTrapSellerMissing = "market.trap_seller_missing";
+
         // ID manifesti
         public const string ManifestDuplicate = "manifest.duplicate";
         public const string ManifestIdMissingInContent = "manifest.id_missing_in_content";

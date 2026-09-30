@@ -147,11 +147,152 @@ namespace Esnaf.Domain.Content
         public long? OpeningCapital { get; set; }
         public DailyExpenseDto DailyExpense { get; set; }
         public int? InitialShelfCapacity { get; set; }
+        public MarketDto Market { get; set; }
     }
 
     internal sealed class DailyExpenseDto
     {
         public int? FromDay { get; set; }
         public long? Amount { get; set; }
+    }
+
+    // ---- economy_constants.json "market" bölümü ----
+
+    internal sealed class MarketDto
+    {
+        public List<ListingCountDto> ListingCounts { get; set; }
+        public LifetimeDto ListingLifetimeDays { get; set; }
+        public List<SegmentWeightDto> SegmentWeights { get; set; }
+        public List<ModelAvailabilityDto> ModelAvailability { get; set; }
+        public LearningFriendlyDto LearningFriendlySellers { get; set; }
+        public OpportunityDto Opportunity { get; set; }
+        public JackpotDto Jackpot { get; set; }
+        public TrapDto Trap { get; set; }
+        public int? AskingPriceStep { get; set; }
+        public List<HiddenDefectDto> HiddenDefects { get; set; }
+        public GuidedListingDto GuidedListing { get; set; }
+    }
+
+    internal sealed class ListingCountDto
+    {
+        public int? FromDay { get; set; }
+        public int? Min { get; set; }
+        public int? Max { get; set; }
+    }
+
+    internal sealed class LifetimeDto
+    {
+        public int? Min { get; set; }
+        public int? Max { get; set; }
+    }
+
+    internal sealed class SegmentWeightDto
+    {
+        public int? FromDay { get; set; }
+        public int? Entry { get; set; }
+        public int? Mid { get; set; }
+        public int? Upper { get; set; }
+    }
+
+    internal sealed class ModelAvailabilityDto
+    {
+        public string Id { get; set; }
+        public int? FromDay { get; set; }
+    }
+
+    internal sealed class LearningFriendlyDto
+    {
+        public int? UntilDay { get; set; }
+        public double? Share { get; set; }
+    }
+
+    internal sealed class OpportunityDto
+    {
+        public int? FromDay { get; set; }
+        public int? MinPerDay { get; set; }
+        public double? MaxRejectRatio { get; set; }
+    }
+
+    internal sealed class QuotaDto
+    {
+        public int? FromDay { get; set; }
+        public int? Max { get; set; }
+    }
+
+    internal sealed class JackpotDto
+    {
+        public double? RejectRatioBelow { get; set; }
+        public List<QuotaDto> MaxPerDay { get; set; }
+    }
+
+    internal sealed class TrapDto
+    {
+        public int? FromDay { get; set; }
+        public int? MinPerDay { get; set; }
+        public List<QuotaDto> MaxPerDay { get; set; }
+        public double? ValueRatio { get; set; }
+    }
+
+    internal sealed class HiddenDefectDto
+    {
+        public string Attribute { get; set; }
+        public List<string> HiddenValues { get; set; }
+        public string CleanValue { get; set; }
+    }
+
+    internal sealed class GuidedListingDto
+    {
+        public string SellerNpcId { get; set; }
+        public string DefinitionId { get; set; }
+        public int? StorageGb { get; set; }
+        public int? AgeMonths { get; set; }
+        public int? Battery { get; set; }
+        public int? Body { get; set; }
+        public string Screen { get; set; }
+        public string Camera { get; set; }
+        public bool? Box { get; set; }
+        public bool? Invoice { get; set; }
+        public long? RejectPrice { get; set; }
+    }
+
+    // ---- npc_profiles.json ----
+
+    internal sealed class NpcProfilesFileDto
+    {
+        public int? SchemaVersion { get; set; }
+        public List<NpcDto> Npcs { get; set; }
+    }
+
+    internal sealed class NpcDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Personality { get; set; }
+        public NpcSellerDto Seller { get; set; }
+        public NpcCustomerDto Customer { get; set; }
+    }
+
+    internal sealed class NpcSellerDto
+    {
+        public int? AvailableFromDay { get; set; }
+        public double? AskMultiplier { get; set; }
+        public double? RejectRatio { get; set; }
+        public int? Patience { get; set; }
+        public double? ValueSigma { get; set; }
+        public double? ValueBias { get; set; }
+        public double? Urgency { get; set; }
+        public double? Persuasion { get; set; }
+        public double? ConcealChance { get; set; }
+        public bool? LearningFriendly { get; set; }
+        public int? UrgentLabelFromDay { get; set; }
+    }
+
+    internal sealed class NpcCustomerDto
+    {
+        public double? OpeningOfferRatio { get; set; }
+        public double? ValueRatio { get; set; }
+        public int? Patience { get; set; }
+        public double? ValueSigma { get; set; }
+        public double? PackageRatio { get; set; }
     }
 }
