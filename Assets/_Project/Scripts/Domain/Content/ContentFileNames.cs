@@ -7,6 +7,8 @@ namespace Esnaf.Domain.Content
         public const string IdManifest = "content_id_manifest.json";
         public const string ValueTables = "value_tables.json";
         public const string ConditionProfiles = "condition_profiles.json";
+        public const string TransactionTypes = "transaction_types.json";
+        public const string EconomyConstants = "economy_constants.json";
 
         /// <summary>Her içerik dosyasının en üstündeki "schemaVersion" değeri bu olmalı.</summary>
         public const int SupportedSchemaVersion = 1;

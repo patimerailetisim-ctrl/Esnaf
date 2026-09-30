@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Esnaf.Core;
+using Esnaf.Domain.Economy;
 using Esnaf.Domain.Products;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -208,6 +209,66 @@ namespace Esnaf.Domain.Content
             }
 
             return profiles;
+        }
+
+        /// <returns>Yapısal hata varsa null; aksi halde (kısmi de olabilir) defter türleri listesi.</returns>
+        public static IReadOnlyList<TransactionType> ParseTransactionTypes(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            TransactionTypesFileDto file = Deserialize<TransactionTypesFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            if (file.Types == null)
+            {
+                issues.Add(FieldMissing(fileName, "types"));
+                return null;
+            }
+
+            var types = new List<TransactionType>(file.Types.Count);
+            for (int i = 0; i < file.Types.Count; i++)
+            {
+                TransactionType type = MapTransactionType(fileName, i, file.Types[i], issues);
+                if (type != null)
+                {
+                    types.Add(type);
+                }
+            }
+
+            return types;
+        }
+
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde ekonomi sabitleri.</returns>
+        public static EconomyConstants ParseEconomyConstants(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            EconomyConstantsFileDto file = Deserialize<EconomyConstantsFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            const string root = "economy constants";
+            bool ok = Require(fileName, root, "openingCapital", file.OpeningCapital.HasValue, issues);
+            ok &= Require(fileName, root, "initialShelfCapacity", file.InitialShelfCapacity.HasValue, issues);
+
+            bool expenseOk = Require(fileName, root, "dailyExpense", file.DailyExpense != null, issues);
+            if (expenseOk)
+            {
+                expenseOk &= Require(fileName, root, "dailyExpense.fromDay", file.DailyExpense.FromDay.HasValue, issues);
+                expenseOk &= Require(fileName, root, "dailyExpense.amount", file.DailyExpense.Amount.HasValue, issues);
+            }
+
+            if (!ok || !expenseOk)
+            {
+                return null;
+            }
+
+            return new EconomyConstants(
+                Money.FromTl(file.OpeningCapital.Value),
+                file.DailyExpense.FromDay.Value,
+                Money.FromTl(file.DailyExpense.Amount.Value),
+                file.InitialShelfCapacity.Value);
         }
 
         // ---- ortak ----
@@ -506,6 +567,65 @@ namespace Esnaf.Domain.Content
             }
 
             return result;
+        }
+
+        private static TransactionType MapTransactionType(string fileName, int index, TransactionTypeDto dto, ICollection<ContentIssue> issues)
+        {
+            string label = "types[" + index + "]";
+            if (dto == null)
+            {
+                issues.Add(FieldMissing(fileName, label));
+                return null;
+            }
+
+            if (dto.Id != null)
+            {
+                label += " (" + dto.Id + ")";
+            }
+
+            bool ok = true;
+            ok &= Require(fileName, label, "id", dto.Id != null, issues);
+            ok &= Require(fileName, label, "displayKey", dto.DisplayKey != null, issues);
+            ok &= Require(fileName, label, "category", dto.Category != null, issues);
+            ok &= Require(fileName, label, "direction", dto.Direction != null, issues);
+            ok &= Require(fileName, label, "profitEffect", dto.ProfitEffect != null, issues);
+
+            TransactionCategory category = TransactionCategory.Capital;
+            if (dto.Category != null && !TransactionTypeEnums.TryParseCategory(dto.Category, out category))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.TransactionTypeCategoryInvalid,
+                    fileName,
+                    label + ": invalid category '" + dto.Category + "' (allowed: capital, trade, expense, investment)."));
+                ok = false;
+            }
+
+            TransactionDirection direction = TransactionDirection.Inflow;
+            if (dto.Direction != null && !TransactionTypeEnums.TryParseDirection(dto.Direction, out direction))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.TransactionTypeDirectionInvalid,
+                    fileName,
+                    label + ": invalid direction '" + dto.Direction + "' (allowed: inflow, outflow, neutral)."));
+                ok = false;
+            }
+
+            ProfitEffect effect = ProfitEffect.None;
+            if (dto.ProfitEffect != null && !TransactionTypeEnums.TryParseProfitEffect(dto.ProfitEffect, out effect))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.TransactionTypeProfitEffectInvalid,
+                    fileName,
+                    label + ": invalid profitEffect '" + dto.ProfitEffect + "' (allowed: none, expense, sale, write_off)."));
+                ok = false;
+            }
+
+            if (!ok)
+            {
+                return null;
+            }
+
+            return new TransactionType(dto.Id, dto.DisplayKey, category, direction, effect);
         }
 
         private static bool Require(string fileName, string label, string field, bool present, ICollection<ContentIssue> issues)

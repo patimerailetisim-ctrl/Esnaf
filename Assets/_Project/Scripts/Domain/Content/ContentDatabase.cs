@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Esnaf.Domain.Economy;
 using Esnaf.Domain.Products;
 
 namespace Esnaf.Domain.Content
@@ -25,6 +26,12 @@ namespace Esnaf.Domain.Content
         /// <summary>Değer formülünün çarpan tabloları (value_tables.json).</summary>
         public ValueTables ValueTables { get; }
 
+        /// <summary>Defter türleri kayıt defteri (transaction_types.json).</summary>
+        public TransactionTypes TransactionTypes { get; }
+
+        /// <summary>Ekonomi sabitleri (economy_constants.json).</summary>
+        public EconomyConstants EconomyConstants { get; }
+
         /// <summary>Durum profilleri, dosyadaki sırayla, salt okunur.</summary>
         public IReadOnlyList<ConditionProfile> ConditionProfiles
         {
@@ -32,8 +39,14 @@ namespace Esnaf.Domain.Content
         }
 
         private ContentDatabase(
-            IEnumerable<ProductDefinition> products, ValueTables valueTables, IEnumerable<ConditionProfile> conditionProfiles)
+            IEnumerable<ProductDefinition> products,
+            ValueTables valueTables,
+            IEnumerable<ConditionProfile> conditionProfiles,
+            TransactionTypes transactionTypes,
+            EconomyConstants economyConstants)
         {
+            TransactionTypes = transactionTypes;
+            EconomyConstants = economyConstants;
             var list = new List<ProductDefinition>(products);
             _productsById = new Dictionary<string, ProductDefinition>(list.Count, StringComparer.Ordinal);
             for (int i = 0; i < list.Count; i++)
@@ -147,6 +160,36 @@ namespace Esnaf.Domain.Content
                 }
             }
 
+            // Defter türleri
+            IReadOnlyList<TransactionType> transactionTypes = null;
+            if (!source.TryGetText(ContentFileNames.TransactionTypes, out text))
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.TransactionTypes, "Content file not found."));
+            }
+            else
+            {
+                transactionTypes = ContentParser.ParseTransactionTypes(ContentFileNames.TransactionTypes, text, issues);
+                if (transactionTypes != null)
+                {
+                    ContentValidator.ValidateTransactionTypes(transactionTypes, ContentFileNames.TransactionTypes, issues);
+                }
+            }
+
+            // Ekonomi sabitleri
+            EconomyConstants economyConstants = null;
+            if (!source.TryGetText(ContentFileNames.EconomyConstants, out text))
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.EconomyConstants, "Content file not found."));
+            }
+            else
+            {
+                economyConstants = ContentParser.ParseEconomyConstants(ContentFileNames.EconomyConstants, text, issues);
+                if (economyConstants != null)
+                {
+                    ContentValidator.ValidateEconomyConstants(economyConstants, ContentFileNames.EconomyConstants, issues);
+                }
+            }
+
             // ID manifesti
             IReadOnlyList<string> manifestIds = null;
             if (source.TryGetText(ContentFileNames.IdManifest, out text))
@@ -170,12 +213,18 @@ namespace Esnaf.Domain.Content
                 ContentValidator.ValidateManifest(manifestIds, contentIds, ContentFileNames.IdManifest, issues);
             }
 
-            if (HasError(issues) || products == null || valueTables == null || conditionProfiles == null)
+            if (HasError(issues)
+                || products == null
+                || valueTables == null
+                || conditionProfiles == null
+                || transactionTypes == null
+                || economyConstants == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
-            return new ContentLoadResult(new ContentDatabase(products, valueTables, conditionProfiles), issues);
+            return new ContentLoadResult(
+                new ContentDatabase(products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants), issues);
         }
 
         private static bool HasError(IList<ContentIssue> issues)

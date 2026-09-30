@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "types": [
+    { "id": "opening_capital", "displayKey": "ledger.type.opening_capital", "category": "capital", "direction": "inflow", "profitEffect": "none" },
+    { "id": "purchase", "displayKey": "ledger.type.purchase", "category": "trade", "direction": "outflow", "profitEffect": "none" },
+    { "id": "sale", "displayKey": "ledger.type.sale", "category": "trade", "direction": "inflow", "profitEffect": "sale" },
+    { "id": "appraisal", "displayKey": "ledger.type.appraisal", "category": "trade", "direction": "outflow", "profitEffect": "none" },
+    { "id": "wasted_appraisal", "displayKey": "ledger.type.wasted_appraisal", "category": "expense", "direction": "neutral", "profitEffect": "write_off" },
+    { "id": "repair", "displayKey": "ledger.type.repair", "category": "trade", "direction": "outflow", "profitEffect": "none" },
+    { "id": "daily_expense", "displayKey": "ledger.type.daily_expense", "category": "expense", "direction": "outflow", "profitEffect": "expense" },
+    { "id": "investment", "displayKey": "ledger.type.investment", "category": "investment", "direction": "outflow", "profitEffect": "none" }
+  ]
+}

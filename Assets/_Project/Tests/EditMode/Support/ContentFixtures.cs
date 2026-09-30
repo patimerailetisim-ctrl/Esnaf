@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Content;
+using Esnaf.Domain.Economy;
 using Esnaf.Domain.Products;
 
 namespace Esnaf.Tests.Support
@@ -45,6 +46,23 @@ namespace Esnaf.Tests.Support
             "   \"screen\": [ { \"value\": \"cracked\", \"weight\": 2 }, { \"value\": \"replaced_aftermarket\", \"weight\": 1 } ]," +
             "   \"camera\": [ { \"value\": \"faulty\", \"weight\": 1 }, { \"value\": \"spotted\", \"weight\": 1 } ]," +
             "   \"boxChance\": 0.0, \"invoiceChance\": 0.0 } ] }";
+
+        /// <summary>GDD v0.3 2.3 / v0.2 9.3: 8 çekirdek defter türü (gerçek dosyayla aynı değerler).</summary>
+        public const string TransactionTypesJson =
+            "{ \"schemaVersion\": 1, \"types\": [" +
+            " { \"id\": \"opening_capital\", \"displayKey\": \"ledger.type.opening_capital\", \"category\": \"capital\", \"direction\": \"inflow\", \"profitEffect\": \"none\" }," +
+            " { \"id\": \"purchase\", \"displayKey\": \"ledger.type.purchase\", \"category\": \"trade\", \"direction\": \"outflow\", \"profitEffect\": \"none\" }," +
+            " { \"id\": \"sale\", \"displayKey\": \"ledger.type.sale\", \"category\": \"trade\", \"direction\": \"inflow\", \"profitEffect\": \"sale\" }," +
+            " { \"id\": \"appraisal\", \"displayKey\": \"ledger.type.appraisal\", \"category\": \"trade\", \"direction\": \"outflow\", \"profitEffect\": \"none\" }," +
+            " { \"id\": \"wasted_appraisal\", \"displayKey\": \"ledger.type.wasted_appraisal\", \"category\": \"expense\", \"direction\": \"neutral\", \"profitEffect\": \"write_off\" }," +
+            " { \"id\": \"repair\", \"displayKey\": \"ledger.type.repair\", \"category\": \"trade\", \"direction\": \"outflow\", \"profitEffect\": \"none\" }," +
+            " { \"id\": \"daily_expense\", \"displayKey\": \"ledger.type.daily_expense\", \"category\": \"expense\", \"direction\": \"outflow\", \"profitEffect\": \"expense\" }," +
+            " { \"id\": \"investment\", \"displayKey\": \"ledger.type.investment\", \"category\": \"investment\", \"direction\": \"outflow\", \"profitEffect\": \"none\" } ] }";
+
+        /// <summary>Başlangıç sermayesi 250.000; günlük gider Gün 3'ten itibaren 500; başlangıç raf kapasitesi 6.</summary>
+        public const string EconomyConstantsJson =
+            "{ \"schemaVersion\": 1, \"openingCapital\": 250000," +
+            " \"dailyExpense\": { \"fromDay\": 3, \"amount\": 500 }, \"initialShelfCapacity\": 6 }";
 
         public static string ModelWithId(string id)
         {
@@ -100,6 +118,32 @@ namespace Esnaf.Tests.Support
             }
 
             return profiles;
+        }
+
+        /// <summary>Test JSON'undan defter türlerini ayrıştırır ve kayıt defterini kurar.</summary>
+        public static TransactionTypes Types()
+        {
+            var issues = new List<ContentIssue>();
+            IReadOnlyList<TransactionType> types = ContentParser.ParseTransactionTypes(ContentFileNames.TransactionTypes, TransactionTypesJson, issues);
+            if (types == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture transaction types are invalid: " + string.Join("; ", issues));
+            }
+
+            return new TransactionTypes(types);
+        }
+
+        /// <summary>Test JSON'undan ekonomi sabitlerini ayrıştırır.</summary>
+        public static EconomyConstants Constants()
+        {
+            var issues = new List<ContentIssue>();
+            EconomyConstants constants = ContentParser.ParseEconomyConstants(ContentFileNames.EconomyConstants, EconomyConstantsJson, issues);
+            if (constants == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture economy constants are invalid: " + string.Join("; ", issues));
+            }
+
+            return constants;
         }
 
         /// <summary>Doğrudan kodla, geçerli varsayılanlarla ürün tanımı üretir; testler tek bir alanı bozar.</summary>
@@ -164,12 +208,14 @@ namespace Esnaf.Tests.Support
 
     public static class ContentFixtureExtensions
     {
-        /// <summary>Kaynağa geçerli value_tables.json ve condition_profiles.json ekler.</summary>
+        /// <summary>Kaynağa geçerli value_tables, condition_profiles, transaction_types ve economy_constants dosyalarını ekler.</summary>
         public static DictionaryContentSource AddValidTables(this DictionaryContentSource source)
         {
             return source
                 .Add(ContentFileNames.ValueTables, ContentFixtures.ValueTablesJson)
-                .Add(ContentFileNames.ConditionProfiles, ContentFixtures.ProfilesJson);
+                .Add(ContentFileNames.ConditionProfiles, ContentFixtures.ProfilesJson)
+                .Add(ContentFileNames.TransactionTypes, ContentFixtures.TransactionTypesJson)
+                .Add(ContentFileNames.EconomyConstants, ContentFixtures.EconomyConstantsJson);
         }
     }
 }

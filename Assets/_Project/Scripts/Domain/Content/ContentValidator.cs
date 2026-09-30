@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Esnaf.Domain.Economy;
 using Esnaf.Domain.Phone;
 using Esnaf.Domain.Products;
 
@@ -19,6 +20,9 @@ namespace Esnaf.Domain.Content
 
         // "sektor.ad" (küçük harf, rakam, alt çizgi). Örn: phone.elma_e13_pro
         private static readonly Regex IdFormat = new Regex("^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
+
+        // Defter türü kimliği: küçük harf, rakam, alt çizgi (örn. daily_expense).
+        private static readonly Regex TransactionTypeIdFormat = new Regex("^[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
 
         public static void ValidateProducts(
             IReadOnlyList<ProductDefinition> products,
@@ -287,6 +291,133 @@ namespace Esnaf.Domain.Content
             {
                 issues.Add(ContentIssue.Error(
                     ContentIssueCodes.ProfileChanceRange, fileName, label + ": " + field + " must be between 0 and 1."));
+            }
+        }
+
+        /// <summary>
+        /// Defter türlerinin kuralları. Çekirdek 8 tür zorunludur ve beklenen davranışta olmalıdır (ekonomi kodu bunlara dayanır);
+        /// başka türler (ör. ileride kredi) serbestçe eklenebilir.
+        /// </summary>
+        public static void ValidateTransactionTypes(IReadOnlyList<TransactionType> types, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (types.Count == 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.TransactionTypesEmpty, fileName, "The file contains no transaction types."));
+                return;
+            }
+
+            var byId = new Dictionary<string, TransactionType>(StringComparer.Ordinal);
+            for (int i = 0; i < types.Count; i++)
+            {
+                TransactionType type = types[i];
+                string label = string.IsNullOrEmpty(type.Id) ? "types[" + i + "]" : type.Id;
+
+                if (string.IsNullOrEmpty(type.Id) || !TransactionTypeIdFormat.IsMatch(type.Id))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.TransactionTypeIdFormat,
+                        fileName,
+                        label + ": id must use lowercase letters, digits and underscores (e.g. daily_expense)."));
+                }
+                else if (byId.ContainsKey(type.Id))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.TransactionTypeIdDuplicate, fileName, label + ": duplicate id."));
+                }
+                else
+                {
+                    byId.Add(type.Id, type);
+                }
+
+                if (string.IsNullOrWhiteSpace(type.DisplayKey))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.TransactionTypeDisplayKeyEmpty, fileName, label + ": displayKey is empty."));
+                }
+
+                if (!EffectMatchesDirection(type.ProfitEffect, type.Direction))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.TransactionTypeEffectDirectionMismatch,
+                        fileName,
+                        label + ": profitEffect " + type.ProfitEffect + " cannot be used with direction " + type.Direction + "."));
+                }
+            }
+
+            ValidateRequiredType(byId, TransactionTypeIds.OpeningCapital, TransactionCategory.Capital, TransactionDirection.Inflow, ProfitEffect.None, fileName, issues);
+            ValidateRequiredType(byId, TransactionTypeIds.Purchase, TransactionCategory.Trade, TransactionDirection.Outflow, ProfitEffect.None, fileName, issues);
+            ValidateRequiredType(byId, TransactionTypeIds.Sale, TransactionCategory.Trade, TransactionDirection.Inflow, ProfitEffect.Sale, fileName, issues);
+            ValidateRequiredType(byId, TransactionTypeIds.Appraisal, TransactionCategory.Trade, TransactionDirection.Outflow, ProfitEffect.None, fileName, issues);
+            ValidateRequiredType(byId, TransactionTypeIds.WastedAppraisal, TransactionCategory.Expense, TransactionDirection.Neutral, ProfitEffect.WriteOff, fileName, issues);
+            ValidateRequiredType(byId, TransactionTypeIds.Repair, TransactionCategory.Trade, TransactionDirection.Outflow, ProfitEffect.None, fileName, issues);
+            ValidateRequiredType(byId, TransactionTypeIds.DailyExpense, TransactionCategory.Expense, TransactionDirection.Outflow, ProfitEffect.Expense, fileName, issues);
+            ValidateRequiredType(byId, TransactionTypeIds.Investment, TransactionCategory.Investment, TransactionDirection.Outflow, ProfitEffect.None, fileName, issues);
+        }
+
+        /// <summary>Ekonomi sabitlerinin kuralları: tutarlar 10 TL'ye yuvarlı, gün ve kapasite en az 1.</summary>
+        public static void ValidateEconomyConstants(EconomyConstants constants, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (!constants.OpeningCapital.IsPositive || !constants.OpeningCapital.IsRoundedTo10)
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.EconomyOpeningCapitalInvalid,
+                    fileName,
+                    "openingCapital " + constants.OpeningCapital.Tl + " must be positive and a multiple of 10 TL."));
+            }
+
+            if (constants.DailyExpenseFromDay < 1
+                || constants.DailyExpenseAmount.IsNegative
+                || !constants.DailyExpenseAmount.IsRoundedTo10)
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.EconomyDailyExpenseInvalid,
+                    fileName,
+                    "dailyExpense needs fromDay >= 1 and a non-negative amount that is a multiple of 10 TL."));
+            }
+
+            if (constants.InitialShelfCapacity < 1)
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.EconomyShelfCapacityInvalid, fileName, "initialShelfCapacity must be at least 1."));
+            }
+        }
+
+        private static bool EffectMatchesDirection(ProfitEffect effect, TransactionDirection direction)
+        {
+            switch (effect)
+            {
+                case ProfitEffect.Sale:
+                    return direction == TransactionDirection.Inflow;
+                case ProfitEffect.Expense:
+                    return direction == TransactionDirection.Outflow;
+                case ProfitEffect.WriteOff:
+                    return direction == TransactionDirection.Neutral;
+                default:
+                    return true;
+            }
+        }
+
+        private static void ValidateRequiredType(
+            Dictionary<string, TransactionType> byId,
+            string id,
+            TransactionCategory category,
+            TransactionDirection direction,
+            ProfitEffect effect,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            TransactionType type;
+            if (!byId.TryGetValue(id, out type))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.TransactionTypeRequiredMissing, fileName, "Required core transaction type '" + id + "' is missing."));
+                return;
+            }
+
+            if (type.Category != category || type.Direction != direction || type.ProfitEffect != effect)
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.TransactionTypeRequiredMismatch,
+                    fileName,
+                    "Core transaction type '" + id + "' must be category " + category + ", direction " + direction + ", profitEffect " + effect + "."));
             }
         }
 

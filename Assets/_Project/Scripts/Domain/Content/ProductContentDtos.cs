@@ -121,4 +121,37 @@ namespace Esnaf.Domain.Content
         public string Value { get; set; }
         public int? Weight { get; set; }
     }
+
+    // ---- transaction_types.json ----
+
+    internal sealed class TransactionTypesFileDto
+    {
+        public int? SchemaVersion { get; set; }
+        public List<TransactionTypeDto> Types { get; set; }
+    }
+
+    internal sealed class TransactionTypeDto
+    {
+        public string Id { get; set; }
+        public string DisplayKey { get; set; }
+        public string Category { get; set; }
+        public string Direction { get; set; }
+        public string ProfitEffect { get; set; }
+    }
+
+    // ---- economy_constants.json ----
+
+    internal sealed class EconomyConstantsFileDto
+    {
+        public int? SchemaVersion { get; set; }
+        public long? OpeningCapital { get; set; }
+        public DailyExpenseDto DailyExpense { get; set; }
+        public int? InitialShelfCapacity { get; set; }
+    }
+
+    internal sealed class DailyExpenseDto
+    {
+        public int? FromDay { get; set; }
+        public long? Amount { get; set; }
+    }
 }

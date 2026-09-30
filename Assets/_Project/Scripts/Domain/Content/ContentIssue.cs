@@ -101,6 +101,23 @@ namespace Esnaf.Domain.Content
         public const string ProfileChoiceDuplicate = "profile.choice.duplicate";
         public const string ProfileChanceRange = "profile.chance.range";
 
+        // Defter türleri (transaction_types.json)
+        public const string TransactionTypesEmpty = "transaction_types.empty";
+        public const string TransactionTypeIdFormat = "transaction_type.id.format";
+        public const string TransactionTypeIdDuplicate = "transaction_type.id.duplicate";
+        public const string TransactionTypeDisplayKeyEmpty = "transaction_type.display_key.empty";
+        public const string TransactionTypeCategoryInvalid = "transaction_type.category.invalid";
+        public const string TransactionTypeDirectionInvalid = "transaction_type.direction.invalid";
+        public const string TransactionTypeProfitEffectInvalid = "transaction_type.profit_effect.invalid";
+        public const string TransactionTypeEffectDirectionMismatch = "transaction_type.effect_direction_mismatch";
+        public const string TransactionTypeRequiredMissing = "transaction_types.required_missing";
+        public const string TransactionTypeRequiredMismatch = "transaction_type.required_mismatch";
+
+        // Ekonomi sabitleri (economy_constants.json)
+        public const string EconomyOpeningCapitalInvalid = "economy.opening_capital.invalid";
+        public const string EconomyDailyExpenseInvalid = "economy.daily_expense.invalid";
+        public const string EconomyShelfCapacityInvalid = "economy.shelf_capacity.invalid";
+
         // ID manifesti
         public const string ManifestDuplicate = "manifest.duplicate";
         public const string ManifestIdMissingInContent = "manifest.id_missing_in_content";
