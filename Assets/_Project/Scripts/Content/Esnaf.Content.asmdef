@@ -1,0 +1,17 @@
+{
+    "name": "Esnaf.Content",
+    "rootNamespace": "Esnaf.Content",
+    "references": [
+        "Esnaf.Core",
+        "Esnaf.Domain"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

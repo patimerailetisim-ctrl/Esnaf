@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Unity'den bağımsız derleme: Assets/_Project/Scripts/Core altındaki AYNI kaynak dosyaları.
+    netstandard2.1 + C# 9: Unity ile uyumlu API/dil alt kümesini zorlar.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Esnaf.Core</AssemblyName>
+    <RootNamespace>Esnaf.Core</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../Assets/_Project/Scripts/Core/**/*.cs" />
+  </ItemGroup>
+
+</Project>

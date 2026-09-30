@@ -1,0 +1,23 @@
+{
+    "name": "Esnaf.App",
+    "rootNamespace": "Esnaf.App",
+    "references": [
+        "Esnaf.Core",
+        "Esnaf.Domain",
+        "Esnaf.Persistence",
+        "Esnaf.Content",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
