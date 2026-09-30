@@ -394,6 +394,7 @@ namespace Esnaf.Tests.Content
         private static readonly object[][] BoundaryValues =
         {
             new object[] { "min", "1", new[] { "\"listingLifetimeDays\"" } },
+            new object[] { "min", "4", new[] { "\"listingLifetimeDays\"" } },
             new object[] { "untilDay", "1", new[] { "\"learningFriendlySellers\"" } },
             new object[] { "share", "0", new[] { "\"learningFriendlySellers\"" } },
             new object[] { "share", "1", new[] { "\"learningFriendlySellers\"" } },

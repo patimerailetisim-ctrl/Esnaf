@@ -97,6 +97,107 @@ namespace Esnaf.Tests.Game
             StringAssert.Contains("|phone.yildiz_y5|64|24|", text);
         }
 
+        private static string[] Lines(GameSession s, string prefix)
+        {
+            return GameStateDigest.Describe(s).Split('\n').Where(l => l.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+        }
+
+        [Test]
+        public void MarketLines_CarryEveryListingField_InOrder()
+        {
+            GameSession s = New(42UL);
+            for (int i = 0; i < 6; i++)
+            {
+                s.Api.EndDay();
+            }
+
+            string[] lines = Lines(s, "M|");
+
+            Assert.AreEqual(s.Market.Count, lines.Length);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                MarketListing l = s.Market.Listings[i];
+                string[] f = lines[i].Split('|');
+                Assert.AreEqual(14, f.Length);
+                Assert.AreEqual(l.IsGuided ? "1" : "0", f[13]);
+                Assert.AreEqual(l.ListingId.ToString(), f[1]);
+                Assert.AreEqual(l.InstanceId.ToString(), f[2]);
+                Assert.AreEqual(l.SellerNpcId, f[3]);
+                Assert.AreEqual(l.AskingPrice.Tl.ToString(), f[4]);
+                Assert.AreEqual(string.Join(",", l.Tags), f[5]);
+                Assert.AreEqual(l.DayListed.ToString(), f[6]);
+                Assert.AreEqual(l.RemainingDays.ToString(), f[7]);
+                Assert.AreEqual(l.RejectPrice.Tl.ToString(), f[8]);
+                Assert.AreEqual(l.BelievedValue.Tl.ToString(), f[9]);
+                Assert.AreEqual(l.IsOpportunity ? "1" : "0", f[10]);
+                Assert.AreEqual(l.IsTrap ? "1" : "0", f[11]);
+                Assert.AreEqual(l.IsJackpot ? "1" : "0", f[12]);
+            }
+        }
+
+        [Test]
+        public void MarketLines_ShowTrapAndGuidedFlags()
+        {
+            GameSession s = New(42UL);
+            for (int i = 0; i < 6; i++)
+            {
+                s.Api.EndDay();
+            }
+
+            Assert.IsTrue(s.Market.Listings.Any(l => l.IsTrap), "Gün 7'de tuzak var");
+            int trapLines = Lines(s, "M|").Count(l => l.Split('|')[11] == "1");
+            Assert.AreEqual(s.Market.Listings.Count(l => l.IsTrap), trapLines);
+        }
+
+        [Test]
+        public void Describe_GuidedFlagIsTheLastField()
+        {
+            GameSession s = New(42UL);
+
+            string[] lines = Lines(s, "M|");
+
+            Assert.AreEqual(s.Market.Listings.Count(l => l.IsGuided), lines.Count(l => l.EndsWith("|1", StringComparison.Ordinal)));
+            Assert.AreEqual(1, lines.Count(l => l.EndsWith("|1", StringComparison.Ordinal)));
+        }
+
+        [Test]
+        public void LedgerLines_CarryAmountAndBalance()
+        {
+            GameSession s = New();
+            s.EconomyService.RecordPurchase(AnyInstanceId(s), "phone.x", "npc.kemal", Money.FromTl(1000), 1);
+            s.EconomyService.RecordPurchase(AnyInstanceId(s), "phone.x", "npc.kemal", Money.FromTl(500), 1);
+
+            string[] rows = Lines(s, "L|");
+
+            Assert.AreEqual("L|1|0|opening_capital|250000|250000||||||ledger.type.opening_capital|", rows[0]);
+            Assert.AreEqual("L|2|1|purchase|-1000|249000|" + AnyInstanceId(s) + "|phone.x|npc.kemal|||ledger.type.purchase|", rows[1]);
+            string[] third = rows[2].Split('|');
+            Assert.AreEqual("-500", third[4]);
+            Assert.AreEqual("248500", third[5], "işlem sonrası bakiye");
+        }
+
+        [Test]
+        public void BusinessAssets_AreListed()
+        {
+            GameSession s = New();
+            s.InventoryService.UpgradeCapacity(8, Money.FromTl(15000), 1);
+
+            CollectionAssert.Contains(GameStateDigest.Describe(s).Split('\n'), "economy.businessAssets=15000");
+        }
+
+        [Test]
+        public void NpcLines_CarryEncountersAndInstances()
+        {
+            GameSession s = New();
+            s.Npcs.RecordEncounter("npc.kemal");
+            s.Npcs.RecordEncounter("npc.kemal");
+            s.Npcs.RecordEncounter("npc.kemal");
+            s.Npcs.RecordSoldToPlayer("npc.kemal", 9);
+            s.Npcs.RecordBoughtFromPlayer("npc.kemal", 4);
+
+            CollectionAssert.AreEqual(new[] { "N|npc.kemal|3|9|4" }, Lines(s, "N|"));
+        }
+
         [Test]
         public void Describe_IsStable_ForTheSameState()
         {

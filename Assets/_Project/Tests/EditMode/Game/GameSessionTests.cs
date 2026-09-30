@@ -36,6 +36,21 @@ namespace Esnaf.Tests.Game
         }
 
         [Test]
+        public void NewGame_SeedsTheRandomStreams_WithTheGameSeed()
+        {
+            GameSession s = New(42UL);
+
+            Assert.AreEqual(42UL, s.Rng.MasterSeed);
+            var reference = new RngStreams(42UL).Get("market");
+            Assert.AreEqual(reference.NextUInt(), new RngStreams(s.Time.MasterSeed).Get("market").NextUInt());
+            var h = new MarketHarness(42UL);
+            Assert.AreEqual(
+                string.Join(",", h.Generate(1).Select(l => l.AskingPrice.Tl + "/" + l.RejectPrice.Tl)),
+                string.Join(",", s.Market.Listings.Select(l => l.AskingPrice.Tl + "/" + l.RejectPrice.Tl)),
+                "oturumun Gün 1 ilanları, aynı tohumlu bağımsız üretimle birebir aynı");
+        }
+
+        [Test]
         public void NewGame_OpensTheMarketForDayOne_WithTheGuidedListing()
         {
             GameSession s = New();

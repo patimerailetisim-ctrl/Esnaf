@@ -288,6 +288,22 @@ namespace Esnaf.Tests.Content
             AssertOneField(Validate(FileOf(Npc(seller: SellerJson.Replace(find, replacement)))), field);
         }
 
+        [Test]
+        public void Validate_RejectRatioEqualToAskMultiplier_IsReported()
+        {
+            string seller = SellerJson.Replace("\"askMultiplier\": 1.10", "\"askMultiplier\": 0.94");
+
+            AssertOneField(Validate(FileOf(Npc(seller: seller))), "seller.rejectRatio");
+        }
+
+        [Test]
+        public void Validate_ZeroSigmaWithZeroBias_IsAccepted()
+        {
+            string seller = SellerJson.Replace("\"valueSigma\": 0.05", "\"valueSigma\": 0").Replace("\"valueBias\": -0.02", "\"valueBias\": 0");
+
+            Assert.AreEqual(0, Validate(FileOf(Npc(seller: seller))).Count);
+        }
+
         private static readonly object[][] BoundarySellerValues =
         {
             new object[] { "\"availableFromDay\": 1", "\"availableFromDay\": 1" },
