@@ -1,6 +1,7 @@
 # ESNAF – v0.3: Unity Geliştirme Hazırlık Dokümanı (Teknik Mimari)
 
-Sürüm: 0.3 · Bu doküman **son büyük tasarım aşamasıdır.** Bundan sonra yeni özellik eklenmez; kodlamaya geçilir.
+Sürüm: 0.3 · **Durum: TASARIM FİNAL — 21 nihai karar Bölüm 14'te. Uygulama açıklamaları (UA1–UA3) Bölüm 15'te ve ilgili satırlarla çelişirse Bölüm 15 geçerlidir.**
+Bu doküman **son büyük tasarım aşamasıdır.** Bundan sonra yeni özellik eklenmez; kodlamaya geçilir.
 Kapsam: yalnızca **telefoncu MVP**. Kod yok; sadece mimari, plan ve test tasarımı.
 Öncelik sırası: v0.3 > v0.2 > v0.1. v0.2'nin **13.2 ve 13.3** bölümleri bu dokümanın Bölüm 1'i ile değiştirilmiştir. Diğer tüm v0.2 kuralları geçerlidir.
 
@@ -95,7 +96,7 @@ Hedef ölçüsü **toplam servet değişimi** (250.000 TL üzerinden).
 
 | Oyuncu tipi | Davranış | 7 gün servet değişimi | Yüzde |
 |-------------|----------|------------------------|-------|
-| **Kusursuz oyun (tavan)** | Tüm fırsatları doğru okur | ≈ +30.000 | **≈ %12** |
+| **Kusursuz oyun (tahmini üst uç)** | Tüm fırsatları doğru okur | ≈ +30.000 | **≈ %12** |
 | **Çok iyi** | Fırsatları büyük oranda bulur | +22.000 … +30.000 | %9–12 |
 | **Aktif dengeli** | Riskli ilana S1/S2, seçici | **+12.500 … +25.000** (tipik ≈ +15.000) | **%5–10** |
 | **Temkinli** | Az ve emin işlem | +5.000 … +12.000 | %2–5 |
@@ -104,7 +105,7 @@ Hedef ölçüsü **toplam servet değişimi** (250.000 TL üzerinden).
 | **Kötü kararlar** | Aşırı pahalı alım, ekspertizsiz | −20.000 … 0 | −%8 … 0 |
 | **Pasif** | Neredeyse işlem yapmaz | −2.500 … 0 | −%1 … 0 |
 
-**Alarm eşikleri (simülasyon, Bölüm 5.6):** Herhangi bir strateji ilk haftada ortalama **> %12** veya p90 **> %15** kazanıyorsa "para basma açığı" sayılır. Kötü strateji **−%8'in altına** iniyorsa "haksız ceza" sayılır.
+**Alarm eşikleri (simülasyon, Bölüm 5.6):** Herhangi bir strateji ilk haftada ortalama **> %12** veya p90 **> %15** kazanıyorsa simülatör **inceleme alarmı** verir (olası para basma açığı şüphesi). Bu, oyuncuya konmuş bir kazanç sınırı değildir; oyunda kâr tavanı uygulanmaz. Kötü strateji **−%8'in altına** iniyorsa "haksız ceza" incelemesi açılır.
 
 ### 1.5 Günlük net kâr bantları (aktif dengeli oyuncu, güncellenmiş)
 
@@ -172,7 +173,7 @@ Gerçek kredi hesaplamaları ve banka/kredi NPC'si **v0.3 kapsamı dışıdır.*
 | `Esnaf.Core` | **Hayır** (`noEngineReferences`) | – | Temel yapı taşları |
 | `Esnaf.Domain` | **Hayır** | Core | Sistemler, durum sınıfları, tanım sınıfları, `GameSession`, `IGameApi` |
 | `Esnaf.Persistence` | **Hayır** | Core, Domain | Serileştirme, migrasyon, yedekleme, dosya soyutlaması |
-| `Esnaf.Content` | Evet | Core, Domain | `ContentLoader` (JSON → tanım nesneleri), katalog SO, editör doğrulama |
+| `Esnaf.Content` | Evet | Core, Domain | `TextAssetContentSource` (TextAsset → metin), katalog SO, editör menüsü (UA1) |
 | `Esnaf.App` | Evet | hepsi | Composition root, sahneler, UI, ses, cihaz servisleri |
 | `Esnaf.Domain.Tests` | Hayır | Core, Domain | Kural testleri |
 | `Esnaf.Persistence.Tests` | Hayır | Core, Domain, Persistence | Kayıt testleri |
@@ -201,7 +202,7 @@ Her sistem `Esnaf.Domain` içinde ayrı klasör/namespace'tir (UI hariç). Siste
 | **Save** (Persistence) | Kayıt/yükleme/yedek/migrasyon | – | Domain (durum toplama) | `GameSaved`, `GameLoaded` |
 | **Events** | Tipli senkron EventBus | – | – | – |
 | **UI** (App) | Ekranlar, sunucular (presenter), navigasyon | Yalnızca görsel durum | `IGameApi`, EventBus | – |
-| **Content** | JSON/tanım yükleme, doğrulama, ikon/ses eşlemesi | – | Domain tanım tipleri | – |
+| **Content** | JSON ayrıştırma + doğrulama (`ContentParser/Validator/Database`, **Domain'de**), Unity tarafı: TextAsset okuma, ikon/ses eşlemesi (UA1) | – | Domain tanım tipleri | – |
 
 **`GameSession`** bütün sistemleri bir arada tutan **tek nesnedir** (oyunun "kasası"). Oyun başlarken veya kayıt yüklenirken kurulur; `IGameApi`'yi sunar.
 
@@ -855,7 +856,7 @@ Aritmetik testler **denge testi değildir**; yalnızca hesabın doğruluğunu s�
 | Gün | Yapılacak sistem | Ana dosyalar | Bağımlılık | Test kriteri | Gün sonunda çalışan özellik |
 |-----|------------------|--------------|-----------|--------------|------------------------------|
 | **1** | **Proje kurulumu + Core** | `.gitignore`, `Esnaf.Core.asmdef`, `Esnaf.Domain.asmdef` (+ Tests), `Money.cs`, `Round.cs`, `IRandom.cs`, `PcgRandom.cs`, `RngStreams.cs`, `EventBus.cs`, `Result.cs`, `IdGenerator.cs` | – | `round10(26.115)=26.120`; aynı seed aynı sayı; akışlar bağımsız; EventBus sırası | Unity projesi açılır, testler yeşil |
-| **2** | **İçerik hattı** | `ProductDefinition.cs`, `ContentModels/*.cs`, `ContentLoader.cs` (Content), `ContentValidator.cs`, `phone_models.json`, `value_tables.json`, `content_id_manifest.json`, `ContentCatalog` SO | Gün 1 | 10 model yüklenir; bozuk dosya hata verir; manifest denetimi | Editörde "İçeriği Doğrula" yeşil |
+| **2** | **İçerik hattı** | `ProductDefinition.cs`, `ContentModels/*.cs`, `ContentParser.cs`, `ContentValidator.cs`, `ContentDatabase.cs` (hepsi Domain), `TextAssetContentSource.cs` (Content), `phone_models.json`, `value_tables.json`, `content_id_manifest.json`, `ContentCatalog` SO | Gün 1 | 10 model yüklenir; bozuk dosya hata verir; manifest denetimi | Editörde "İçeriği Doğrula" yeşil |
 | **3** | **Ürün örneği + değer hesabı** | `ProductInstance.cs`, `ValueCalculator.cs`, `ConditionProfiles.cs`, `InstanceGenerator.cs`, `condition_profiles.json` | Gün 2 | E13 Pro A/B/C/D/E = 28.820/25.100/19.860/22.310/13.260; 10.000 örnek geçerli | Konsol/test ile "ürün üret, değerini hesapla" |
 | **4** | **Ekonomi + defter + envanter** | `EconomyState.cs`, `Ledger.cs`, `TransactionRecord.cs`, `transaction_types.json`, `InventoryState.cs`, `WealthCalculator.cs` (`IWealthContributor`) | Gün 3 | Senaryo T1–T5; I1, I2, I3 | Alış/satış (sabit fiyatla) nakit ve defteri doğru günceller |
 | **5** | **NPC + pazar + gün döngüsü** | `NPCDefinition.cs`, `NpcStateStore.cs`, `npc_profiles.json`, `MarketState.cs`, `ListingGenerator.cs`, `TimeState.cs`, `IDayEndStep.cs` + adımlar, `GameSession.cs`, `IGameApi.cs` (ilk komutlar) | Gün 4 | 1.000 gün: ≥2 fırsat, ≥1 tuzak (Gün 5+), jackpot kotası; gün sonu sırası; I6 (determinizm) | "Günü Bitir" ilanları yeniler, gider düşer (komutla) |
@@ -968,3 +969,43 @@ Bu sıra **Gün 1 ve Gün 2**'nin başıdır. Her dosya için ben kodu yazarım,
 - **v0.3 tamamlandığında tasarım dondurulur.** MVP kapsamı Bölüm 11'dir. Değişiklik yalnızca (a) kod yazarken bulunan teknik zorunluluk, (b) simülasyon/oyun testinin gösterdiği denge hatası için yapılır ve bu doküman güncellenir.
 - Değişiklik türleri: **denge sayısı** (serbest, JSON dosyası), **kural değişikliği** (Bölüm 3.3 K1–K10'a uyduğu sürece serbest), **kapsam artışı** (yasak, Bölüm 11.3'e yazılır).
 - Açık riskler (izlenecek): (1) 14 gün iddialı, (2) pazarlık motoru "formülik" hissettirebilir (his testi gerekir), (3) 250.000 TL'nin anlamı (yatırım hedefleri ve sonraki sektör kilitleri), (4) hedef Android/iOS cihaz performansı (UI ağırlıklı olduğu için düşük risk).
+
+---
+
+## 14. Nihai kararlar (FINAL, 21 madde)
+
+1. MVP ilk sektörü: telefon ticareti.
+2. Başlangıç sermayesi: 250.000 TL.
+3. İlk hafta hedefi: yaklaşık %5–10 sermaye büyümesi.
+4. %12 üzeri getiri, ekonomi simülatöründe **inceleme alarmıdır**; oyuncuya konmuş kesin bir kazanç sınırı değildir.
+5. Gün 1'de gün sonu ledger özeti, Gün 3'te tam ledger ekranı.
+6. Kredi/borç MVP dışı; yalnızca ileride eklenebilmesi için mimari extension point'leri.
+7. Core / Domain / Persistence / Content / App assembly yapısı.
+8. Oyun kuralları Unity'den bağımsız düz C# Domain katmanında.
+9. `IGameApi`, oyun sistemlerine erişimin tek giriş noktası.
+10. Seed'li PCG RNG.
+11. Para `long` TL; fiyatlar 10 TL'ye yuvarlanır.
+12. İçerik/tasarım verileri JSON.
+13. ScriptableObject yalnızca Unity'ye özgü asset/catalog eşlemesi için.
+14. 3 Unity scene: Boot, MainMenu, Game.
+15. UI: uGUI + TextMeshPro, dikey 1080×1920.
+16. Save: version + checksum + atomic write + 2 backup + migration.
+17. Pazarlık sırasında uygulama kapanırsa kaldığı yerden devam.
+18. Ekonomi simülasyon aracı: Unity'siz .NET konsol uygulaması, aynı Domain kodunu kullanır.
+19. Simülatörde normal oyuncu botlarının yanında exploit/sömürü botları da bulunur.
+20. MVP dışı sistemler MVP sonrası listesinde kalır.
+21. 27.000 → 35.000 TL örneği yalnızca aritmetik testidir; denge testi olarak kullanılmaz.
+
+---
+
+## 15. Uygulama açıklamaları (yeni özellik değil; çelişki/belirsizlik giderme)
+
+**UA1: JSON ayrıştırma ve doğrulama Domain'dedir.** Bölüm 3.1'de `Esnaf.Content` Unity'ye bağlıydı; simülatör (Bölüm 5.2) ise yalnızca Core+Domain kullanır. İkisi birlikte çalışsın diye:
+- `ContentParser`, `ContentValidator`, `ContentDatabase` → **`Esnaf.Domain`** (metin girer, tanım nesneleri çıkar; dosya/Unity bilmez).
+- `Esnaf.Content` (Unity) yalnızca: TextAsset'i metne çevirip Domain'e verme (`TextAssetContentSource`), `ContentCatalog` SO (ID → sprite/ses), editör "İçeriği Doğrula" menüsü (Domain doğrulayıcısını çağırır).
+- Simülatör aynı JSON dosyalarını diskten okuyup aynı `ContentParser`'a verir.
+- `Newtonsoft.Json`, `Domain` ve `Persistence` için izinli tek harici bağımlılıktır (Unity'de package'ın precompiled DLL'i, .NET'te NuGet).
+
+**UA2: Kayıt, `IGameApi` üzerinden geçmez.** `IGameApi` UI/simülatör/test komut-sorgu kapısıdır. `Persistence`, `GameSession`'ın dar bir kayıt yüzeyini (`Capture()` / `Restore(data)`) kullanır; App bu yüzeyi yalnızca `SaveService` üzerinden çağırır. `IGameApi`'ye durum yazma yetkisi eklenmez.
+
+**UA3: Pazarlık golden testleri ±10 TL toleranslıdır.** v0.2/v0.3 tablolarındaki pazarlık ara fiyatları `round10` ile gösterim yuvarlamasıdır (ör. iç değer 26.115 → 26.120; tabloda 26.110 yazılı olabilir). Bu yüzden: (a) değer, ekspertiz ve defter golden sayıları (28.820, 25.100, … , +15.280, 265.280) **tam eşitlikle** test edilir; (b) pazarlık tur fiyatları ve anlaşma fiyatları tablodaki değerle **±10 TL** toleransla karşılaştırılır; (c) motor Gün 7'de yazılınca kurallardan üretilen kesin değerler elle doğrulanıp `Tests/Fixtures/negotiation_golden.json` olarak sabitlenir ve sonraki testler bu dosyaya karşı çalışır.
