@@ -295,4 +295,54 @@ namespace Esnaf.Domain.Content
         public double? ValueSigma { get; set; }
         public double? PackageRatio { get; set; }
     }
+
+    // ---- appraisal_levels.json ----
+
+    internal sealed class AppraisalFileDto
+    {
+        public int? SchemaVersion { get; set; }
+        public List<AppraisalLevelDto> Levels { get; set; }
+        public List<AppraisalCheckDto> Checks { get; set; }
+        public AppraisalRiskCardDto RiskCard { get; set; }
+    }
+
+    internal sealed class AppraisalLevelDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public int? UnlockDay { get; set; }
+        public string RequiredEquipment { get; set; }
+        public AppraisalFeesDto Fees { get; set; }
+        public string Confidence { get; set; }
+        public double? EvidencePower { get; set; }
+        public Dictionary<string, double> Detect { get; set; }
+        public double? FalseAlarm { get; set; }
+        public int? BatteryHalfWidth { get; set; }
+        public int? BodyHalfWidth { get; set; }
+        public double? ValueHalfWidth { get; set; }
+        public double? CenterShift { get; set; }
+        public double? ValueNoise { get; set; }
+        public double? CoverageEstimate { get; set; }
+    }
+
+    internal sealed class AppraisalFeesDto
+    {
+        public long? Entry { get; set; }
+        public long? Mid { get; set; }
+        public long? Upper { get; set; }
+    }
+
+    internal sealed class AppraisalCheckDto
+    {
+        public string Attribute { get; set; }
+        public List<string> DefectValues { get; set; }
+        public string FalseAlarmValue { get; set; }
+        public string CleanValue { get; set; }
+        public string WordingKey { get; set; }
+    }
+
+    internal sealed class AppraisalRiskCardDto
+    {
+        public double? ExpectedSaleFactor { get; set; }
+    }
 }

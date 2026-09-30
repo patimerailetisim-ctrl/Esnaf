@@ -82,12 +82,13 @@ namespace Esnaf.Tests.Time
             public readonly MarketState Market = new MarketState();
             public readonly InstanceStore Store = new InstanceStore();
             public readonly EventBus Bus = new EventBus();
+            public readonly EconomyHarness Bank = new EconomyHarness();
             public readonly ListingExpiryStep Step;
             public readonly List<string> Events = new List<string>();
 
             public ExpiryRig()
             {
-                Step = new ListingExpiryStep(Market, Store, Bus);
+                Step = new ListingExpiryStep(Market, Store, Bank.Economy, Bus);
                 Bus.Subscribe<ListingExpired>(e =>
                 {
                     MarketListing still;
@@ -202,17 +203,69 @@ namespace Esnaf.Tests.Time
             var store = new InstanceStore();
             store.Add(new ProductInstance { InstanceId = 101, DefinitionId = "phone.x", Location = ProductLocation.Market });
             market.Add(new MarketListing(1, 101, "npc.a", Money.FromTl(1000), new string[0], 1, 1, Money.FromTl(800), Money.FromTl(900), false, false, false, false));
-            var step = new ListingExpiryStep(market, store, null);
+            var step = new ListingExpiryStep(market, store, new EconomyHarness().Economy, null);
 
             Assert.IsTrue(step.Execute(new DayEndContext(2)).IsSuccess);
             Assert.AreEqual(0, market.Count);
         }
 
+        // Boşa ekspertiz: ürünü alınmadan kalkan ilanın bekleyen ekspertiz ücreti gider yazılır (Gün 6, v0.2 5.1)
+
+        [Test]
+        public void ListingExpiryStep_WritesOffPendingAppraisalFees_OfExpiringListings()
+        {
+            var rig = new ExpiryRig();
+            rig.Add(1, 1);
+            rig.Add(2, 5);
+            Assert.IsTrue(rig.Bank.Economy.PayAppraisal(101, "phone.x", Tl(200), 3).IsSuccess);
+            Assert.IsTrue(rig.Bank.Economy.PayAppraisal(101, "phone.x", Tl(600), 3).IsSuccess);
+            Assert.IsTrue(rig.Bank.Economy.PayAppraisal(102, "phone.x", Tl(300), 3).IsSuccess);
+
+            rig.Step.Execute(new DayEndContext(3));
+
+            Assert.AreEqual(Esnaf.Core.Money.Zero, rig.Bank.Economy.PendingAppraisalCost(101), "kalkan ilanın ücretleri gider yazıldı");
+            Assert.AreEqual(Tl(300), rig.Bank.Economy.PendingAppraisalCost(102), "ilanı süren ürünün ücreti bekler");
+            Assert.AreEqual(2, rig.Bank.State.Ledger.Records.Count(r => r.TypeId == "wasted_appraisal"));
+            Assert.IsTrue(rig.Bank.State.Ledger.Records.Where(r => r.TypeId == "wasted_appraisal").All(r => r.Day == 3 && r.Amount.IsZero));
+            Assert.AreEqual(Tl(-800), rig.Bank.Summaries.NetProfit(3), "boşa ekspertiz günün net kârından düşer");
+        }
+
+        [Test]
+        public void ListingExpiryStep_DoesNotWriteOffFees_OfItemsTheShopBought()
+        {
+            var rig = new ExpiryRig();
+            rig.Add(1, 1, ProductLocation.Inventory);
+            Assert.IsTrue(rig.Bank.Economy.PayAppraisal(101, "phone.x", Tl(200), 3).IsSuccess);
+
+            rig.Step.Execute(new DayEndContext(3));
+
+            Assert.AreEqual(0, rig.Bank.State.Ledger.Records.Count(r => r.TypeId == "wasted_appraisal"));
+            Assert.AreEqual(Tl(200), rig.Bank.Economy.PendingAppraisalCost(101));
+        }
+
+        [Test]
+        public void ListingExpiryStep_ExpiringListingWithoutFees_WritesNothing()
+        {
+            var rig = new ExpiryRig();
+            rig.Add(1, 1);
+
+            Assert.IsTrue(rig.Step.Execute(new DayEndContext(3)).IsSuccess);
+
+            Assert.AreEqual(1, rig.Bank.State.Ledger.Count, "yalnızca başlangıç sermayesi");
+        }
+
+        private static Esnaf.Core.Money Tl(long tl)
+        {
+            return Esnaf.Core.Money.FromTl(tl);
+        }
+
         [Test]
         public void ListingExpiryStep_RejectsNulls()
         {
-            Assert.Throws<ArgumentNullException>(() => new ListingExpiryStep(null, new InstanceStore(), null));
-            Assert.Throws<ArgumentNullException>(() => new ListingExpiryStep(new MarketState(), null, null));
+            var economy = new EconomyHarness().Economy;
+            Assert.Throws<ArgumentNullException>(() => new ListingExpiryStep(null, new InstanceStore(), economy, null));
+            Assert.Throws<ArgumentNullException>(() => new ListingExpiryStep(new MarketState(), null, economy, null));
+            Assert.Throws<ArgumentNullException>(() => new ListingExpiryStep(new MarketState(), new InstanceStore(), null, null));
             Assert.Throws<ArgumentNullException>(() => new ExpiryRig().Step.Execute(null));
         }
 

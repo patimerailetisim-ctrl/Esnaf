@@ -129,6 +129,13 @@ namespace Esnaf.Domain.Content
         public const string MarketReferenceMissing = "market.reference.missing";
         public const string MarketTrapSellerMissing = "market.trap_seller_missing";
 
+        // Ekspertiz kuralları (appraisal_levels.json)
+        public const string AppraisalLevelsEmpty = "appraisal.levels.empty";
+        public const string AppraisalLevelIdFormat = "appraisal.level.id.format";
+        public const string AppraisalLevelIdDuplicate = "appraisal.level.id.duplicate";
+        public const string AppraisalConfidenceInvalid = "appraisal.confidence.invalid";
+        public const string AppraisalFieldInvalid = "appraisal.field.invalid";
+
         // ID manifesti
         public const string ManifestDuplicate = "manifest.duplicate";
         public const string ManifestIdMissingInContent = "manifest.id_missing_in_content";

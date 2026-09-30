@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Npc;
@@ -51,12 +52,14 @@ namespace Esnaf.Domain.Game
             sb.Append("day=").Append(N(session.Time.Day)).Append('\n');
             sb.Append("ids.instance=").Append(N(session.InstanceIds.LastIssued)).Append('\n');
             sb.Append("ids.listing=").Append(N(session.ListingIds.LastIssued)).Append('\n');
+            sb.Append("ids.appraisal=").Append(N(session.AppraisalIds.LastIssued)).Append('\n');
 
             AppendEconomy(sb, session);
             AppendInventory(sb, session);
             AppendInstances(sb, session);
             AppendMarket(sb, session);
             AppendNpcs(sb, session);
+            AppendKnowledge(sb, session);
             AppendRng(sb, session);
             return sb.ToString();
         }
@@ -150,6 +153,35 @@ namespace Esnaf.Domain.Game
                     .Append('|').Append(string.Join(",", npc.BoughtFromPlayer.Select(N)))
                     .Append('\n');
             }
+        }
+
+        private static void AppendKnowledge(StringBuilder sb, GameSession session)
+        {
+            foreach (string equipment in session.Equipment.All)
+            {
+                sb.Append("E|").Append(E(equipment)).Append('\n');
+            }
+
+            foreach (AppraisalResult r in session.Knowledge.All)
+            {
+                sb.Append("A|").Append(N(r.ResultId))
+                    .Append('|').Append(N(r.InstanceId))
+                    .Append('|').Append(E(r.LevelId))
+                    .Append('|').Append(N(r.Day))
+                    .Append('|').Append(N(r.Fee.Tl))
+                    .Append('|').Append(r.Seed.ToString(CultureInfo.InvariantCulture))
+                    .Append('|').Append(string.Join(";", r.Findings.Select(f => E(f.Attribute) + ":" + f.Found + ":" + f.IsFalseAlarm + ":" + f.Confidence)))
+                    .Append('|').Append(Range(r.BatteryRange))
+                    .Append('|').Append(Range(r.BodyRange))
+                    .Append('|').Append(r.ValueRange == null ? "-" : N(r.ValueRange.Min.Tl) + ".." + N(r.ValueRange.Max.Tl))
+                    .Append('|').Append(string.Join(";", r.Cards.Select(c => E(c.Attribute) + ":" + N(c.ProblemValue.Tl) + ":" + c.IsFalseAlarm)))
+                    .Append('\n');
+            }
+        }
+
+        private static string Range(NumericRange range)
+        {
+            return range == null ? "-" : N(range.Min) + ".." + N(range.Max);
         }
 
         private static void AppendRng(StringBuilder sb, GameSession session)

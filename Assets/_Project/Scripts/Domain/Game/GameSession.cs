@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Inventory;
@@ -28,6 +29,10 @@ namespace Esnaf.Domain.Game
         public InstanceStore Store { get; }
         public MarketState Market { get; }
         public NpcStateStore Npcs { get; }
+        public IdGenerator AppraisalIds { get; }
+        public KnowledgeState Knowledge { get; }
+        public EquipmentState Equipment { get; }
+        public AppraisalService Appraisal { get; }
         public EconomyState EconomyState { get; }
         public EconomyService EconomyService { get; }
         public InventoryState InventoryState { get; }
@@ -50,6 +55,9 @@ namespace Esnaf.Domain.Game
             Store = new InstanceStore();
             Market = new MarketState();
             Npcs = new NpcStateStore();
+            AppraisalIds = new IdGenerator();
+            Knowledge = new KnowledgeState();
+            Equipment = new EquipmentState();
 
             EconomyState = new EconomyState(content.TransactionTypes);
             EconomyService = new EconomyService(EconomyState, content.EconomyConstants, bus);
@@ -66,12 +74,14 @@ namespace Esnaf.Domain.Game
             Summaries = new DaySummaryBuilder(EconomyState, content.TransactionTypes);
             LedgerView = new LedgerView(EconomyState, content.TransactionTypes);
 
+            Appraisal = new AppraisalService(content, Knowledge, Equipment, EconomyService, Store, AppraisalIds, bus, seed);
+
             ListingGenerator = new ListingGenerator(content, Store, InstanceIds, ListingIds);
             var newDay = new NewDayStep(Time, Market, ListingGenerator, Rng, bus);
             DayEnd = new DayEndPipeline(new IDayEndStep[]
             {
                 new DailyExpenseStep(EconomyService),
-                new ListingExpiryStep(Market, Store, bus),
+                new ListingExpiryStep(Market, Store, EconomyService, bus),
                 newDay
             });
             Api = new GameApi(this);

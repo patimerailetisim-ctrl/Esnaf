@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
@@ -86,6 +87,30 @@ namespace Esnaf.Tests.Support
             " { \"attribute\": \"camera\", \"hiddenValues\": [ \"spotted\", \"faulty\" ], \"cleanValue\": \"ok\" } ]," +
             " \"guidedListing\": { \"sellerNpcId\": \"npc.test_honest\", \"definitionId\": \"phone.test_one\", \"storageGb\": 128, \"ageMonths\": 12," +
             " \"battery\": 95, \"body\": 100, \"screen\": \"original\", \"camera\": \"ok\", \"box\": false, \"invoice\": false, \"rejectPrice\": 4750 } }";
+
+        /// <summary>
+        /// GDD v0.2 5.1/5.2 tablolarının test kopyası. centerShift ve valueNoise 0'dır: v0.2 5.4 örneği "sabit rastgele
+        /// değerlerle" (sıfır sapma) hesaplandığı için altın testler bu fixture'ı kullanır.
+        /// </summary>
+        public const string AppraisalLevelsJson =
+            "{ \"schemaVersion\": 1, \"levels\": [" +
+            " { \"id\": \"s0\", \"name\": \"Göz muayenesi\", \"unlockDay\": 1, \"fees\": { \"entry\": 0, \"mid\": 0, \"upper\": 0 }," +
+            "   \"confidence\": \"hint\", \"evidencePower\": 0.2, \"detect\": { \"screen\": 0.35, \"camera\": 0.20 }, \"falseAlarm\": 0.05," +
+            "   \"bodyHalfWidth\": 15, \"centerShift\": 0, \"valueNoise\": 0 }," +
+            " { \"id\": \"s1\", \"name\": \"Temel kontrol\", \"unlockDay\": 3, \"fees\": { \"entry\": 100, \"mid\": 200, \"upper\": 300 }," +
+            "   \"confidence\": \"low\", \"evidencePower\": 0.4, \"detect\": { \"screen\": 0.70, \"camera\": 0.60 }, \"falseAlarm\": 0.05," +
+            "   \"batteryHalfWidth\": 10, \"bodyHalfWidth\": 10, \"valueHalfWidth\": 0.10, \"centerShift\": 0, \"valueNoise\": 0, \"coverageEstimate\": 0.85 }," +
+            " { \"id\": \"s2\", \"name\": \"Ayrıntılı kontrol\", \"unlockDay\": 5, \"fees\": { \"entry\": 350, \"mid\": 600, \"upper\": 1000 }," +
+            "   \"confidence\": \"medium\", \"evidencePower\": 0.7, \"detect\": { \"screen\": 0.92, \"camera\": 0.90 }, \"falseAlarm\": 0.02," +
+            "   \"batteryHalfWidth\": 5, \"bodyHalfWidth\": 5, \"valueHalfWidth\": 0.05, \"centerShift\": 0, \"valueNoise\": 0, \"coverageEstimate\": 0.92 }," +
+            " { \"id\": \"s3\", \"name\": \"Profesyonel ekspertiz\", \"unlockDay\": 6, \"requiredEquipment\": \"test_device\"," +
+            "   \"fees\": { \"entry\": 700, \"mid\": 1200, \"upper\": 2000 }," +
+            "   \"confidence\": \"certain\", \"evidencePower\": 1.0, \"detect\": { \"screen\": 0.99, \"camera\": 0.99 }, \"falseAlarm\": 0.005," +
+            "   \"batteryHalfWidth\": 2, \"bodyHalfWidth\": 3, \"valueHalfWidth\": 0.025, \"centerShift\": 0, \"valueNoise\": 0, \"coverageEstimate\": 0.96 } ]," +
+            " \"checks\": [" +
+            " { \"attribute\": \"screen\", \"defectValues\": [ \"replaced_aftermarket\" ], \"falseAlarmValue\": \"replaced_aftermarket\", \"cleanValue\": \"original\", \"wordingKey\": \"appraisal.finding.screen_replaced\" }," +
+            " { \"attribute\": \"camera\", \"defectValues\": [ \"spotted\", \"faulty\" ], \"falseAlarmValue\": \"spotted\", \"cleanValue\": \"ok\", \"wordingKey\": \"appraisal.finding.camera_problem\" } ]," +
+            " \"riskCard\": { \"expectedSaleFactor\": 1.02 } }";
 
         /// <summary>Üç test NPC'si: dürüst (Gün 1), aceleci (Gün 2), kusur saklayan (Gün 3).</summary>
         public const string NpcProfilesJson =
@@ -178,6 +203,19 @@ namespace Esnaf.Tests.Support
             }
 
             return new TransactionTypes(types);
+        }
+
+        /// <summary>Test JSON'undan ekspertiz kurallarını ayrıştırır (sıfır sapma/gürültü).</summary>
+        public static AppraisalConfig Appraisal()
+        {
+            var issues = new List<ContentIssue>();
+            AppraisalConfig config = ContentParser.ParseAppraisal(ContentFileNames.AppraisalLevels, AppraisalLevelsJson, issues);
+            if (config == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture appraisal levels are invalid: " + string.Join("; ", issues));
+            }
+
+            return config;
         }
 
         /// <summary>Test JSON'undan NPC tanımlarını ayrıştırır.</summary>
@@ -281,7 +319,7 @@ namespace Esnaf.Tests.Support
 
     public static class ContentFixtureExtensions
     {
-        /// <summary>Kaynağa geçerli value_tables, condition_profiles, transaction_types, economy_constants ve npc_profiles dosyalarını ekler.</summary>
+        /// <summary>Kaynağa geçerli value_tables, condition_profiles, transaction_types, economy_constants ve npc_profiles ve appraisal_levels dosyalarını ekler.</summary>
         public static DictionaryContentSource AddValidTables(this DictionaryContentSource source)
         {
             return source
@@ -289,7 +327,8 @@ namespace Esnaf.Tests.Support
                 .Add(ContentFileNames.ConditionProfiles, ContentFixtures.ProfilesJson)
                 .Add(ContentFileNames.TransactionTypes, ContentFixtures.TransactionTypesJson)
                 .Add(ContentFileNames.EconomyConstants, ContentFixtures.EconomyConstantsJson)
-                .Add(ContentFileNames.NpcProfiles, ContentFixtures.NpcProfilesJson);
+                .Add(ContentFileNames.NpcProfiles, ContentFixtures.NpcProfilesJson)
+                .Add(ContentFileNames.AppraisalLevels, ContentFixtures.AppraisalLevelsJson);
         }
     }
 }

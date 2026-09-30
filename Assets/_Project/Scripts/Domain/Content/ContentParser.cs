@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Npc;
@@ -321,6 +322,83 @@ namespace Esnaf.Domain.Content
             }
 
             return MapMarket(fileName, file.Market, issues);
+        }
+
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde ekspertiz kuralları.</returns>
+        public static AppraisalConfig ParseAppraisal(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            AppraisalFileDto file = Deserialize<AppraisalFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            const string root = "appraisal";
+            bool ok = true;
+
+            var levels = new List<AppraisalLevel>();
+            if (Require(fileName, root, "levels", file.Levels != null, issues))
+            {
+                for (int i = 0; i < file.Levels.Count; i++)
+                {
+                    AppraisalLevel level = MapAppraisalLevel(fileName, root, i, file.Levels[i], issues);
+                    if (level != null)
+                    {
+                        levels.Add(level);
+                    }
+                    else
+                    {
+                        ok = false;
+                    }
+                }
+            }
+            else
+            {
+                ok = false;
+            }
+
+            var checks = new List<AppraisalCheck>();
+            if (Require(fileName, root, "checks", file.Checks != null, issues))
+            {
+                for (int i = 0; i < file.Checks.Count; i++)
+                {
+                    AppraisalCheckDto dto = file.Checks[i];
+                    string f = "checks[" + i + "]";
+                    bool entryOk = Require(fileName, root, f, dto != null, issues);
+                    if (entryOk)
+                    {
+                        entryOk &= Require(fileName, root, f + ".attribute", dto.Attribute != null, issues);
+                        entryOk &= Require(fileName, root, f + ".defectValues", dto.DefectValues != null, issues);
+                        entryOk &= Require(fileName, root, f + ".falseAlarmValue", dto.FalseAlarmValue != null, issues);
+                        entryOk &= Require(fileName, root, f + ".cleanValue", dto.CleanValue != null, issues);
+                        entryOk &= Require(fileName, root, f + ".wordingKey", dto.WordingKey != null, issues);
+                    }
+
+                    if (entryOk)
+                    {
+                        checks.Add(new AppraisalCheck(dto.Attribute, dto.DefectValues, dto.FalseAlarmValue, dto.CleanValue, dto.WordingKey));
+                    }
+
+                    ok &= entryOk;
+                }
+            }
+            else
+            {
+                ok = false;
+            }
+
+            bool riskOk = Require(fileName, root, "riskCard", file.RiskCard != null, issues);
+            if (riskOk)
+            {
+                riskOk &= Require(fileName, root, "riskCard.expectedSaleFactor", file.RiskCard.ExpectedSaleFactor.HasValue, issues);
+            }
+
+            if (!ok || !riskOk)
+            {
+                return null;
+            }
+
+            return new AppraisalConfig(levels, checks, file.RiskCard.ExpectedSaleFactor.Value);
         }
 
         // ---- ortak ----
@@ -1032,6 +1110,70 @@ namespace Esnaf.Domain.Content
                 dto.Box.Value,
                 dto.Invoice.Value,
                 Money.FromTl(dto.RejectPrice.Value));
+        }
+
+        private static AppraisalLevel MapAppraisalLevel(string fileName, string root, int index, AppraisalLevelDto dto, ICollection<ContentIssue> issues)
+        {
+            string f = "levels[" + index + "]";
+            if (!Require(fileName, root, f, dto != null, issues))
+            {
+                return null;
+            }
+
+            bool ok = Require(fileName, root, f + ".id", dto.Id != null, issues);
+            ok &= Require(fileName, root, f + ".name", dto.Name != null, issues);
+            ok &= Require(fileName, root, f + ".unlockDay", dto.UnlockDay.HasValue, issues);
+
+            bool feesOk = Require(fileName, root, f + ".fees", dto.Fees != null, issues);
+            if (feesOk)
+            {
+                feesOk &= Require(fileName, root, f + ".fees.entry", dto.Fees.Entry.HasValue, issues);
+                feesOk &= Require(fileName, root, f + ".fees.mid", dto.Fees.Mid.HasValue, issues);
+                feesOk &= Require(fileName, root, f + ".fees.upper", dto.Fees.Upper.HasValue, issues);
+            }
+
+            ok &= feesOk;
+
+            bool confidenceOk = Require(fileName, root, f + ".confidence", dto.Confidence != null, issues);
+            AppraisalConfidence confidence = AppraisalConfidence.Hint;
+            if (confidenceOk && !AppraisalConfidences.TryParse(dto.Confidence, out confidence))
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.AppraisalConfidenceInvalid,
+                    fileName,
+                    f + ": invalid confidence '" + dto.Confidence + "' (allowed: hint, low, medium, certain)."));
+                confidenceOk = false;
+            }
+
+            ok &= confidenceOk;
+            ok &= Require(fileName, root, f + ".evidencePower", dto.EvidencePower.HasValue, issues);
+            ok &= Require(fileName, root, f + ".detect", dto.Detect != null, issues);
+            ok &= Require(fileName, root, f + ".falseAlarm", dto.FalseAlarm.HasValue, issues);
+            ok &= Require(fileName, root, f + ".centerShift", dto.CenterShift.HasValue, issues);
+            ok &= Require(fileName, root, f + ".valueNoise", dto.ValueNoise.HasValue, issues);
+            if (!ok)
+            {
+                return null;
+            }
+
+            return new AppraisalLevel(
+                dto.Id,
+                dto.Name,
+                dto.UnlockDay.Value,
+                dto.RequiredEquipment,
+                Money.FromTl(dto.Fees.Entry.Value),
+                Money.FromTl(dto.Fees.Mid.Value),
+                Money.FromTl(dto.Fees.Upper.Value),
+                confidence,
+                dto.EvidencePower.Value,
+                dto.Detect,
+                dto.FalseAlarm.Value,
+                dto.BatteryHalfWidth,
+                dto.BodyHalfWidth,
+                dto.ValueHalfWidth,
+                dto.CenterShift.Value,
+                dto.ValueNoise.Value,
+                dto.CoverageEstimate);
         }
 
         private static bool Require(string fileName, string label, string field, bool present, ICollection<ContentIssue> issues)

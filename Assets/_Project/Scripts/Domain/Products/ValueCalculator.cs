@@ -29,6 +29,12 @@ namespace Esnaf.Domain.Products
             _tables = tables;
         }
 
+        /// <summary>Kullanılan çarpan tabloları (ekspertiz gibi sistemler kusur çarpanlarına buradan bakar).</summary>
+        public ValueTables Tables
+        {
+            get { return _tables; }
+        }
+
         /// <param name="demandMultiplier">Model talep çarpanı (Gün 5'e kadar 1,0). Pozitif ve sonlu olmalı.</param>
         public ValueBreakdown Calculate(ProductInstance instance, ProductDefinition definition, double demandMultiplier = 1.0)
         {

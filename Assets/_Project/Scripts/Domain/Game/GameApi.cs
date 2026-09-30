@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Phone;
@@ -44,6 +46,62 @@ namespace Esnaf.Domain.Game
                 context.NewListingIds,
                 context.ExecutedStepIds,
                 summary));
+        }
+
+        public Result<AppraisalView> StartAppraisal(long listingId, string levelId)
+        {
+            MarketListing listing;
+            if (!_session.Market.TryGet(listingId, out listing))
+            {
+                return Result<AppraisalView>.Fail("listing.unknown", "Unknown listing " + listingId + ".");
+            }
+
+            Result<AppraisalResult> result = _session.Appraisal.Appraise(listing.InstanceId, levelId, _session.Time.Day);
+            if (result.IsFailure)
+            {
+                return Result<AppraisalView>.Fail(result.ErrorCode, result.Message);
+            }
+
+            return Result<AppraisalView>.Ok(ViewOf(result.Value, listingId));
+        }
+
+        public IReadOnlyList<AppraisalView> GetAppraisals(long listingId)
+        {
+            MarketListing listing;
+            if (!_session.Market.TryGet(listingId, out listing))
+            {
+                return new ReadOnlyCollection<AppraisalView>(new List<AppraisalView>());
+            }
+
+            return new ReadOnlyCollection<AppraisalView>(
+                _session.Knowledge.ForInstance(listing.InstanceId).Select(r => ViewOf(r, listingId)).ToList());
+        }
+
+        public Result<RiskCard> GetRiskCard(long appraisalId, Money offer)
+        {
+            AppraisalResult result;
+            if (!_session.Knowledge.TryGetById(appraisalId, out result))
+            {
+                return Result<RiskCard>.Fail("appraisal.unknown", "Unknown appraisal " + appraisalId + ".");
+            }
+
+            return new RiskCardBuilder(_session.Content.Appraisal).Build(result, offer);
+        }
+
+        private static AppraisalView ViewOf(AppraisalResult r, long listingId)
+        {
+            return new AppraisalView(
+                r.ResultId,
+                listingId,
+                r.InstanceId,
+                r.LevelId,
+                r.Day,
+                r.Fee,
+                r.Findings.Select(f => new FindingView(f.Attribute, f.WordingKey, f.Found, f.Confidence, f.EvidencePower)),
+                r.BatteryRange,
+                r.BodyRange,
+                r.ValueRange,
+                r.Cards.Select(c => new CardView(c.Attribute, c.WordingKey, c.Confidence, c.EvidencePower, c.ProblemValue)));
         }
 
         public int GetDay()

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Npc;
@@ -20,6 +22,11 @@ namespace Esnaf.Domain.Content
         private const int MaxReleaseYear = 2100;
         private const double MultiplierTolerance = 1e-9;
 
+        private const int MaxHalfWidthPoints = 50;
+
+        /// <summary>v0.2 5.5: tahmini satış = değer × çarpan; makul üst sınır.</summary>
+        private const double MaxExpectedSaleFactor = 1.25;
+
         /// <summary>v0.2 10.4: müşteri Max'ı ≤ V × 1,25 (aşırı prim yok).</summary>
         private const double MaxCustomerValueRatio = 1.25;
 
@@ -28,6 +35,9 @@ namespace Esnaf.Domain.Content
 
         // NPC kimliği: "npc.kemal" (küçük harf, rakam, alt çizgi; harfle başlar).
         private static readonly Regex NpcIdFormat = new Regex("^npc\\.[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
+
+        // Ekspertiz seviye kimliği: "s1" (küçük harf, rakam, alt çizgi; harfle başlar).
+        private static readonly Regex AppraisalLevelIdFormat = new Regex("^[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
 
         // Defter türü kimliği: küçük harf, rakam, alt çizgi (örn. daily_expense).
         private static readonly Regex TransactionTypeIdFormat = new Regex("^[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
@@ -940,6 +950,237 @@ namespace Esnaf.Domain.Content
         {
             issues.Add(ContentIssue.Error(
                 ContentIssueCodes.MarketReferenceMissing, fileName, "market." + field + " refers to unknown id '" + id + "'."));
+        }
+
+        // ---------- ekspertiz kuralları (appraisal_levels.json) ----------
+
+        public static void ValidateAppraisal(AppraisalConfig config, ValueTables tables, string fileName, ICollection<ContentIssue> issues)
+        {
+            var checkAttributes = new HashSet<string>(StringComparer.Ordinal);
+            ValidateAppraisalChecks(config, tables, fileName, issues, checkAttributes);
+
+            if (config.Levels.Count == 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.AppraisalLevelsEmpty, fileName, "The file contains no appraisal levels."));
+            }
+
+            var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < config.Levels.Count; i++)
+            {
+                AppraisalLevel level = config.Levels[i];
+                string label = string.IsNullOrWhiteSpace(level.Id) ? "levels[" + i + "]" : level.Id;
+                if (string.IsNullOrEmpty(level.Id) || !AppraisalLevelIdFormat.IsMatch(level.Id))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.AppraisalLevelIdFormat, fileName, label + ": id '" + level.Id + "' must be lowercase letters, digits, underscore (e.g. s1)."));
+                }
+                else if (!seenIds.Add(level.Id))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.AppraisalLevelIdDuplicate, fileName, label + ": duplicate id."));
+                }
+
+                ValidateAppraisalLevel(level, label, checkAttributes, fileName, issues);
+            }
+
+            if (config.ExpectedSaleFactor <= 0.0 || config.ExpectedSaleFactor > MaxExpectedSaleFactor)
+            {
+                AppraisalField(issues, fileName, "riskCard", "expectedSaleFactor must be in (0, " + MaxExpectedSaleFactor + "].");
+            }
+        }
+
+        private static void ValidateAppraisalChecks(
+            AppraisalConfig config,
+            ValueTables tables,
+            string fileName,
+            ICollection<ContentIssue> issues,
+            ISet<string> attributes)
+        {
+            if (config.Checks.Count == 0)
+            {
+                AppraisalField(issues, fileName, "checks", "needs at least one checked attribute.");
+                return;
+            }
+
+            for (int i = 0; i < config.Checks.Count; i++)
+            {
+                AppraisalCheck check = config.Checks[i];
+                string f = "checks[" + i + "]";
+
+                TryGetMultiplier lookup;
+                if (check.Attribute == PhoneAttributes.Screen)
+                {
+                    lookup = tables.TryGetScreenMultiplier;
+                }
+                else if (check.Attribute == PhoneAttributes.Camera)
+                {
+                    lookup = tables.TryGetCameraMultiplier;
+                }
+                else
+                {
+                    AppraisalField(issues, fileName, f + ".attribute", "must be 'screen' or 'camera'.");
+                    continue;
+                }
+
+                if (!attributes.Add(check.Attribute))
+                {
+                    AppraisalField(issues, fileName, f + ".attribute", "'" + check.Attribute + "' is checked more than once.");
+                }
+
+                double ignored;
+                bool defectsOk = check.DefectValues.Count > 0;
+                if (!defectsOk)
+                {
+                    AppraisalField(issues, fileName, f + ".defectValues", "needs at least one value.");
+                }
+
+                for (int v = 0; v < check.DefectValues.Count; v++)
+                {
+                    if (!lookup(check.DefectValues[v], out ignored))
+                    {
+                        AppraisalField(issues, fileName, f + ".defectValues", "'" + check.DefectValues[v] + "' is not a known " + check.Attribute + " id.");
+                        defectsOk = false;
+                    }
+                }
+
+                if (defectsOk && !check.IsDefect(check.FalseAlarmValue))
+                {
+                    AppraisalField(issues, fileName, f + ".falseAlarmValue", "must be one of the defect values.");
+                }
+
+                if (!lookup(check.CleanValue, out ignored))
+                {
+                    AppraisalField(issues, fileName, f + ".cleanValue", "'" + check.CleanValue + "' is not a known " + check.Attribute + " id.");
+                }
+                else if (check.IsDefect(check.CleanValue))
+                {
+                    AppraisalField(issues, fileName, f + ".cleanValue", "must not be one of the defect values.");
+                }
+
+                if (string.IsNullOrWhiteSpace(check.WordingKey))
+                {
+                    AppraisalField(issues, fileName, f + ".wordingKey", "must not be empty.");
+                }
+            }
+        }
+
+        private static void ValidateAppraisalLevel(
+            AppraisalLevel level,
+            string label,
+            ISet<string> checkAttributes,
+            string fileName,
+            ICollection<ContentIssue> issues)
+        {
+            if (string.IsNullOrWhiteSpace(level.Name))
+            {
+                AppraisalField(issues, fileName, label, "name must not be empty.");
+            }
+
+            if (level.UnlockDay < 1)
+            {
+                AppraisalField(issues, fileName, label, "unlockDay must be at least 1.");
+            }
+
+            if (level.RequiredEquipment != null && string.IsNullOrWhiteSpace(level.RequiredEquipment))
+            {
+                AppraisalField(issues, fileName, label, "requiredEquipment must not be empty when given.");
+            }
+
+            ValidateFee(level.FeeFor(ProductSegment.Entry), "fees.entry", label, fileName, issues);
+            ValidateFee(level.FeeFor(ProductSegment.Mid), "fees.mid", label, fileName, issues);
+            ValidateFee(level.FeeFor(ProductSegment.Upper), "fees.upper", label, fileName, issues);
+
+            if (level.EvidencePower <= 0.0 || level.EvidencePower > 1.0)
+            {
+                AppraisalField(issues, fileName, label, "evidencePower must be in (0, 1].");
+            }
+
+            if (level.FalseAlarmChance < 0.0 || level.FalseAlarmChance > 1.0)
+            {
+                AppraisalField(issues, fileName, label, "falseAlarm must be in [0, 1].");
+            }
+
+            foreach (string attribute in checkAttributes)
+            {
+                if (!ContainsKey(level, attribute))
+                {
+                    AppraisalField(issues, fileName, label, "detect." + attribute + " is missing.");
+                }
+            }
+
+            foreach (string attribute in level.DetectAttributes)
+            {
+                if (!checkAttributes.Contains(attribute))
+                {
+                    AppraisalField(issues, fileName, label, "detect." + attribute + " is not a checked attribute.");
+                }
+                else if (level.DetectChance(attribute) < 0.0 || level.DetectChance(attribute) > 1.0)
+                {
+                    AppraisalField(issues, fileName, label, "detect." + attribute + " must be in [0, 1].");
+                }
+            }
+
+            if (level.BatteryHalfWidth.HasValue && (level.BatteryHalfWidth.Value < 1 || level.BatteryHalfWidth.Value > MaxHalfWidthPoints))
+            {
+                AppraisalField(issues, fileName, label, "batteryHalfWidth must be in [1, " + MaxHalfWidthPoints + "].");
+            }
+
+            if (level.BodyHalfWidth.HasValue && (level.BodyHalfWidth.Value < 1 || level.BodyHalfWidth.Value > MaxHalfWidthPoints))
+            {
+                AppraisalField(issues, fileName, label, "bodyHalfWidth must be in [1, " + MaxHalfWidthPoints + "].");
+            }
+
+            if (level.ValueHalfWidth.HasValue)
+            {
+                if (level.ValueHalfWidth.Value <= 0.0 || level.ValueHalfWidth.Value >= 0.5)
+                {
+                    AppraisalField(issues, fileName, label, "valueHalfWidth must be in (0, 0.5).");
+                }
+                else if (!level.BatteryHalfWidth.HasValue || !level.BodyHalfWidth.HasValue)
+                {
+                    AppraisalField(issues, fileName, label, "valueHalfWidth needs batteryHalfWidth and bodyHalfWidth (the observed value uses their centers).");
+                }
+            }
+
+            if (level.CenterShift < 0.0 || level.CenterShift >= 1.0)
+            {
+                AppraisalField(issues, fileName, label, "centerShift must be in [0, 1).");
+            }
+
+            if (level.ValueNoise < 0.0 || level.ValueNoise >= 0.5)
+            {
+                AppraisalField(issues, fileName, label, "valueNoise must be in [0, 0.5).");
+            }
+
+            if (level.CoverageEstimate.HasValue && (level.CoverageEstimate.Value <= 0.0 || level.CoverageEstimate.Value > 1.0))
+            {
+                AppraisalField(issues, fileName, label, "coverageEstimate must be in (0, 1].");
+            }
+        }
+
+        private static bool ContainsKey(AppraisalLevel level, string attribute)
+        {
+            foreach (string key in level.DetectAttributes)
+            {
+                if (key == attribute)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ValidateFee(Money fee, string field, string label, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (fee.IsNegative || !fee.IsRoundedTo10)
+            {
+                AppraisalField(issues, fileName, label, field + " must be non-negative and a multiple of 10 TL.");
+            }
+        }
+
+        private static void AppraisalField(ICollection<ContentIssue> issues, string fileName, string label, string rule)
+        {
+            issues.Add(ContentIssue.Error(ContentIssueCodes.AppraisalFieldInvalid, fileName, label + ": " + rule));
         }
 
         /// <param name="manifestIds">content_id_manifest.json içindeki ID'ler.</param>

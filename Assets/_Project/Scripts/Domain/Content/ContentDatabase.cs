@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Npc;
@@ -36,6 +37,9 @@ namespace Esnaf.Domain.Content
         /// <summary>Ekonomi sabitleri (economy_constants.json).</summary>
         public EconomyConstants EconomyConstants { get; }
 
+        /// <summary>Ekspertiz kuralları (appraisal_levels.json).</summary>
+        public AppraisalConfig Appraisal { get; }
+
         /// <summary>Pazar (ilan üretimi) sabitleri (economy_constants.json "market" bölümü).</summary>
         public MarketConstants MarketConstants { get; }
 
@@ -58,8 +62,10 @@ namespace Esnaf.Domain.Content
             TransactionTypes transactionTypes,
             EconomyConstants economyConstants,
             MarketConstants marketConstants,
-            IEnumerable<NpcDefinition> npcs)
+            IEnumerable<NpcDefinition> npcs,
+            AppraisalConfig appraisal)
         {
+            Appraisal = appraisal;
             TransactionTypes = transactionTypes;
             EconomyConstants = economyConstants;
             MarketConstants = marketConstants;
@@ -255,6 +261,21 @@ namespace Esnaf.Domain.Content
                 }
             }
 
+            // Ekspertiz kuralları
+            AppraisalConfig appraisal = null;
+            if (!source.TryGetText(ContentFileNames.AppraisalLevels, out text))
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.AppraisalLevels, "Content file not found."));
+            }
+            else
+            {
+                appraisal = ContentParser.ParseAppraisal(ContentFileNames.AppraisalLevels, text, issues);
+                if (appraisal != null && valueTables != null)
+                {
+                    ContentValidator.ValidateAppraisal(appraisal, valueTables, ContentFileNames.AppraisalLevels, issues);
+                }
+            }
+
             // Pazar kuralları ürünlere, NPC'lere ve değer tablolarına başvurur; önceki dosyalar temizse çapraz denetlenir
             // (bozuk bir dosyanın ardından art arda gelen başvuru hatası gürültüsünü önler).
             if (marketConstants != null && npcs != null && products != null && valueTables != null && !HasError(issues))
@@ -297,14 +318,15 @@ namespace Esnaf.Domain.Content
                 || transactionTypes == null
                 || economyConstants == null
                 || marketConstants == null
-                || npcs == null)
+                || npcs == null
+                || appraisal == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
             return new ContentLoadResult(
                 new ContentDatabase(
-                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs),
+                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal),
                 issues);
         }
 

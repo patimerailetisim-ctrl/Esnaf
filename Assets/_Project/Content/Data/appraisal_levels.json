@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "levels": [
+    {
+      "id": "s0", "name": "Göz muayenesi", "unlockDay": 1,
+      "fees": { "entry": 0, "mid": 0, "upper": 0 },
+      "confidence": "hint", "evidencePower": 0.2,
+      "detect": { "screen": 0.35, "camera": 0.20 }, "falseAlarm": 0.05,
+      "bodyHalfWidth": 15,
+      "centerShift": 0.5, "valueNoise": 0.0
+    },
+    {
+      "id": "s1", "name": "Temel kontrol", "unlockDay": 3,
+      "fees": { "entry": 100, "mid": 200, "upper": 300 },
+      "confidence": "low", "evidencePower": 0.4,
+      "detect": { "screen": 0.70, "camera": 0.60 }, "falseAlarm": 0.05,
+      "batteryHalfWidth": 10, "bodyHalfWidth": 10, "valueHalfWidth": 0.10,
+      "centerShift": 0.5, "valueNoise": 0.09, "coverageEstimate": 0.85
+    },
+    {
+      "id": "s2", "name": "Ayrıntılı kontrol", "unlockDay": 5,
+      "fees": { "entry": 350, "mid": 600, "upper": 1000 },
+      "confidence": "medium", "evidencePower": 0.7,
+      "detect": { "screen": 0.92, "camera": 0.90 }, "falseAlarm": 0.02,
+      "batteryHalfWidth": 5, "bodyHalfWidth": 5, "valueHalfWidth": 0.05,
+      "centerShift": 0.5, "valueNoise": 0.0, "coverageEstimate": 0.92
+    },
+    {
+      "id": "s3", "name": "Profesyonel ekspertiz", "unlockDay": 6, "requiredEquipment": "test_device",
+      "fees": { "entry": 700, "mid": 1200, "upper": 2000 },
+      "confidence": "certain", "evidencePower": 1.0,
+      "detect": { "screen": 0.99, "camera": 0.99 }, "falseAlarm": 0.005,
+      "batteryHalfWidth": 2, "bodyHalfWidth": 3, "valueHalfWidth": 0.025,
+      "centerShift": 0.6, "valueNoise": 0.022, "coverageEstimate": 0.96
+    }
+  ],
+  "checks": [
+    {
+      "attribute": "screen", "defectValues": [ "replaced_aftermarket" ], "falseAlarmValue": "replaced_aftermarket",
+      "cleanValue": "original", "wordingKey": "appraisal.finding.screen_replaced"
+    },
+    {
+      "attribute": "camera", "defectValues": [ "spotted", "faulty" ], "falseAlarmValue": "spotted",
+      "cleanValue": "ok", "wordingKey": "appraisal.finding.camera_problem"
+    }
+  ],
+  "riskCard": { "expectedSaleFactor": 1.02 }
+}
