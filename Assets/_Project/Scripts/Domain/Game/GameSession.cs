@@ -6,6 +6,7 @@ using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Inventory;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 using Esnaf.Domain.Time;
@@ -33,6 +34,8 @@ namespace Esnaf.Domain.Game
         public KnowledgeState Knowledge { get; }
         public EquipmentState Equipment { get; }
         public AppraisalService Appraisal { get; }
+        public TradeState TradeState { get; }
+        public TradeService Trade { get; }
         public EconomyState EconomyState { get; }
         public EconomyService EconomyService { get; }
         public InventoryState InventoryState { get; }
@@ -75,6 +78,10 @@ namespace Esnaf.Domain.Game
             LedgerView = new LedgerView(EconomyState, content.TransactionTypes);
 
             Appraisal = new AppraisalService(content, Knowledge, Equipment, EconomyService, Store, AppraisalIds, bus, seed);
+
+            TradeState = new TradeState();
+            Trade = new TradeService(
+                content, Market, Store, InventoryState, InventoryService, EconomyService, Knowledge, Npcs, Rng, Time, TradeState, bus);
 
             ListingGenerator = new ListingGenerator(content, Store, InstanceIds, ListingIds);
             var newDay = new NewDayStep(Time, Market, ListingGenerator, Rng, bus);

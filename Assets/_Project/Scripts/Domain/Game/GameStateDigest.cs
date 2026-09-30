@@ -7,6 +7,7 @@ using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 
@@ -60,8 +61,49 @@ namespace Esnaf.Domain.Game
             AppendMarket(sb, session);
             AppendNpcs(sb, session);
             AppendKnowledge(sb, session);
+            AppendTrade(sb, session);
             AppendRng(sb, session);
             return sb.ToString();
+        }
+
+        private static void AppendTrade(StringBuilder sb, GameSession session)
+        {
+            ActiveNegotiation a = session.TradeState.Current;
+            if (a == null)
+            {
+                return;
+            }
+
+            NegotiationState n = a.State;
+            sb.Append("G|").Append(N(a.ListingId))
+                .Append('|').Append(N(a.InstanceId))
+                .Append('|').Append(E(a.SellerNpcId))
+                .Append('|').Append(N((int)n.Phase))
+                .Append('|').Append(N(n.Round))
+                .Append('|').Append(N(n.Patience))
+                .Append('|').Append(N(n.Trust))
+                .Append('|').Append(Bits(n.Reject))
+                .Append('|').Append(Bits(n.Price))
+                .Append('|').Append(N(n.ShownPrice.Tl))
+                .Append('|').Append(N(n.DealPrice.Tl))
+                .Append('|').Append(a.LastOfferInsulted ? "1" : "0")
+                .Append('|').Append(string.Join(",", n.UsedCards.Select(E)))
+                .Append('|').Append(Bits(n.Setup.Reject))
+                .Append('|').Append(Bits(n.Setup.Floor))
+                .Append('|').Append(N(n.Setup.Patience))
+                .Append('|').Append(N(n.Setup.Trust))
+                .Append('|').Append(N(n.Setup.Ask.Tl))
+                .Append('|').Append(Bits(n.Setup.Urgency))
+                .Append('|').Append(Bits(n.Setup.Persuasion))
+                .Append('|').Append(Bits(n.Setup.WrongCardMultiplier))
+                .Append('|').Append(N(n.Setup.Day))
+                .Append('\n');
+        }
+
+        /// <summary>double'ı kültürden bağımsız, kesin (bit deseni) yazar.</summary>
+        private static string Bits(double value)
+        {
+            return BitConverter.DoubleToInt64Bits(value).ToString("x16", CultureInfo.InvariantCulture);
         }
 
         private static void AppendEconomy(StringBuilder sb, GameSession session)

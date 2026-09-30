@@ -27,6 +27,12 @@ namespace Esnaf.Tests.Support
                 "Could not locate Assets/_Project/Content/Data from '" + starts[0] + "' or '" + starts[1] + "'.");
         }
 
+        /// <summary>Assets/_Project/Tests/Fixtures (golden dosyaları).</summary>
+        public static string FixturesDirectory()
+        {
+            return Path.Combine(Directory.GetParent(Directory.GetParent(ContentDataDirectory()).FullName).FullName, "Tests", "Fixtures");
+        }
+
         private static string Search(string start)
         {
             var directory = new DirectoryInfo(start);

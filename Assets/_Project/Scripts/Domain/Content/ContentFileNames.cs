@@ -11,6 +11,7 @@ namespace Esnaf.Domain.Content
         public const string EconomyConstants = "economy_constants.json";
         public const string NpcProfiles = "npc_profiles.json";
         public const string AppraisalLevels = "appraisal_levels.json";
+        public const string NegotiationRules = "negotiation_rules.json";
 
         /// <summary>Her içerik dosyasının en üstündeki "schemaVersion" değeri bu olmalı.</summary>
         public const int SupportedSchemaVersion = 1;

@@ -136,6 +136,9 @@ namespace Esnaf.Domain.Content
         public const string AppraisalConfidenceInvalid = "appraisal.confidence.invalid";
         public const string AppraisalFieldInvalid = "appraisal.field.invalid";
 
+        // Pazarlık kuralları (negotiation_rules.json)
+        public const string NegotiationFieldInvalid = "negotiation.field.invalid";
+
         // ID manifesti
         public const string ManifestDuplicate = "manifest.duplicate";
         public const string ManifestIdMissingInContent = "manifest.id_missing_in_content";

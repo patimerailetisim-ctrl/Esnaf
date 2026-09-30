@@ -3,6 +3,7 @@ using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 
 namespace Esnaf.Domain.Game
 {
@@ -10,7 +11,7 @@ namespace Esnaf.Domain.Game
     /// Oyuna girişin TEK kapısı (GDD K1, T6): UI, simülasyon aracı ve testler oyunu buradan oynar.
     /// Komut = niyet; <see cref="Result"/> döner, başarısızlıkta durum değişmez (istisna: bkz. <see cref="DayEndPipeline"/> notu).
     /// Sorgu = salt okunur; durum değiştirmez, kopya/değişmez görünüm döner (K3).
-    /// Day 5 kapsamı: yalnızca "Günü Bitir" komutu ve temel sorgular. Alış/pazarlık/ekspertiz komutları kendi günlerinde eklenir.
+    /// Komutlar kendi günlerinde eklenir: Gün 5 günü bitir, Gün 6 ekspertiz, Gün 7 alış pazarlığı.
     /// Kayıt (Capture/Restore) bu arayüzden geçmez (UA2).
     /// </summary>
     public interface IGameApi
@@ -26,7 +27,31 @@ namespace Esnaf.Domain.Game
         /// </summary>
         Result<AppraisalView> StartAppraisal(long listingId, string levelId);
 
+        /// <summary>
+        /// İlandaki ürün için alış pazarlığı açar (Gün 7). Aynı anda tek pazarlık olur; sürerken gün bitirilemez.
+        /// Hatalar: listing.unknown, negotiation.in_progress, inventory.full.
+        /// </summary>
+        Result<NegotiationView> StartNegotiation(long listingId);
+
+        /// <summary>
+        /// Süren pazarlıkta teklif verir. Teklif satıcının o anki fiyatına ulaşırsa anlaşılır ve ürün rafa girer (fiyat teklife değil satıcının fiyatınadır).
+        /// Hatalar: negotiation.none / closed / final_offer_only, offer.invalid, cash.insufficient, inventory.full.
+        /// </summary>
+        Result<NegotiationView> MakeOffer(Money offer);
+
+        /// <summary>Teklifle birlikte bir koz kartı oynar (kart, ekspertiz sonucundan: AppraisalId + CardIndex). Hatalar: MakeOffer'inkiler + card.unknown, card.already_used.</summary>
+        Result<NegotiationView> MakeOfferWithCard(Money offer, long appraisalId, int cardIndex);
+
+        /// <summary>Satıcının "son fiyatım" teklifini (sabır bitince) kabul eder. Hata: negotiation.no_final_offer, cash.insufficient.</summary>
+        Result<NegotiationView> AcceptFinalPrice();
+
+        /// <summary>Masadan kalkar: pazarlık biter, ilan kalkar, bekleyen ekspertiz ücreti gider yazılır.</summary>
+        Result<NegotiationView> WalkAway();
+
         // ---- sorgular ----
+
+        /// <summary>Süren pazarlığın görünümü (ruh hali/sabır kademesi, koz kartları); pazarlık yoksa null.</summary>
+        NegotiationView GetNegotiation();
 
         int GetDay();
 

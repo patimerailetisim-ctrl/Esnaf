@@ -4,6 +4,7 @@ using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 
@@ -125,6 +126,16 @@ namespace Esnaf.Tests.Support
             "   \"seller\": { \"availableFromDay\": 3, \"askMultiplier\": 1.02, \"rejectRatio\": 0.78, \"patience\": 2, \"valueSigma\": 0.15, \"urgency\": 1.0, \"persuasion\": 0.9, \"concealChance\": 0.6, \"urgentLabelFromDay\": 6 }," +
             "   \"customer\": { \"openingOfferRatio\": 0.85, \"valueRatio\": 0.95, \"patience\": 3, \"valueSigma\": 0.30, \"packageRatio\": 1.12 } } ] }";
 
+        /// <summary>Pazarlık kuralları (negotiation_rules.json) test kopyası; gerçek dosyayla aynı değerler.</summary>
+        public const string NegotiationRulesJson =
+            "{ \"schemaVersion\": 1," +
+            " \"price\": { \"baseShare\": 0.20, \"trustShare\": 0.30, \"urgencyShare\": 0.15 }," +
+            " \"insult\": { \"ratio\": 0.90, \"trustLoss\": 15, \"extraPatienceLoss\": 1, \"penaltyFromDay\": 5 }," +
+            " \"nearOffer\": { \"ratio\": 0.97, \"trustGain\": 5 }," +
+            " \"card\": { \"correctTrustGain\": 5, \"wrongTrustLoss\": 10, \"wrongPatienceLoss\": 1, \"reportLevelId\": \"s3\", \"reportPersuasionBonus\": 0.20, \"rejectFloorRatio\": 0.65 }," +
+            " \"start\": { \"trust\": 50, \"trustSpread\": 10, \"rejectMoodSwing\": 0.03 }," +
+            " \"view\": { \"moodLowBelow\": 40, \"moodHighFrom\": 70, \"patienceLowAtMost\": 1, \"patienceMediumAtMost\": 3 } }";
+
         public static string ModelWithId(string id)
         {
             return ValidModelJson.Replace(TestModelId, id);
@@ -216,6 +227,19 @@ namespace Esnaf.Tests.Support
             }
 
             return config;
+        }
+
+        /// <summary>Test JSON'undan pazarlık kurallarını ayrıştırır.</summary>
+        public static NegotiationRules Negotiation()
+        {
+            var issues = new List<ContentIssue>();
+            NegotiationRules rules = ContentParser.ParseNegotiation(ContentFileNames.NegotiationRules, NegotiationRulesJson, issues);
+            if (rules == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture negotiation rules are invalid: " + string.Join("; ", issues));
+            }
+
+            return rules;
         }
 
         /// <summary>Test JSON'undan NPC tanımlarını ayrıştırır.</summary>
@@ -328,7 +352,8 @@ namespace Esnaf.Tests.Support
                 .Add(ContentFileNames.TransactionTypes, ContentFixtures.TransactionTypesJson)
                 .Add(ContentFileNames.EconomyConstants, ContentFixtures.EconomyConstantsJson)
                 .Add(ContentFileNames.NpcProfiles, ContentFixtures.NpcProfilesJson)
-                .Add(ContentFileNames.AppraisalLevels, ContentFixtures.AppraisalLevelsJson);
+                .Add(ContentFileNames.AppraisalLevels, ContentFixtures.AppraisalLevelsJson)
+                .Add(ContentFileNames.NegotiationRules, ContentFixtures.NegotiationRulesJson);
         }
     }
 }

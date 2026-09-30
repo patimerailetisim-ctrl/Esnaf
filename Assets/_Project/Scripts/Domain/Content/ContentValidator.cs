@@ -5,6 +5,7 @@ using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Npc;
 using Esnaf.Domain.Phone;
 using Esnaf.Domain.Products;
@@ -530,6 +531,11 @@ namespace Esnaf.Domain.Content
             if (s.UrgentLabelFromDay.HasValue && s.UrgentLabelFromDay.Value < 1)
             {
                 NpcField(issues, fileName, label, "seller.urgentLabelFromDay", "must be at least 1.");
+            }
+
+            if (s.WrongCardPenaltyMultiplier < 1.0 || s.WrongCardPenaltyMultiplier > MaxWrongCardPenaltyMultiplier)
+            {
+                NpcField(issues, fileName, label, "seller.wrongCardPenaltyMultiplier", "must be in [1, " + MaxWrongCardPenaltyMultiplier + "].");
             }
         }
 
@@ -1176,6 +1182,151 @@ namespace Esnaf.Domain.Content
             {
                 AppraisalField(issues, fileName, label, field + " must be non-negative and a multiple of 10 TL.");
             }
+        }
+
+        private const double MaxWrongCardPenaltyMultiplier = 5.0;
+        private const double MaxMoodSwing = 0.2;
+
+        /// <summary>negotiation_rules.json değer aralıkları (kendi içinde tutarlılık).</summary>
+        public static void ValidateNegotiation(NegotiationRules r, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (r.PriceBaseShare < 0.0 || r.PriceBaseShare > 1.0)
+            {
+                NegotiationField(issues, fileName, "price.baseShare", "must be in [0, 1].");
+            }
+
+            if (r.PriceTrustShare < 0.0)
+            {
+                NegotiationField(issues, fileName, "price.trustShare", "must not be negative.");
+            }
+
+            if (r.PriceUrgencyShare < 0.0)
+            {
+                NegotiationField(issues, fileName, "price.urgencyShare", "must not be negative.");
+            }
+
+            if (r.PriceBaseShare >= 0.0 && r.PriceTrustShare >= 0.0 && r.PriceUrgencyShare >= 0.0
+                && r.PriceBaseShare + r.PriceTrustShare + r.PriceUrgencyShare > 1.0)
+            {
+                NegotiationField(issues, fileName, "price", "the three shares must add up to at most 1 (the seller cannot give more than the whole gap).");
+            }
+
+            bool insultRatioOk = r.InsultRatio > 0.0 && r.InsultRatio < 1.0;
+            if (!insultRatioOk)
+            {
+                NegotiationField(issues, fileName, "insult.ratio", "must be in (0, 1).");
+            }
+
+            if (r.InsultTrustLoss < 0 || r.InsultTrustLoss > 100)
+            {
+                NegotiationField(issues, fileName, "insult.trustLoss", "must be in [0, 100].");
+            }
+
+            if (r.InsultExtraPatienceLoss < 0)
+            {
+                NegotiationField(issues, fileName, "insult.extraPatienceLoss", "must not be negative.");
+            }
+
+            if (r.InsultPenaltyFromDay < 1)
+            {
+                NegotiationField(issues, fileName, "insult.penaltyFromDay", "must be at least 1.");
+            }
+
+            if (r.NearOfferRatio > 1.0 || (insultRatioOk && r.NearOfferRatio <= r.InsultRatio))
+            {
+                NegotiationField(issues, fileName, "nearOffer.ratio", "must be above insult.ratio and at most 1.");
+            }
+
+            if (r.NearOfferTrustGain < 0 || r.NearOfferTrustGain > 100)
+            {
+                NegotiationField(issues, fileName, "nearOffer.trustGain", "must be in [0, 100].");
+            }
+
+            if (r.CardCorrectTrustGain < 0 || r.CardCorrectTrustGain > 100)
+            {
+                NegotiationField(issues, fileName, "card.correctTrustGain", "must be in [0, 100].");
+            }
+
+            if (r.CardWrongTrustLoss < 0 || r.CardWrongTrustLoss > 100)
+            {
+                NegotiationField(issues, fileName, "card.wrongTrustLoss", "must be in [0, 100].");
+            }
+
+            if (r.CardWrongPatienceLoss < 0)
+            {
+                NegotiationField(issues, fileName, "card.wrongPatienceLoss", "must not be negative.");
+            }
+
+            if (string.IsNullOrWhiteSpace(r.ReportLevelId))
+            {
+                NegotiationField(issues, fileName, "card.reportLevelId", "must not be empty.");
+            }
+
+            if (r.ReportPersuasionBonus < 0.0 || r.ReportPersuasionBonus > 1.0)
+            {
+                NegotiationField(issues, fileName, "card.reportPersuasionBonus", "must be in [0, 1].");
+            }
+
+            if (r.RejectFloorRatio <= 0.0 || r.RejectFloorRatio > 1.0)
+            {
+                NegotiationField(issues, fileName, "card.rejectFloorRatio", "must be in (0, 1].");
+            }
+
+            if (r.StartTrustSpread < 0)
+            {
+                NegotiationField(issues, fileName, "start.trustSpread", "must not be negative.");
+            }
+
+            if (r.StartTrust - r.StartTrustSpread < 0 || r.StartTrust + r.StartTrustSpread > 100)
+            {
+                NegotiationField(issues, fileName, "start.trust", "trust ± trustSpread must stay within [0, 100].");
+            }
+
+            if (r.RejectMoodSwing < 0.0 || r.RejectMoodSwing > MaxMoodSwing)
+            {
+                NegotiationField(issues, fileName, "start.rejectMoodSwing", "must be in [0, " + MaxMoodSwing + "].");
+            }
+
+            if (r.MoodLowBelow < 0 || r.MoodHighFrom > 100)
+            {
+                if (r.MoodLowBelow < 0)
+                {
+                    NegotiationField(issues, fileName, "view.moodLowBelow", "must not be negative.");
+                }
+
+                if (r.MoodHighFrom > 100)
+                {
+                    NegotiationField(issues, fileName, "view.moodHighFrom", "must be at most 100.");
+                }
+            }
+            else if (r.MoodLowBelow >= r.MoodHighFrom)
+            {
+                NegotiationField(issues, fileName, "view.mood", "moodLowBelow must be below moodHighFrom.");
+            }
+
+            if (r.PatienceLowAtMost < 0)
+            {
+                NegotiationField(issues, fileName, "view.patienceLowAtMost", "must not be negative.");
+            }
+            else if (r.PatienceMediumAtMost <= r.PatienceLowAtMost)
+            {
+                NegotiationField(issues, fileName, "view.patience", "patienceMediumAtMost must be above patienceLowAtMost.");
+            }
+        }
+
+        /// <summary>Rapor seviyesi, ekspertiz seviyeleri arasında olmalı (çapraz denetim).</summary>
+        public static void ValidateNegotiationLinks(NegotiationRules r, AppraisalConfig appraisal, string fileName, ICollection<ContentIssue> issues)
+        {
+            AppraisalLevel level;
+            if (!string.IsNullOrWhiteSpace(r.ReportLevelId) && !appraisal.TryGetLevel(r.ReportLevelId, out level))
+            {
+                NegotiationField(issues, fileName, "card.reportLevelId", "unknown appraisal level '" + r.ReportLevelId + "'.");
+            }
+        }
+
+        private static void NegotiationField(ICollection<ContentIssue> issues, string fileName, string label, string rule)
+        {
+            issues.Add(ContentIssue.Error(ContentIssueCodes.NegotiationFieldInvalid, fileName, label + ": " + rule));
         }
 
         private static void AppraisalField(ICollection<ContentIssue> issues, string fileName, string label, string rule)

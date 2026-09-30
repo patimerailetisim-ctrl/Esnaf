@@ -285,6 +285,7 @@ namespace Esnaf.Domain.Content
         public double? ConcealChance { get; set; }
         public bool? LearningFriendly { get; set; }
         public int? UrgentLabelFromDay { get; set; }
+        public double? WrongCardPenaltyMultiplier { get; set; }
     }
 
     internal sealed class NpcCustomerDto
@@ -344,5 +345,64 @@ namespace Esnaf.Domain.Content
     internal sealed class AppraisalRiskCardDto
     {
         public double? ExpectedSaleFactor { get; set; }
+    }
+
+    // ---- negotiation_rules.json ----
+
+    internal sealed class NegotiationFileDto
+    {
+        public int? SchemaVersion { get; set; }
+        public NegotiationPriceDto Price { get; set; }
+        public NegotiationInsultDto Insult { get; set; }
+        public NegotiationNearOfferDto NearOffer { get; set; }
+        public NegotiationCardDto Card { get; set; }
+        public NegotiationStartDto Start { get; set; }
+        public NegotiationViewDto View { get; set; }
+    }
+
+    internal sealed class NegotiationPriceDto
+    {
+        public double? BaseShare { get; set; }
+        public double? TrustShare { get; set; }
+        public double? UrgencyShare { get; set; }
+    }
+
+    internal sealed class NegotiationInsultDto
+    {
+        public double? Ratio { get; set; }
+        public int? TrustLoss { get; set; }
+        public int? ExtraPatienceLoss { get; set; }
+        public int? PenaltyFromDay { get; set; }
+    }
+
+    internal sealed class NegotiationNearOfferDto
+    {
+        public double? Ratio { get; set; }
+        public int? TrustGain { get; set; }
+    }
+
+    internal sealed class NegotiationCardDto
+    {
+        public int? CorrectTrustGain { get; set; }
+        public int? WrongTrustLoss { get; set; }
+        public int? WrongPatienceLoss { get; set; }
+        public string ReportLevelId { get; set; }
+        public double? ReportPersuasionBonus { get; set; }
+        public double? RejectFloorRatio { get; set; }
+    }
+
+    internal sealed class NegotiationStartDto
+    {
+        public int? Trust { get; set; }
+        public int? TrustSpread { get; set; }
+        public double? RejectMoodSwing { get; set; }
+    }
+
+    internal sealed class NegotiationViewDto
+    {
+        public int? MoodLowBelow { get; set; }
+        public int? MoodHighFrom { get; set; }
+        public int? PatienceLowAtMost { get; set; }
+        public int? PatienceMediumAtMost { get; set; }
     }
 }

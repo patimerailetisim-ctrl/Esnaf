@@ -6,6 +6,7 @@ using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Phone;
 using Esnaf.Domain.Products;
 using Esnaf.Domain.Time;
@@ -29,6 +30,11 @@ namespace Esnaf.Domain.Game
 
         public Result<DayEndReport> EndDay()
         {
+            if (_session.Trade.IsNegotiating)
+            {
+                return Result<DayEndReport>.Fail("negotiation.in_progress", "Finish or leave the negotiation before ending the day.");
+            }
+
             var context = new DayEndContext(_session.Time.Day);
             Result result = _session.DayEnd.Run(context);
             if (result.IsFailure)
@@ -46,6 +52,36 @@ namespace Esnaf.Domain.Game
                 context.NewListingIds,
                 context.ExecutedStepIds,
                 summary));
+        }
+
+        public Result<NegotiationView> StartNegotiation(long listingId)
+        {
+            return _session.Trade.Start(listingId);
+        }
+
+        public Result<NegotiationView> MakeOffer(Money offer)
+        {
+            return _session.Trade.Offer(offer, null, 0);
+        }
+
+        public Result<NegotiationView> MakeOfferWithCard(Money offer, long appraisalId, int cardIndex)
+        {
+            return _session.Trade.Offer(offer, appraisalId, cardIndex);
+        }
+
+        public Result<NegotiationView> AcceptFinalPrice()
+        {
+            return _session.Trade.AcceptFinal();
+        }
+
+        public Result<NegotiationView> WalkAway()
+        {
+            return _session.Trade.WalkAway();
+        }
+
+        public NegotiationView GetNegotiation()
+        {
+            return _session.Trade.GetCurrent();
         }
 
         public Result<AppraisalView> StartAppraisal(long listingId, string levelId)

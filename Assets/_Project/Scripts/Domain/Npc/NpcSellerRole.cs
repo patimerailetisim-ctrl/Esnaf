@@ -35,6 +35,9 @@ namespace Esnaf.Domain.Npc
         /// <summary>"Acil satış" etiketinin görüneceği ilk gün; etiketsiz satıcıda null.</summary>
         public int? UrgentLabelFromDay { get; }
 
+        /// <summary>Yanlış koz kartının güven/sabır cezasının çarpanı (Dr. Murat 2; varsayılan 1).</summary>
+        public double WrongCardPenaltyMultiplier { get; }
+
         public NpcSellerRole(
             int availableFromDay,
             double askMultiplier,
@@ -46,7 +49,8 @@ namespace Esnaf.Domain.Npc
             double persuasion,
             double concealChance,
             bool learningFriendly,
-            int? urgentLabelFromDay)
+            int? urgentLabelFromDay,
+            double wrongCardPenaltyMultiplier = 1.0)
         {
             AvailableFromDay = availableFromDay;
             AskMultiplier = askMultiplier;
@@ -59,6 +63,7 @@ namespace Esnaf.Domain.Npc
             ConcealChance = concealChance;
             LearningFriendly = learningFriendly;
             UrgentLabelFromDay = urgentLabelFromDay;
+            WrongCardPenaltyMultiplier = wrongCardPenaltyMultiplier;
         }
     }
 }

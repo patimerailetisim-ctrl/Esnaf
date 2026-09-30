@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 
@@ -40,6 +41,9 @@ namespace Esnaf.Domain.Content
         /// <summary>Ekspertiz kuralları (appraisal_levels.json).</summary>
         public AppraisalConfig Appraisal { get; }
 
+        /// <summary>Alış pazarlığı kuralları (negotiation_rules.json).</summary>
+        public NegotiationRules Negotiation { get; }
+
         /// <summary>Pazar (ilan üretimi) sabitleri (economy_constants.json "market" bölümü).</summary>
         public MarketConstants MarketConstants { get; }
 
@@ -63,9 +67,11 @@ namespace Esnaf.Domain.Content
             EconomyConstants economyConstants,
             MarketConstants marketConstants,
             IEnumerable<NpcDefinition> npcs,
-            AppraisalConfig appraisal)
+            AppraisalConfig appraisal,
+            NegotiationRules negotiation)
         {
             Appraisal = appraisal;
+            Negotiation = negotiation;
             TransactionTypes = transactionTypes;
             EconomyConstants = economyConstants;
             MarketConstants = marketConstants;
@@ -276,6 +282,25 @@ namespace Esnaf.Domain.Content
                 }
             }
 
+            // Pazarlık kuralları (rapor seviyesi ekspertiz seviyeleriyle çapraz denetlenir)
+            NegotiationRules negotiation = null;
+            if (!source.TryGetText(ContentFileNames.NegotiationRules, out text))
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.NegotiationRules, "Content file not found."));
+            }
+            else
+            {
+                negotiation = ContentParser.ParseNegotiation(ContentFileNames.NegotiationRules, text, issues);
+                if (negotiation != null)
+                {
+                    ContentValidator.ValidateNegotiation(negotiation, ContentFileNames.NegotiationRules, issues);
+                    if (appraisal != null)
+                    {
+                        ContentValidator.ValidateNegotiationLinks(negotiation, appraisal, ContentFileNames.NegotiationRules, issues);
+                    }
+                }
+            }
+
             // Pazar kuralları ürünlere, NPC'lere ve değer tablolarına başvurur; önceki dosyalar temizse çapraz denetlenir
             // (bozuk bir dosyanın ardından art arda gelen başvuru hatası gürültüsünü önler).
             if (marketConstants != null && npcs != null && products != null && valueTables != null && !HasError(issues))
@@ -319,14 +344,15 @@ namespace Esnaf.Domain.Content
                 || economyConstants == null
                 || marketConstants == null
                 || npcs == null
-                || appraisal == null)
+                || appraisal == null
+                || negotiation == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
             return new ContentLoadResult(
                 new ContentDatabase(
-                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal),
+                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal, negotiation),
                 issues);
         }
 

@@ -3,6 +3,7 @@ using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Npc;
 using Esnaf.Domain.Products;
 using Newtonsoft.Json;
@@ -399,6 +400,100 @@ namespace Esnaf.Domain.Content
             }
 
             return new AppraisalConfig(levels, checks, file.RiskCard.ExpectedSaleFactor.Value);
+        }
+
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde pazarlık kuralları.</returns>
+        public static NegotiationRules ParseNegotiation(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            NegotiationFileDto file = Deserialize<NegotiationFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            const string root = "negotiation";
+            bool ok = true;
+
+            bool price = Require(fileName, root, "price", file.Price != null, issues);
+            if (price)
+            {
+                ok &= Require(fileName, root, "price.baseShare", file.Price.BaseShare.HasValue, issues);
+                ok &= Require(fileName, root, "price.trustShare", file.Price.TrustShare.HasValue, issues);
+                ok &= Require(fileName, root, "price.urgencyShare", file.Price.UrgencyShare.HasValue, issues);
+            }
+
+            bool insult = Require(fileName, root, "insult", file.Insult != null, issues);
+            if (insult)
+            {
+                ok &= Require(fileName, root, "insult.ratio", file.Insult.Ratio.HasValue, issues);
+                ok &= Require(fileName, root, "insult.trustLoss", file.Insult.TrustLoss.HasValue, issues);
+                ok &= Require(fileName, root, "insult.extraPatienceLoss", file.Insult.ExtraPatienceLoss.HasValue, issues);
+                ok &= Require(fileName, root, "insult.penaltyFromDay", file.Insult.PenaltyFromDay.HasValue, issues);
+            }
+
+            bool near = Require(fileName, root, "nearOffer", file.NearOffer != null, issues);
+            if (near)
+            {
+                ok &= Require(fileName, root, "nearOffer.ratio", file.NearOffer.Ratio.HasValue, issues);
+                ok &= Require(fileName, root, "nearOffer.trustGain", file.NearOffer.TrustGain.HasValue, issues);
+            }
+
+            bool card = Require(fileName, root, "card", file.Card != null, issues);
+            if (card)
+            {
+                ok &= Require(fileName, root, "card.correctTrustGain", file.Card.CorrectTrustGain.HasValue, issues);
+                ok &= Require(fileName, root, "card.wrongTrustLoss", file.Card.WrongTrustLoss.HasValue, issues);
+                ok &= Require(fileName, root, "card.wrongPatienceLoss", file.Card.WrongPatienceLoss.HasValue, issues);
+                ok &= Require(fileName, root, "card.reportLevelId", file.Card.ReportLevelId != null, issues);
+                ok &= Require(fileName, root, "card.reportPersuasionBonus", file.Card.ReportPersuasionBonus.HasValue, issues);
+                ok &= Require(fileName, root, "card.rejectFloorRatio", file.Card.RejectFloorRatio.HasValue, issues);
+            }
+
+            bool start = Require(fileName, root, "start", file.Start != null, issues);
+            if (start)
+            {
+                ok &= Require(fileName, root, "start.trust", file.Start.Trust.HasValue, issues);
+                ok &= Require(fileName, root, "start.trustSpread", file.Start.TrustSpread.HasValue, issues);
+                ok &= Require(fileName, root, "start.rejectMoodSwing", file.Start.RejectMoodSwing.HasValue, issues);
+            }
+
+            bool view = Require(fileName, root, "view", file.View != null, issues);
+            if (view)
+            {
+                ok &= Require(fileName, root, "view.moodLowBelow", file.View.MoodLowBelow.HasValue, issues);
+                ok &= Require(fileName, root, "view.moodHighFrom", file.View.MoodHighFrom.HasValue, issues);
+                ok &= Require(fileName, root, "view.patienceLowAtMost", file.View.PatienceLowAtMost.HasValue, issues);
+                ok &= Require(fileName, root, "view.patienceMediumAtMost", file.View.PatienceMediumAtMost.HasValue, issues);
+            }
+
+            if (!ok || !price || !insult || !near || !card || !start || !view)
+            {
+                return null;
+            }
+
+            return new NegotiationRules(
+                file.Price.BaseShare.Value,
+                file.Price.TrustShare.Value,
+                file.Price.UrgencyShare.Value,
+                file.Insult.Ratio.Value,
+                file.Insult.TrustLoss.Value,
+                file.Insult.ExtraPatienceLoss.Value,
+                file.Insult.PenaltyFromDay.Value,
+                file.NearOffer.Ratio.Value,
+                file.NearOffer.TrustGain.Value,
+                file.Card.CorrectTrustGain.Value,
+                file.Card.WrongTrustLoss.Value,
+                file.Card.WrongPatienceLoss.Value,
+                file.Card.ReportLevelId,
+                file.Card.ReportPersuasionBonus.Value,
+                file.Card.RejectFloorRatio.Value,
+                file.Start.Trust.Value,
+                file.Start.TrustSpread.Value,
+                file.Start.RejectMoodSwing.Value,
+                file.View.MoodLowBelow.Value,
+                file.View.MoodHighFrom.Value,
+                file.View.PatienceLowAtMost.Value,
+                file.View.PatienceMediumAtMost.Value);
         }
 
         // ---- ortak ----
@@ -821,7 +916,8 @@ namespace Esnaf.Domain.Content
                 dto.Persuasion.Value,
                 dto.ConcealChance ?? 0.0,
                 dto.LearningFriendly ?? false,
-                dto.UrgentLabelFromDay);
+                dto.UrgentLabelFromDay,
+                dto.WrongCardPenaltyMultiplier ?? 1.0);
         }
 
         private static NpcCustomerRole MapCustomer(string fileName, string label, NpcCustomerDto dto, ICollection<ContentIssue> issues)

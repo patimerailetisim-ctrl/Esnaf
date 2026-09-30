@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "price": { "baseShare": 0.20, "trustShare": 0.30, "urgencyShare": 0.15 },
+  "insult": { "ratio": 0.90, "trustLoss": 15, "extraPatienceLoss": 1, "penaltyFromDay": 5 },
+  "nearOffer": { "ratio": 0.97, "trustGain": 5 },
+  "card": {
+    "correctTrustGain": 5, "wrongTrustLoss": 10, "wrongPatienceLoss": 1,
+    "reportLevelId": "s3", "reportPersuasionBonus": 0.20, "rejectFloorRatio": 0.65
+  },
+  "start": { "trust": 50, "trustSpread": 10, "rejectMoodSwing": 0.03 },
+  "view": { "moodLowBelow": 40, "moodHighFrom": 70, "patienceLowAtMost": 1, "patienceMediumAtMost": 3 }
+}

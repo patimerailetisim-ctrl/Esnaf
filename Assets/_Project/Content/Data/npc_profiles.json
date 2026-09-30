@@ -13,7 +13,7 @@
     },
     {
       "id": "npc.murat", "name": "Dr. Murat", "personality": "informed",
-      "seller": { "availableFromDay": 4, "askMultiplier": 1.08, "rejectRatio": 0.97, "patience": 4, "valueSigma": 0.03, "urgency": 0.3, "persuasion": 1.0 },
+      "seller": { "availableFromDay": 4, "askMultiplier": 1.08, "rejectRatio": 0.97, "patience": 4, "valueSigma": 0.03, "urgency": 0.3, "persuasion": 1.0, "wrongCardPenaltyMultiplier": 2.0 },
       "customer": { "openingOfferRatio": 0.90, "valueRatio": 0.97, "patience": 4 }
     },
     {
