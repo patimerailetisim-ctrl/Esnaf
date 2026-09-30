@@ -580,7 +580,7 @@ namespace Esnaf.Tests.Business
             }
 
             var ids = report.Value.ExecutedSteps.ToList();
-            CollectionAssert.AreEqual(new[] { "missed_customers", "daily_expense", "listing_expiry", "demand_update", "new_day" }, ids);
+            CollectionAssert.AreEqual(new[] { "missed_customers", "daily_expense", "listing_expiry", "demand_update", "new_day", "auto_save" }, ids);
             Assert.AreEqual(a.Api.GetStateDigest(), b.Api.GetStateDigest());
         }
     }

@@ -127,5 +127,47 @@ namespace Esnaf.Tests.Time
                 Assert.AreEqual(a.Demand.Index(p.Id), b.Demand.Index(p.Id), 0.0, p.Id);
             }
         }
+
+        [Test]
+        public void AutoSaveStep_HasTheFixedIdentity_AndAnnouncesTheCurrentDay()
+        {
+            var time = new TimeState(3, 1UL);
+            var bus = new EventBus();
+            var days = new List<int>();
+            bus.Subscribe<AutoSaveRequested>(e => days.Add(e.Day));
+            var step = new AutoSaveStep(time, bus);
+
+            Assert.AreEqual("auto_save", step.Id);
+            Assert.AreEqual(8, step.Order);
+            Assert.IsTrue(step.Execute(new DayEndContext(2)).IsSuccess);
+
+            CollectionAssert.AreEqual(new[] { 3 }, days);
+        }
+
+        [Test]
+        public void AutoSaveStep_WorksWithoutABus_AndRejectsNulls()
+        {
+            var time = new TimeState(1, 1UL);
+
+            Assert.IsTrue(new AutoSaveStep(time, null).Execute(new DayEndContext(1)).IsSuccess);
+            Assert.Throws<ArgumentNullException>(() => new AutoSaveStep(null, new EventBus()));
+            Assert.Throws<ArgumentNullException>(() => new AutoSaveStep(time, new EventBus()).Execute(null));
+        }
+
+        [Test]
+        public void TheDayEnd_PublishesTheAutoSaveRequestLast_AfterTheNewDayStarted()
+        {
+            var bus = new EventBus();
+            var log = new List<string>();
+            bus.Subscribe<DayEnded>(e => log.Add("ended:" + e.Day));
+            bus.Subscribe<DayStarted>(e => log.Add("started:" + e.Day));
+            bus.Subscribe<AutoSaveRequested>(e => log.Add("autosave:" + e.Day));
+            GameSession s = GameSession.NewGame(MarketHarness.RealContent(), 42UL, bus);
+            log.Clear();
+
+            s.Api.EndDay();
+
+            CollectionAssert.AreEqual(new[] { "ended:1", "started:2", "autosave:2" }, log);
+        }
     }
 }

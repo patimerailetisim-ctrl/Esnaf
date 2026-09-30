@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Unity'den bağımsız derleme: Assets/_Project/Scripts/Persistence altındaki AYNI kaynak dosyaları. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Esnaf.Persistence</AssemblyName>
+    <RootNamespace>Esnaf.Persistence</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../Assets/_Project/Scripts/Persistence/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Unity tarafında aynı kütüphane com.unity.nuget.newtonsoft-json paketinden gelir. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Esnaf.Core/Esnaf.Core.csproj" />
+    <ProjectReference Include="../Esnaf.Domain/Esnaf.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

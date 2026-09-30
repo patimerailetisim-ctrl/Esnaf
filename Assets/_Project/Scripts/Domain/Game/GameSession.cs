@@ -53,7 +53,20 @@ namespace Esnaf.Domain.Game
         public DayEndPipeline DayEnd { get; }
         public IGameApi Api { get; }
 
-        private GameSession(ContentDatabase content, ulong seed, IEventBus bus)
+        private readonly List<string> _loadWarnings = new List<string>();
+
+        /// <summary>Kayıttan yüklerken oyuncuya hata göstermeden yapılan onarımların günlüğü (GDD 6.7); yeni oyunda boş.</summary>
+        public IReadOnlyList<string> LoadWarnings
+        {
+            get { return _loadWarnings; }
+        }
+
+        internal void AddLoadWarning(string message)
+        {
+            _loadWarnings.Add(message);
+        }
+
+        private GameSession(ContentDatabase content, ulong seed, IEventBus bus, bool openNewGame)
         {
             Content = content;
             Bus = bus;
@@ -102,9 +115,15 @@ namespace Esnaf.Domain.Game
                 new DailyExpenseStep(EconomyService),
                 new ListingExpiryStep(Market, Store, EconomyService, bus),
                 new DemandUpdateStep(Demand, Rng, content),
-                newDay
+                newDay,
+                new AutoSaveStep(Time, bus)
             });
             Api = new GameApi(this);
+
+            if (!openNewGame)
+            {
+                return;
+            }
 
             Result opened = EconomyService.OpenBooks();
             if (opened.IsFailure)
@@ -131,7 +150,39 @@ namespace Esnaf.Domain.Game
                 throw new ArgumentNullException(nameof(content));
             }
 
-            return new GameSession(content, seed, events ?? new EventBus());
+            return new GameSession(content, seed, events ?? new EventBus(), true);
+        }
+
+        /// <summary>
+        /// Kayıt yüzeyi (UA2): bütün kayda giren durumun düz veri görüntüsü. Durumu DEĞİŞTİRMEZ; aynı durum her zaman aynı görüntüyü verir.
+        /// </summary>
+        public GameSnapshot Capture()
+        {
+            return SnapshotCapture.Capture(this);
+        }
+
+        /// <summary>
+        /// Kayıt yüzeyi (UA2): görüntüden YENİ bir oturum kurar (Gün 1 açılışı yapılmaz; UA30). Defter yeniden oynatılarak ve bütün başvurular
+        /// denetlenerek doğrulanır; tutarsızsa <c>save.invalid</c> döner ve hiçbir oturum üretilmez. Bilinmeyen ürün kimlikleri GDD 6.7'ye göre onarılır.
+        /// </summary>
+        public static Result<GameSession> Restore(ContentDatabase content, GameSnapshot snapshot, IEventBus events = null)
+        {
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            if (snapshot == null)
+            {
+                throw new ArgumentNullException(nameof(snapshot));
+            }
+
+            return SnapshotRestore.Restore(content, snapshot, events ?? new EventBus());
+        }
+
+        internal static GameSession CreateForRestore(ContentDatabase content, ulong seed, IEventBus events)
+        {
+            return new GameSession(content, seed, events, false);
         }
     }
 }

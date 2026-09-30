@@ -22,6 +22,17 @@ namespace Esnaf.Domain.Time
             MasterSeed = masterSeed;
         }
 
+        /// <summary>Kayıttan yükleme: günü doğrudan yazar (en az 1).</summary>
+        internal void Restore(int day)
+        {
+            if (day < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(day), "Day must be at least 1.");
+            }
+
+            Day = day;
+        }
+
         /// <summary>Bir sonraki güne geçer ve yeni günü döndürür. Taşarsa OverflowException; gün değişmez.</summary>
         public int Advance()
         {

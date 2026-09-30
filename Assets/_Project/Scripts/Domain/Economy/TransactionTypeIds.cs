@@ -18,6 +18,9 @@ namespace Esnaf.Domain.Economy
         public const string DailyExpense = "daily_expense";
         public const string Investment = "investment";
 
+        /// <summary>Çekirdek değil: kayıt yüklenirken içerikte kalmamış bir ürünün otomatik iadesi (GDD v0.3 6.7).</summary>
+        public const string ContentRefund = "content_refund";
+
         public static readonly IReadOnlyList<string> Required = new ReadOnlyCollection<string>(new[]
         {
             OpeningCapital, Purchase, Sale, Appraisal, WastedAppraisal, Repair, DailyExpense, Investment

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Esnaf.Domain", "Esnaf.Domai
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Esnaf.Tests", "Esnaf.Tests\Esnaf.Tests.csproj", "{91F068CB-0FC2-498B-90B7-24913615EE19}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Esnaf.Persistence", "Esnaf.Persistence\Esnaf.Persistence.csproj", "{67F6657D-1E96-4431-B5C0-C552530B93B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{91F068CB-0FC2-498B-90B7-24913615EE19}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91F068CB-0FC2-498B-90B7-24913615EE19}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91F068CB-0FC2-498B-90B7-24913615EE19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67F6657D-1E96-4431-B5C0-C552530B93B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67F6657D-1E96-4431-B5C0-C552530B93B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67F6657D-1E96-4431-B5C0-C552530B93B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67F6657D-1E96-4431-B5C0-C552530B93B4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

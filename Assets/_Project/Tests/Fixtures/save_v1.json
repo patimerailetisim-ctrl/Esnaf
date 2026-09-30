@@ -1,0 +1,2986 @@
+{
+  "header": {
+    "format": "esnaf-save",
+    "saveVersion": 1,
+    "appVersion": "0.1.0",
+    "contentSchemaVersion": 1,
+    "createdAtUtc": "2026-01-01T10:00:00Z",
+    "savedAtUtc": "2026-01-01T11:30:00Z",
+    "playTimeSeconds": 5230,
+    "checksum": "sha256:226470e063c490cdd3885cec31bbb4ce0843960952561046d9ed36a532760649",
+    "preview": {
+      "day": 17,
+      "cash": 161660,
+      "wealth": 243590
+    }
+  },
+  "payload": {
+    "time": {
+      "day": 17,
+      "seed": "20260101"
+    },
+    "rng": [
+      {
+        "name": "customers",
+        "state": "9947067945075073679",
+        "increment": "1815218534691587965"
+      },
+      {
+        "name": "demand",
+        "state": "11118875068009909539",
+        "increment": "8023467084926171581"
+      },
+      {
+        "name": "market",
+        "state": "2048035405487467357",
+        "increment": "15832802883311556131"
+      },
+      {
+        "name": "negotiation",
+        "state": "4568451279832098459",
+        "increment": "2346556809882646821"
+      }
+    ],
+    "ids": {
+      "instance": 117,
+      "listing": 117,
+      "appraisal": 8,
+      "customer": 85
+    },
+    "economy": {
+      "ledger": [
+        {
+          "id": 1,
+          "day": 0,
+          "type": "opening_capital",
+          "amount": 250000,
+          "balanceAfter": 250000,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.opening_capital",
+          "memoArgs": []
+        },
+        {
+          "id": 2,
+          "day": 1,
+          "type": "purchase",
+          "amount": -4980,
+          "balanceAfter": 245020,
+          "instanceId": 3,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.ayse",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 3,
+          "day": 1,
+          "type": "purchase",
+          "amount": -28660,
+          "balanceAfter": 216360,
+          "instanceId": 1,
+          "definitionId": "phone.elma_e13_pro",
+          "npcId": "npc.ayse",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 4,
+          "day": 2,
+          "type": "sale",
+          "amount": 5450,
+          "balanceAfter": 221810,
+          "instanceId": 3,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.kemal",
+          "saleCostBasis": 4980,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 5,
+          "day": 2,
+          "type": "purchase",
+          "amount": -20590,
+          "balanceAfter": 201220,
+          "instanceId": 4,
+          "definitionId": "phone.samsun_vega_s21",
+          "npcId": "npc.ayse",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 6,
+          "day": 2,
+          "type": "purchase",
+          "amount": -5200,
+          "balanceAfter": 196020,
+          "instanceId": 7,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.ozan",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 7,
+          "day": 3,
+          "type": "purchase",
+          "amount": -12770,
+          "balanceAfter": 183250,
+          "instanceId": 2,
+          "definitionId": "phone.elma_e11",
+          "npcId": "npc.ayse",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 8,
+          "day": 3,
+          "type": "purchase",
+          "amount": -4300,
+          "balanceAfter": 178950,
+          "instanceId": 13,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.ayse",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 9,
+          "day": 3,
+          "type": "sale",
+          "amount": 13170,
+          "balanceAfter": 192120,
+          "instanceId": 2,
+          "definitionId": "phone.elma_e11",
+          "npcId": "npc.selin",
+          "saleCostBasis": 12770,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 10,
+          "day": 3,
+          "type": "appraisal",
+          "amount": -200,
+          "balanceAfter": 191920,
+          "instanceId": 9,
+          "definitionId": "phone.samsun_vega_a3",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 11,
+          "day": 3,
+          "type": "sale",
+          "amount": 5760,
+          "balanceAfter": 197680,
+          "instanceId": 7,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.hatice",
+          "saleCostBasis": 5200,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 12,
+          "day": 3,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 197180,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 13,
+          "day": 4,
+          "type": "sale",
+          "amount": 29210,
+          "balanceAfter": 226390,
+          "instanceId": 1,
+          "definitionId": "phone.elma_e13_pro",
+          "npcId": "npc.kemal",
+          "saleCostBasis": 28660,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 14,
+          "day": 4,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 225890,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 15,
+          "day": 5,
+          "type": "sale",
+          "amount": 4220,
+          "balanceAfter": 230110,
+          "instanceId": 13,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.cengiz",
+          "saleCostBasis": 4300,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 16,
+          "day": 5,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 229610,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 17,
+          "day": 6,
+          "type": "appraisal",
+          "amount": -600,
+          "balanceAfter": 229010,
+          "instanceId": 16,
+          "definitionId": "phone.samsun_vega_a3",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 18,
+          "day": 6,
+          "type": "sale",
+          "amount": 20650,
+          "balanceAfter": 249660,
+          "instanceId": 4,
+          "definitionId": "phone.samsun_vega_s21",
+          "npcId": "npc.ozan",
+          "saleCostBasis": 20590,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 19,
+          "day": 6,
+          "type": "purchase",
+          "amount": -12420,
+          "balanceAfter": 237240,
+          "instanceId": 18,
+          "definitionId": "phone.yildiz_y8_plus",
+          "npcId": "npc.selin",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 20,
+          "day": 6,
+          "type": "purchase",
+          "amount": -2460,
+          "balanceAfter": 234780,
+          "instanceId": 33,
+          "definitionId": "phone.nova_n1_lite",
+          "npcId": "npc.cengiz",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 21,
+          "day": 6,
+          "type": "purchase",
+          "amount": -4400,
+          "balanceAfter": 230380,
+          "instanceId": 21,
+          "definitionId": "phone.nova_n3_pro",
+          "npcId": "npc.hatice",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 22,
+          "day": 6,
+          "type": "purchase",
+          "amount": -3740,
+          "balanceAfter": 226640,
+          "instanceId": 24,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.cengiz",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 23,
+          "day": 6,
+          "type": "purchase",
+          "amount": -3240,
+          "balanceAfter": 223400,
+          "instanceId": 30,
+          "definitionId": "phone.nova_n1_lite",
+          "npcId": "npc.selin",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 24,
+          "day": 6,
+          "type": "sale",
+          "amount": 6350,
+          "balanceAfter": 229750,
+          "instanceId": 21,
+          "definitionId": "phone.nova_n3_pro",
+          "npcId": "npc.selin",
+          "saleCostBasis": 4400,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 25,
+          "day": 6,
+          "type": "purchase",
+          "amount": -2050,
+          "balanceAfter": 227700,
+          "instanceId": 32,
+          "definitionId": "phone.nova_n1_lite",
+          "npcId": "npc.hatice",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 26,
+          "day": 6,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 227200,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 27,
+          "day": 6,
+          "type": "wasted_appraisal",
+          "amount": 0,
+          "balanceAfter": 227200,
+          "instanceId": 9,
+          "definitionId": "phone.samsun_vega_a3",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": 10,
+          "memoKey": "ledger.type.wasted_appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 28,
+          "day": 7,
+          "type": "sale",
+          "amount": 2960,
+          "balanceAfter": 230160,
+          "instanceId": 32,
+          "definitionId": "phone.nova_n1_lite",
+          "npcId": "npc.cengiz",
+          "saleCostBasis": 2050,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 29,
+          "day": 7,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 229660,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 30,
+          "day": 7,
+          "type": "wasted_appraisal",
+          "amount": 0,
+          "balanceAfter": 229660,
+          "instanceId": 16,
+          "definitionId": "phone.samsun_vega_a3",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": 17,
+          "memoKey": "ledger.type.wasted_appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 31,
+          "day": 8,
+          "type": "purchase",
+          "amount": -22130,
+          "balanceAfter": 207530,
+          "instanceId": 31,
+          "definitionId": "phone.elma_e13_pro",
+          "npcId": "npc.ozan",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 32,
+          "day": 8,
+          "type": "purchase",
+          "amount": -6440,
+          "balanceAfter": 201090,
+          "instanceId": 27,
+          "definitionId": "phone.samsun_vega_a3",
+          "npcId": "npc.murat",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 33,
+          "day": 8,
+          "type": "appraisal",
+          "amount": -200,
+          "balanceAfter": 200890,
+          "instanceId": 41,
+          "definitionId": "phone.yildiz_y8_plus",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 34,
+          "day": 8,
+          "type": "appraisal",
+          "amount": -1000,
+          "balanceAfter": 199890,
+          "instanceId": 25,
+          "definitionId": "phone.samsun_vega_s21",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 35,
+          "day": 8,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 199390,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 36,
+          "day": 8,
+          "type": "wasted_appraisal",
+          "amount": 0,
+          "balanceAfter": 199390,
+          "instanceId": 25,
+          "definitionId": "phone.samsun_vega_s21",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": 34,
+          "memoKey": "ledger.type.wasted_appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 37,
+          "day": 8,
+          "type": "wasted_appraisal",
+          "amount": 0,
+          "balanceAfter": 199390,
+          "instanceId": 41,
+          "definitionId": "phone.yildiz_y8_plus",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": 33,
+          "memoKey": "ledger.type.wasted_appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 38,
+          "day": 9,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 198890,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 39,
+          "day": 10,
+          "type": "sale",
+          "amount": 3380,
+          "balanceAfter": 202270,
+          "instanceId": 30,
+          "definitionId": "phone.nova_n1_lite",
+          "npcId": "npc.cengiz",
+          "saleCostBasis": 3240,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 40,
+          "day": 10,
+          "type": "purchase",
+          "amount": -10270,
+          "balanceAfter": 192000,
+          "instanceId": 63,
+          "definitionId": "phone.samsun_vega_s21",
+          "npcId": "npc.cengiz",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 41,
+          "day": 10,
+          "type": "sale",
+          "amount": 11730,
+          "balanceAfter": 203730,
+          "instanceId": 18,
+          "definitionId": "phone.yildiz_y8_plus",
+          "npcId": "npc.ayse",
+          "saleCostBasis": 12420,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 42,
+          "day": 10,
+          "type": "sale",
+          "amount": 3390,
+          "balanceAfter": 207120,
+          "instanceId": 24,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.kemal",
+          "saleCostBasis": 3740,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 43,
+          "day": 10,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 206620,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 44,
+          "day": 11,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 206120,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 45,
+          "day": 12,
+          "type": "sale",
+          "amount": 20210,
+          "balanceAfter": 226330,
+          "instanceId": 31,
+          "definitionId": "phone.elma_e13_pro",
+          "npcId": "npc.hatice",
+          "saleCostBasis": 22130,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 46,
+          "day": 12,
+          "type": "purchase",
+          "amount": -54220,
+          "balanceAfter": 172110,
+          "instanceId": 58,
+          "definitionId": "phone.elma_e14_pro_max",
+          "npcId": "npc.nermin",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 47,
+          "day": 12,
+          "type": "appraisal",
+          "amount": -1000,
+          "balanceAfter": 171110,
+          "instanceId": 62,
+          "definitionId": "phone.elma_e14_pro_max",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 48,
+          "day": 12,
+          "type": "appraisal",
+          "amount": -600,
+          "balanceAfter": 170510,
+          "instanceId": 52,
+          "definitionId": "phone.zirve_z5",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 49,
+          "day": 12,
+          "type": "purchase",
+          "amount": -3870,
+          "balanceAfter": 166640,
+          "instanceId": 71,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.ozan",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 50,
+          "day": 12,
+          "type": "purchase",
+          "amount": -14150,
+          "balanceAfter": 152490,
+          "instanceId": 67,
+          "definitionId": "phone.zirve_z5",
+          "npcId": "npc.kemal",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 51,
+          "day": 12,
+          "type": "sale",
+          "amount": 10160,
+          "balanceAfter": 162650,
+          "instanceId": 63,
+          "definitionId": "phone.samsun_vega_s21",
+          "npcId": "npc.ozan",
+          "saleCostBasis": 10270,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 52,
+          "day": 12,
+          "type": "purchase",
+          "amount": -3250,
+          "balanceAfter": 159400,
+          "instanceId": 60,
+          "definitionId": "phone.yildiz_y5",
+          "npcId": "npc.hatice",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 53,
+          "day": 12,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 158900,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 54,
+          "day": 12,
+          "type": "wasted_appraisal",
+          "amount": 0,
+          "balanceAfter": 158900,
+          "instanceId": 52,
+          "definitionId": "phone.zirve_z5",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": 48,
+          "memoKey": "ledger.type.wasted_appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 55,
+          "day": 12,
+          "type": "wasted_appraisal",
+          "amount": 0,
+          "balanceAfter": 158900,
+          "instanceId": 62,
+          "definitionId": "phone.elma_e14_pro_max",
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": 47,
+          "memoKey": "ledger.type.wasted_appraisal",
+          "memoArgs": []
+        },
+        {
+          "id": 56,
+          "day": 13,
+          "type": "sale",
+          "amount": 2690,
+          "balanceAfter": 161590,
+          "instanceId": 33,
+          "definitionId": "phone.nova_n1_lite",
+          "npcId": "npc.hatice",
+          "saleCostBasis": 2460,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 57,
+          "day": 13,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 161090,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 58,
+          "day": 14,
+          "type": "purchase",
+          "amount": -6590,
+          "balanceAfter": 154500,
+          "instanceId": 90,
+          "definitionId": "phone.nova_n3_pro",
+          "npcId": "npc.hatice",
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.purchase",
+          "memoArgs": []
+        },
+        {
+          "id": 59,
+          "day": 14,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 154000,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 60,
+          "day": 15,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 153500,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        },
+        {
+          "id": 61,
+          "day": 16,
+          "type": "sale",
+          "amount": 8660,
+          "balanceAfter": 162160,
+          "instanceId": 90,
+          "definitionId": "phone.nova_n3_pro",
+          "npcId": "npc.riza",
+          "saleCostBasis": 6590,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.sale",
+          "memoArgs": []
+        },
+        {
+          "id": 62,
+          "day": 16,
+          "type": "daily_expense",
+          "amount": -500,
+          "balanceAfter": 161660,
+          "instanceId": null,
+          "definitionId": null,
+          "npcId": null,
+          "saleCostBasis": null,
+          "relatedRecordId": null,
+          "memoKey": "ledger.type.daily_expense",
+          "memoArgs": []
+        }
+      ],
+      "businessAssets": 0,
+      "pendingAppraisals": [],
+      "demand": {
+        "indexes": [
+          {
+            "modelId": "phone.elma_e11",
+            "index": 1.0121075477673915
+          },
+          {
+            "modelId": "phone.elma_e13_pro",
+            "index": 1.0244821929157057
+          },
+          {
+            "modelId": "phone.elma_e14_pro_max",
+            "index": 0.9817245566526737
+          },
+          {
+            "modelId": "phone.nova_n1_lite",
+            "index": 1.0168599242194878
+          },
+          {
+            "modelId": "phone.nova_n3_pro",
+            "index": 0.9802138046024543
+          },
+          {
+            "modelId": "phone.samsun_vega_a3",
+            "index": 1.0034320409078015
+          },
+          {
+            "modelId": "phone.samsun_vega_s21",
+            "index": 1.0093720395296768
+          },
+          {
+            "modelId": "phone.yildiz_y5",
+            "index": 1.0022020530629043
+          },
+          {
+            "modelId": "phone.yildiz_y8_plus",
+            "index": 1.0141535708177047
+          },
+          {
+            "modelId": "phone.zirve_z5",
+            "index": 0.9861864342788366
+          }
+        ],
+        "sales": [
+          {
+            "modelId": "phone.nova_n1_lite",
+            "day": 13
+          },
+          {
+            "modelId": "phone.nova_n3_pro",
+            "day": 16
+          }
+        ]
+      }
+    },
+    "inventory": {
+      "capacity": 6,
+      "itemIds": [
+        27,
+        58,
+        71,
+        67,
+        60
+      ]
+    },
+    "business": {
+      "equipment": []
+    },
+    "market": {
+      "listings": [
+        {
+          "listingId": 89,
+          "instanceId": 89,
+          "sellerNpcId": "npc.ayse",
+          "askingPrice": 5250,
+          "tags": [
+            "box",
+            "invoice"
+          ],
+          "dayListed": 14,
+          "remainingDays": 1,
+          "rejectPrice": 4470,
+          "believedValue": 4750,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 91,
+          "instanceId": 91,
+          "sellerNpcId": "npc.cengiz",
+          "askingPrice": 3700,
+          "tags": [
+            "invoice",
+            "urgent_sale"
+          ],
+          "dayListed": 14,
+          "remainingDays": 1,
+          "rejectPrice": 2820,
+          "believedValue": 3610,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": true,
+          "isGuided": false
+        },
+        {
+          "listingId": 92,
+          "instanceId": 92,
+          "sellerNpcId": "npc.cengiz",
+          "askingPrice": 9200,
+          "tags": [
+            "urgent_sale"
+          ],
+          "dayListed": 14,
+          "remainingDays": 1,
+          "rejectPrice": 7030,
+          "believedValue": 9010,
+          "isOpportunity": false,
+          "isTrap": true,
+          "isJackpot": true,
+          "isGuided": false
+        },
+        {
+          "listingId": 94,
+          "instanceId": 94,
+          "sellerNpcId": "npc.ayse",
+          "askingPrice": 34700,
+          "tags": [
+            "box"
+          ],
+          "dayListed": 14,
+          "remainingDays": 1,
+          "rejectPrice": 29650,
+          "believedValue": 31540,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 95,
+          "instanceId": 95,
+          "sellerNpcId": "npc.hatice",
+          "askingPrice": 8050,
+          "tags": [],
+          "dayListed": 14,
+          "remainingDays": 1,
+          "rejectPrice": 6720,
+          "believedValue": 7310,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 96,
+          "instanceId": 96,
+          "sellerNpcId": "npc.ayse",
+          "askingPrice": 4050,
+          "tags": [
+            "box",
+            "invoice"
+          ],
+          "dayListed": 15,
+          "remainingDays": 1,
+          "rejectPrice": 3440,
+          "believedValue": 3660,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 98,
+          "instanceId": 98,
+          "sellerNpcId": "npc.berk",
+          "askingPrice": 5250,
+          "tags": [],
+          "dayListed": 15,
+          "remainingDays": 1,
+          "rejectPrice": 4490,
+          "believedValue": 4590,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 99,
+          "instanceId": 99,
+          "sellerNpcId": "npc.hatice",
+          "askingPrice": 7450,
+          "tags": [],
+          "dayListed": 15,
+          "remainingDays": 1,
+          "rejectPrice": 6210,
+          "believedValue": 6750,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 100,
+          "instanceId": 100,
+          "sellerNpcId": "npc.riza",
+          "askingPrice": 13650,
+          "tags": [
+            "box"
+          ],
+          "dayListed": 15,
+          "remainingDays": 2,
+          "rejectPrice": 11800,
+          "believedValue": 12420,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 101,
+          "instanceId": 101,
+          "sellerNpcId": "npc.cengiz",
+          "askingPrice": 16950,
+          "tags": [
+            "box",
+            "invoice",
+            "urgent_sale"
+          ],
+          "dayListed": 15,
+          "remainingDays": 1,
+          "rejectPrice": 12980,
+          "believedValue": 16640,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": true,
+          "isGuided": false
+        },
+        {
+          "listingId": 102,
+          "instanceId": 102,
+          "sellerNpcId": "npc.cengiz",
+          "askingPrice": 9550,
+          "tags": [
+            "urgent_sale"
+          ],
+          "dayListed": 15,
+          "remainingDays": 1,
+          "rejectPrice": 7290,
+          "believedValue": 9340,
+          "isOpportunity": false,
+          "isTrap": true,
+          "isJackpot": true,
+          "isGuided": false
+        },
+        {
+          "listingId": 103,
+          "instanceId": 103,
+          "sellerNpcId": "npc.ozan",
+          "askingPrice": 4200,
+          "tags": [
+            "box"
+          ],
+          "dayListed": 16,
+          "remainingDays": 2,
+          "rejectPrice": 3590,
+          "believedValue": 3990,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 104,
+          "instanceId": 104,
+          "sellerNpcId": "npc.hatice",
+          "askingPrice": 10600,
+          "tags": [],
+          "dayListed": 16,
+          "remainingDays": 2,
+          "rejectPrice": 8870,
+          "believedValue": 9640,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 105,
+          "instanceId": 105,
+          "sellerNpcId": "npc.ayse",
+          "askingPrice": 35500,
+          "tags": [
+            "box",
+            "invoice"
+          ],
+          "dayListed": 16,
+          "remainingDays": 3,
+          "rejectPrice": 30330,
+          "believedValue": 32260,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 106,
+          "instanceId": 106,
+          "sellerNpcId": "npc.cengiz",
+          "askingPrice": 30450,
+          "tags": [
+            "urgent_sale"
+          ],
+          "dayListed": 16,
+          "remainingDays": 1,
+          "rejectPrice": 23300,
+          "believedValue": 29870,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": true,
+          "isGuided": false
+        },
+        {
+          "listingId": 107,
+          "instanceId": 107,
+          "sellerNpcId": "npc.cengiz",
+          "askingPrice": 10750,
+          "tags": [
+            "urgent_sale"
+          ],
+          "dayListed": 16,
+          "remainingDays": 3,
+          "rejectPrice": 8240,
+          "believedValue": 10560,
+          "isOpportunity": false,
+          "isTrap": true,
+          "isJackpot": true,
+          "isGuided": false
+        },
+        {
+          "listingId": 108,
+          "instanceId": 108,
+          "sellerNpcId": "npc.nermin",
+          "askingPrice": 47650,
+          "tags": [],
+          "dayListed": 16,
+          "remainingDays": 3,
+          "rejectPrice": 37340,
+          "believedValue": 38100,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 109,
+          "instanceId": 109,
+          "sellerNpcId": "npc.hatice",
+          "askingPrice": 6400,
+          "tags": [],
+          "dayListed": 16,
+          "remainingDays": 3,
+          "rejectPrice": 5370,
+          "believedValue": 5830,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 110,
+          "instanceId": 110,
+          "sellerNpcId": "npc.nermin",
+          "askingPrice": 65000,
+          "tags": [],
+          "dayListed": 17,
+          "remainingDays": 2,
+          "rejectPrice": 50970,
+          "believedValue": 52010,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 111,
+          "instanceId": 111,
+          "sellerNpcId": "npc.hatice",
+          "askingPrice": 20750,
+          "tags": [],
+          "dayListed": 17,
+          "remainingDays": 4,
+          "rejectPrice": 17360,
+          "believedValue": 18870,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 112,
+          "instanceId": 112,
+          "sellerNpcId": "npc.cengiz",
+          "askingPrice": 4300,
+          "tags": [
+            "urgent_sale"
+          ],
+          "dayListed": 17,
+          "remainingDays": 4,
+          "rejectPrice": 3270,
+          "believedValue": 4200,
+          "isOpportunity": false,
+          "isTrap": true,
+          "isJackpot": true,
+          "isGuided": false
+        },
+        {
+          "listingId": 113,
+          "instanceId": 113,
+          "sellerNpcId": "npc.nermin",
+          "askingPrice": 4750,
+          "tags": [],
+          "dayListed": 17,
+          "remainingDays": 2,
+          "rejectPrice": 3720,
+          "believedValue": 3800,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 114,
+          "instanceId": 114,
+          "sellerNpcId": "npc.riza",
+          "askingPrice": 13300,
+          "tags": [
+            "box"
+          ],
+          "dayListed": 17,
+          "remainingDays": 2,
+          "rejectPrice": 11480,
+          "believedValue": 12080,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 115,
+          "instanceId": 115,
+          "sellerNpcId": "npc.ozan",
+          "askingPrice": 2550,
+          "tags": [],
+          "dayListed": 17,
+          "remainingDays": 3,
+          "rejectPrice": 2170,
+          "believedValue": 2410,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 116,
+          "instanceId": 116,
+          "sellerNpcId": "npc.nermin",
+          "askingPrice": 5050,
+          "tags": [
+            "box"
+          ],
+          "dayListed": 17,
+          "remainingDays": 3,
+          "rejectPrice": 3940,
+          "believedValue": 4020,
+          "isOpportunity": false,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        },
+        {
+          "listingId": 117,
+          "instanceId": 117,
+          "sellerNpcId": "npc.ozan",
+          "askingPrice": 14950,
+          "tags": [],
+          "dayListed": 17,
+          "remainingDays": 2,
+          "rejectPrice": 12840,
+          "believedValue": 14260,
+          "isOpportunity": true,
+          "isTrap": false,
+          "isJackpot": false,
+          "isGuided": false
+        }
+      ]
+    },
+    "instances": [
+      {
+        "instanceId": 1,
+        "definitionId": "phone.elma_e13_pro",
+        "storageGb": 256,
+        "ageMonths": 31,
+        "attributes": {
+          "battery": 89,
+          "body": 98,
+          "box": true,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 1,
+          "acquiredDay": 1
+        },
+        "purchasePrice": 28660,
+        "costBasis": 28660,
+        "listPrice": 30690,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 2,
+        "definitionId": "phone.elma_e11",
+        "storageGb": 128,
+        "ageMonths": 35,
+        "attributes": {
+          "battery": 75,
+          "body": 82,
+          "box": false,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 2,
+          "acquiredDay": 3
+        },
+        "purchasePrice": 12770,
+        "costBasis": 12770,
+        "listPrice": 15090,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 3,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 64,
+        "ageMonths": 24,
+        "attributes": {
+          "battery": 95,
+          "body": 100,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 3,
+          "acquiredDay": 1
+        },
+        "purchasePrice": 4980,
+        "costBasis": 4980,
+        "listPrice": 5810,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 4,
+        "definitionId": "phone.samsun_vega_s21",
+        "storageGb": 128,
+        "ageMonths": 14,
+        "attributes": {
+          "battery": 92,
+          "body": 89,
+          "box": false,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 4,
+          "acquiredDay": 2
+        },
+        "purchasePrice": 20590,
+        "costBasis": 20590,
+        "listPrice": 24670,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 7,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 64,
+        "ageMonths": 13,
+        "attributes": {
+          "battery": 95,
+          "body": 99,
+          "box": false,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ozan",
+          "listingId": 7,
+          "acquiredDay": 2
+        },
+        "purchasePrice": 5200,
+        "costBasis": 5200,
+        "listPrice": 5720,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 13,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 64,
+        "ageMonths": 27,
+        "attributes": {
+          "battery": 84,
+          "body": 84,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 13,
+          "acquiredDay": 3
+        },
+        "purchasePrice": 4300,
+        "costBasis": 4300,
+        "listPrice": 4530,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 18,
+        "definitionId": "phone.yildiz_y8_plus",
+        "storageGb": 128,
+        "ageMonths": 18,
+        "attributes": {
+          "battery": 77,
+          "body": 84,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.selin",
+          "listingId": 18,
+          "acquiredDay": 6
+        },
+        "purchasePrice": 12420,
+        "costBasis": 12420,
+        "listPrice": 13530,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 21,
+        "definitionId": "phone.nova_n3_pro",
+        "storageGb": 128,
+        "ageMonths": 21,
+        "attributes": {
+          "battery": 63,
+          "body": 68,
+          "box": false,
+          "camera": "spotted",
+          "invoice": false,
+          "screen": "cracked"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 21,
+          "acquiredDay": 6
+        },
+        "purchasePrice": 4400,
+        "costBasis": 4400,
+        "listPrice": 5100,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 24,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 128,
+        "ageMonths": 35,
+        "attributes": {
+          "battery": 67,
+          "body": 70,
+          "box": false,
+          "camera": "spotted",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 24,
+          "acquiredDay": 6
+        },
+        "purchasePrice": 3740,
+        "costBasis": 3740,
+        "listPrice": 4090,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 27,
+        "definitionId": "phone.samsun_vega_a3",
+        "storageGb": 128,
+        "ageMonths": 23,
+        "attributes": {
+          "battery": 65,
+          "body": 64,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.murat",
+          "listingId": 27,
+          "acquiredDay": 8
+        },
+        "purchasePrice": 6440,
+        "costBasis": 6440,
+        "listPrice": 7210,
+        "location": "Inventory"
+      },
+      {
+        "instanceId": 30,
+        "definitionId": "phone.nova_n1_lite",
+        "storageGb": 64,
+        "ageMonths": 29,
+        "attributes": {
+          "battery": 88,
+          "body": 93,
+          "box": true,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.selin",
+          "listingId": 30,
+          "acquiredDay": 6
+        },
+        "purchasePrice": 3240,
+        "costBasis": 3240,
+        "listPrice": 3640,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 31,
+        "definitionId": "phone.elma_e13_pro",
+        "storageGb": 512,
+        "ageMonths": 31,
+        "attributes": {
+          "battery": 74,
+          "body": 66,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ozan",
+          "listingId": 31,
+          "acquiredDay": 8
+        },
+        "purchasePrice": 22130,
+        "costBasis": 22130,
+        "listPrice": 24080,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 32,
+        "definitionId": "phone.nova_n1_lite",
+        "storageGb": 64,
+        "ageMonths": 14,
+        "attributes": {
+          "battery": 73,
+          "body": 71,
+          "box": false,
+          "camera": "spotted",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 32,
+          "acquiredDay": 6
+        },
+        "purchasePrice": 2050,
+        "costBasis": 2050,
+        "listPrice": 2210,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 33,
+        "definitionId": "phone.nova_n1_lite",
+        "storageGb": 64,
+        "ageMonths": 18,
+        "attributes": {
+          "battery": 50,
+          "body": 59,
+          "box": false,
+          "camera": "spotted",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 33,
+          "acquiredDay": 6
+        },
+        "purchasePrice": 2460,
+        "costBasis": 2460,
+        "listPrice": 2910,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 58,
+        "definitionId": "phone.elma_e14_pro_max",
+        "storageGb": 256,
+        "ageMonths": 12,
+        "attributes": {
+          "battery": 97,
+          "body": 98,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.nermin",
+          "listingId": 58,
+          "acquiredDay": 12
+        },
+        "purchasePrice": 54220,
+        "costBasis": 54220,
+        "listPrice": 64380,
+        "location": "Inventory"
+      },
+      {
+        "instanceId": 60,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 64,
+        "ageMonths": 16,
+        "attributes": {
+          "battery": 86,
+          "body": 72,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 60,
+          "acquiredDay": 12
+        },
+        "purchasePrice": 3250,
+        "costBasis": 3250,
+        "listPrice": 3970,
+        "location": "Inventory"
+      },
+      {
+        "instanceId": 63,
+        "definitionId": "phone.samsun_vega_s21",
+        "storageGb": 128,
+        "ageMonths": 24,
+        "attributes": {
+          "battery": 64,
+          "body": 59,
+          "box": false,
+          "camera": "faulty",
+          "invoice": false,
+          "screen": "cracked"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 63,
+          "acquiredDay": 10
+        },
+        "purchasePrice": 10270,
+        "costBasis": 10270,
+        "listPrice": 11070,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 67,
+        "definitionId": "phone.zirve_z5",
+        "storageGb": 128,
+        "ageMonths": 13,
+        "attributes": {
+          "battery": 89,
+          "body": 93,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.kemal",
+          "listingId": 67,
+          "acquiredDay": 12
+        },
+        "purchasePrice": 14150,
+        "costBasis": 14150,
+        "listPrice": 17250,
+        "location": "Inventory"
+      },
+      {
+        "instanceId": 71,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 64,
+        "ageMonths": 37,
+        "attributes": {
+          "battery": 80,
+          "body": 85,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ozan",
+          "listingId": 71,
+          "acquiredDay": 12
+        },
+        "purchasePrice": 3870,
+        "costBasis": 3870,
+        "listPrice": 4600,
+        "location": "Inventory"
+      },
+      {
+        "instanceId": 89,
+        "definitionId": "phone.nova_n1_lite",
+        "storageGb": 128,
+        "ageMonths": 20,
+        "attributes": {
+          "battery": 92,
+          "body": 100,
+          "box": true,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 89,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 90,
+        "definitionId": "phone.nova_n3_pro",
+        "storageGb": 128,
+        "ageMonths": 34,
+        "attributes": {
+          "battery": 88,
+          "body": 78,
+          "box": false,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 90,
+          "acquiredDay": 14
+        },
+        "purchasePrice": 6590,
+        "costBasis": 6590,
+        "listPrice": 7220,
+        "location": "Sold"
+      },
+      {
+        "instanceId": 91,
+        "definitionId": "phone.nova_n1_lite",
+        "storageGb": 64,
+        "ageMonths": 18,
+        "attributes": {
+          "battery": 83,
+          "body": 81,
+          "box": false,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 91,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 92,
+        "definitionId": "phone.elma_e11",
+        "storageGb": 128,
+        "ageMonths": 53,
+        "attributes": {
+          "battery": 51,
+          "body": 69,
+          "box": false,
+          "camera": "spotted",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 92,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 94,
+        "definitionId": "phone.elma_e13_pro",
+        "storageGb": 512,
+        "ageMonths": 22,
+        "attributes": {
+          "battery": 76,
+          "body": 75,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 94,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 95,
+        "definitionId": "phone.nova_n3_pro",
+        "storageGb": 256,
+        "ageMonths": 31,
+        "attributes": {
+          "battery": 85,
+          "body": 79,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 95,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 96,
+        "definitionId": "phone.nova_n1_lite",
+        "storageGb": 64,
+        "ageMonths": 27,
+        "attributes": {
+          "battery": 94,
+          "body": 88,
+          "box": true,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 96,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 98,
+        "definitionId": "phone.samsun_vega_a3",
+        "storageGb": 256,
+        "ageMonths": 17,
+        "attributes": {
+          "battery": 64,
+          "body": 59,
+          "box": false,
+          "camera": "faulty",
+          "invoice": false,
+          "screen": "cracked"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.berk",
+          "listingId": 98,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 99,
+        "definitionId": "phone.zirve_z5",
+        "storageGb": 256,
+        "ageMonths": 28,
+        "attributes": {
+          "battery": 61,
+          "body": 71,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 99,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 100,
+        "definitionId": "phone.elma_e11",
+        "storageGb": 256,
+        "ageMonths": 51,
+        "attributes": {
+          "battery": 85,
+          "body": 70,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.riza",
+          "listingId": 100,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 101,
+        "definitionId": "phone.samsun_vega_s21",
+        "storageGb": 128,
+        "ageMonths": 37,
+        "attributes": {
+          "battery": 90,
+          "body": 100,
+          "box": true,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 101,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 102,
+        "definitionId": "phone.elma_e11",
+        "storageGb": 128,
+        "ageMonths": 52,
+        "attributes": {
+          "battery": 56,
+          "body": 68,
+          "box": false,
+          "camera": "spotted",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 102,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 103,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 128,
+        "ageMonths": 46,
+        "attributes": {
+          "battery": 77,
+          "body": 81,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ozan",
+          "listingId": 103,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 104,
+        "definitionId": "phone.yildiz_y8_plus",
+        "storageGb": 256,
+        "ageMonths": 22,
+        "attributes": {
+          "battery": 70,
+          "body": 59,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 104,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 105,
+        "definitionId": "phone.elma_e13_pro",
+        "storageGb": 256,
+        "ageMonths": 13,
+        "attributes": {
+          "battery": 91,
+          "body": 99,
+          "box": true,
+          "camera": "ok",
+          "invoice": true,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ayse",
+          "listingId": 105,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 106,
+        "definitionId": "phone.elma_e13_pro",
+        "storageGb": 512,
+        "ageMonths": 23,
+        "attributes": {
+          "battery": 87,
+          "body": 81,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 106,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 107,
+        "definitionId": "phone.elma_e11",
+        "storageGb": 128,
+        "ageMonths": 45,
+        "attributes": {
+          "battery": 60,
+          "body": 53,
+          "box": false,
+          "camera": "faulty",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 107,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 108,
+        "definitionId": "phone.elma_e14_pro_max",
+        "storageGb": 256,
+        "ageMonths": 7,
+        "attributes": {
+          "battery": 79,
+          "body": 78,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.nermin",
+          "listingId": 108,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 109,
+        "definitionId": "phone.samsun_vega_a3",
+        "storageGb": 256,
+        "ageMonths": 22,
+        "attributes": {
+          "battery": 87,
+          "body": 76,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 109,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 110,
+        "definitionId": "phone.elma_e14_pro_max",
+        "storageGb": 1024,
+        "ageMonths": 10,
+        "attributes": {
+          "battery": 85,
+          "body": 80,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.nermin",
+          "listingId": 110,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 111,
+        "definitionId": "phone.elma_e13_pro",
+        "storageGb": 256,
+        "ageMonths": 8,
+        "attributes": {
+          "battery": 70,
+          "body": 82,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "replaced_aftermarket"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.hatice",
+          "listingId": 111,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 112,
+        "definitionId": "phone.samsun_vega_a3",
+        "storageGb": 128,
+        "ageMonths": 35,
+        "attributes": {
+          "battery": 64,
+          "body": 53,
+          "box": false,
+          "camera": "faulty",
+          "invoice": false,
+          "screen": "cracked"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.cengiz",
+          "listingId": 112,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 113,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 64,
+        "ageMonths": 42,
+        "attributes": {
+          "battery": 83,
+          "body": 84,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.nermin",
+          "listingId": 113,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 114,
+        "definitionId": "phone.nova_n3_pro",
+        "storageGb": 64,
+        "ageMonths": 12,
+        "attributes": {
+          "battery": 98,
+          "body": 97,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "original"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.riza",
+          "listingId": 114,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 115,
+        "definitionId": "phone.nova_n1_lite",
+        "storageGb": 64,
+        "ageMonths": 27,
+        "attributes": {
+          "battery": 68,
+          "body": 59,
+          "box": false,
+          "camera": "spotted",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ozan",
+          "listingId": 115,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 116,
+        "definitionId": "phone.yildiz_y5",
+        "storageGb": 64,
+        "ageMonths": 32,
+        "attributes": {
+          "battery": 76,
+          "body": 75,
+          "box": true,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.nermin",
+          "listingId": 116,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      },
+      {
+        "instanceId": 117,
+        "definitionId": "phone.samsun_vega_s21",
+        "storageGb": 128,
+        "ageMonths": 25,
+        "attributes": {
+          "battery": 71,
+          "body": 55,
+          "box": false,
+          "camera": "ok",
+          "invoice": false,
+          "screen": "scratched"
+        },
+        "provenance": {
+          "sellerNpcId": "npc.ozan",
+          "listingId": 117,
+          "acquiredDay": null
+        },
+        "purchasePrice": 0,
+        "costBasis": 0,
+        "listPrice": 0,
+        "location": "Market"
+      }
+    ],
+    "npcStates": [
+      {
+        "npcId": "npc.ayse",
+        "encounterCount": 7,
+        "soldToPlayer": [
+          1,
+          2,
+          3,
+          4,
+          13
+        ],
+        "boughtFromPlayer": [
+          18
+        ]
+      },
+      {
+        "npcId": "npc.berk",
+        "encounterCount": 1,
+        "soldToPlayer": [],
+        "boughtFromPlayer": []
+      },
+      {
+        "npcId": "npc.cengiz",
+        "encounterCount": 5,
+        "soldToPlayer": [
+          24,
+          33,
+          63
+        ],
+        "boughtFromPlayer": [
+          13,
+          30,
+          32
+        ]
+      },
+      {
+        "npcId": "npc.hatice",
+        "encounterCount": 5,
+        "soldToPlayer": [
+          21,
+          32,
+          60,
+          90
+        ],
+        "boughtFromPlayer": [
+          7,
+          31,
+          33
+        ]
+      },
+      {
+        "npcId": "npc.kemal",
+        "encounterCount": 2,
+        "soldToPlayer": [
+          67
+        ],
+        "boughtFromPlayer": [
+          1,
+          3,
+          24
+        ]
+      },
+      {
+        "npcId": "npc.murat",
+        "encounterCount": 2,
+        "soldToPlayer": [
+          27
+        ],
+        "boughtFromPlayer": []
+      },
+      {
+        "npcId": "npc.nermin",
+        "encounterCount": 1,
+        "soldToPlayer": [
+          58
+        ],
+        "boughtFromPlayer": []
+      },
+      {
+        "npcId": "npc.ozan",
+        "encounterCount": 6,
+        "soldToPlayer": [
+          7,
+          31,
+          71
+        ],
+        "boughtFromPlayer": [
+          4,
+          63
+        ]
+      },
+      {
+        "npcId": "npc.riza",
+        "encounterCount": 0,
+        "soldToPlayer": [],
+        "boughtFromPlayer": [
+          90
+        ]
+      },
+      {
+        "npcId": "npc.selin",
+        "encounterCount": 2,
+        "soldToPlayer": [
+          18,
+          30
+        ],
+        "boughtFromPlayer": [
+          2,
+          21
+        ]
+      }
+    ],
+    "knowledge": [
+      {
+        "resultId": 1,
+        "instanceId": 9,
+        "definitionId": "phone.samsun_vega_a3",
+        "levelId": "s1",
+        "day": 3,
+        "fee": 200,
+        "seed": "16747874910704056383",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Low",
+            "evidencePower": 0.4,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": false,
+            "confidence": "Low",
+            "evidencePower": 0.4,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": {
+          "min": 67,
+          "max": 87
+        },
+        "bodyRange": {
+          "min": 75,
+          "max": 95
+        },
+        "valueRange": {
+          "min": 6610,
+          "max": 8080
+        },
+        "cards": []
+      },
+      {
+        "resultId": 2,
+        "instanceId": 16,
+        "definitionId": "phone.samsun_vega_a3",
+        "levelId": "s2",
+        "day": 6,
+        "fee": 600,
+        "seed": "4975985878565967182",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": {
+          "min": 87,
+          "max": 97
+        },
+        "bodyRange": {
+          "min": 85,
+          "max": 95
+        },
+        "valueRange": {
+          "min": 7080,
+          "max": 7830
+        },
+        "cards": []
+      },
+      {
+        "resultId": 3,
+        "instanceId": 41,
+        "definitionId": "phone.yildiz_y8_plus",
+        "levelId": "s1",
+        "day": 8,
+        "fee": 200,
+        "seed": "7438156669060584647",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Low",
+            "evidencePower": 0.4,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": true,
+            "confidence": "Low",
+            "evidencePower": 0.4,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": {
+          "min": 56,
+          "max": 76
+        },
+        "bodyRange": {
+          "min": 56,
+          "max": 76
+        },
+        "valueRange": {
+          "min": 10060,
+          "max": 12290
+        },
+        "cards": [
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "confidence": "Low",
+            "evidencePower": 0.4,
+            "problemValue": 820,
+            "isFalseAlarm": false
+          }
+        ]
+      },
+      {
+        "resultId": 4,
+        "instanceId": 25,
+        "definitionId": "phone.samsun_vega_s21",
+        "levelId": "s2",
+        "day": 8,
+        "fee": 1000,
+        "seed": "7656965269181500524",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": {
+          "min": 84,
+          "max": 94
+        },
+        "bodyRange": {
+          "min": 72,
+          "max": 82
+        },
+        "valueRange": {
+          "min": 19020,
+          "max": 21020
+        },
+        "cards": []
+      },
+      {
+        "resultId": 5,
+        "instanceId": 58,
+        "definitionId": "phone.elma_e14_pro_max",
+        "levelId": "s0",
+        "day": 10,
+        "fee": 0,
+        "seed": "14156760850141768922",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Hint",
+            "evidencePower": 0.2,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": false,
+            "confidence": "Hint",
+            "evidencePower": 0.2,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": null,
+        "bodyRange": {
+          "min": 77,
+          "max": 100
+        },
+        "valueRange": null,
+        "cards": []
+      },
+      {
+        "resultId": 6,
+        "instanceId": 61,
+        "definitionId": "phone.nova_n1_lite",
+        "levelId": "s0",
+        "day": 10,
+        "fee": 0,
+        "seed": "12099218187047095754",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Hint",
+            "evidencePower": 0.2,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": false,
+            "confidence": "Hint",
+            "evidencePower": 0.2,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": null,
+        "bodyRange": {
+          "min": 57,
+          "max": 87
+        },
+        "valueRange": null,
+        "cards": []
+      },
+      {
+        "resultId": 7,
+        "instanceId": 62,
+        "definitionId": "phone.elma_e14_pro_max",
+        "levelId": "s2",
+        "day": 12,
+        "fee": 1000,
+        "seed": "14082673419131826251",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": {
+          "min": 85,
+          "max": 95
+        },
+        "bodyRange": {
+          "min": 80,
+          "max": 90
+        },
+        "valueRange": {
+          "min": 52510,
+          "max": 58030
+        },
+        "cards": []
+      },
+      {
+        "resultId": 8,
+        "instanceId": 52,
+        "definitionId": "phone.zirve_z5",
+        "levelId": "s2",
+        "day": 12,
+        "fee": 600,
+        "seed": "241555352312599526",
+        "findings": [
+          {
+            "attribute": "screen",
+            "wordingKey": "appraisal.finding.screen_replaced",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          },
+          {
+            "attribute": "camera",
+            "wordingKey": "appraisal.finding.camera_problem",
+            "found": false,
+            "confidence": "Medium",
+            "evidencePower": 0.7,
+            "isFalseAlarm": false
+          }
+        ],
+        "batteryRange": {
+          "min": 83,
+          "max": 93
+        },
+        "bodyRange": {
+          "min": 66,
+          "max": 76
+        },
+        "valueRange": {
+          "min": 9480,
+          "max": 10480
+        },
+        "cards": []
+      }
+    ],
+    "customers": {
+      "arrived": 5,
+      "missedTotal": 58,
+      "slots": [
+        {
+          "customerId": 81,
+          "npcId": "npc.cengiz",
+          "valueDraw": 0.5424123071976978,
+          "trustDraw": 0.7091521128839813,
+          "pickDraw": 0.07954817866844799,
+          "status": "Waiting"
+        },
+        {
+          "customerId": 82,
+          "npcId": "npc.hatice",
+          "valueDraw": 0.00771518825351436,
+          "trustDraw": 0.5353161043404289,
+          "pickDraw": 0.5713658691464613,
+          "status": "Waiting"
+        },
+        {
+          "customerId": 83,
+          "npcId": "npc.berk",
+          "valueDraw": 0.25360171208703175,
+          "trustDraw": 0.5244176649638914,
+          "pickDraw": 0.8054793508025518,
+          "status": "Waiting"
+        },
+        {
+          "customerId": 84,
+          "npcId": "npc.ozan",
+          "valueDraw": 0.7666180147282152,
+          "trustDraw": 0.257752054093336,
+          "pickDraw": 0.42260008921047887,
+          "status": "Waiting"
+        },
+        {
+          "customerId": 85,
+          "npcId": "npc.hatice",
+          "valueDraw": 0.3730005651660965,
+          "trustDraw": 0.3669868400741799,
+          "pickDraw": 0.5120871669493438,
+          "status": "Waiting"
+        }
+      ]
+    },
+    "activeNegotiation": {
+      "listingId": 89,
+      "instanceId": 89,
+      "sellerNpcId": "npc.ayse",
+      "lastOfferInsulted": false,
+      "setup": {
+        "ask": 5250,
+        "reject": 4589.854016249886,
+        "floor": 3081.0,
+        "patience": 4,
+        "trust": 59,
+        "urgency": 0.3,
+        "persuasion": 0.9,
+        "wrongCardMultiplier": 1.0,
+        "day": 17
+      },
+      "phase": "Active",
+      "round": 1,
+      "patience": 3,
+      "trust": 59,
+      "reject": 4589.854016249886,
+      "price": 4971.418394857452,
+      "shownPrice": 4970,
+      "dealPrice": 0,
+      "usedCards": []
+    },
+    "activeSale": null
+  }
+}

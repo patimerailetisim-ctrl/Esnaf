@@ -34,6 +34,24 @@ namespace Esnaf.Domain.Npc
             return _states.TryGetValue(npcId, out state);
         }
 
+        /// <summary>Kayıttan yükleme: bir NPC'nin durumunu olduğu gibi yazar.</summary>
+        internal void Restore(string npcId, int encounterCount, IEnumerable<long> soldToPlayer, IEnumerable<long> boughtFromPlayer)
+        {
+            NpcState state = GetOrCreate(npcId);
+            state.EncounterCount = encounterCount;
+            foreach (long id in soldToPlayer)
+            {
+                RequireInstance(id);
+                state.AddSoldToPlayer(id);
+            }
+
+            foreach (long id in boughtFromPlayer)
+            {
+                RequireInstance(id);
+                state.AddBoughtFromPlayer(id);
+            }
+        }
+
         public void RecordEncounter(string npcId)
         {
             GetOrCreate(npcId).EncounterCount++;

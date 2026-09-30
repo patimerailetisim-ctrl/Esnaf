@@ -78,6 +78,28 @@ namespace Esnaf.Domain.Economy
             return result;
         }
 
+        /// <summary>
+        /// İçerik değişikliği iadesi (GDD v0.3 6.7): içerikte artık olmayan bir ürünün alış fiyatı kadar nakit geri verilir.
+        /// Yalnızca kayıt yüklenirken kullanılır; kâr etkisi yoktur.
+        /// </summary>
+        public Result<TransactionRecord> RecordContentRefund(long instanceId, string definitionId, Money amount, int day)
+        {
+            if (!IsPositiveRounded(amount))
+            {
+                return Result<TransactionRecord>.Fail("amount.invalid", "A refund must be positive and a multiple of 10 TL.");
+            }
+
+            Money oldCash = _state.Cash;
+            Result<TransactionRecord> result = _state.Ledger.Append(
+                TransactionTypeIds.ContentRefund, amount, day, instanceId, definitionId);
+            if (result.IsSuccess)
+            {
+                Publish(result.Value, oldCash);
+            }
+
+            return result;
+        }
+
         public Result<TransactionRecord> RecordSale(long instanceId, string definitionId, string buyerNpcId, Money price, Money costBasis, int day)
         {
             if (!IsPositiveRounded(price) || costBasis.IsNegative || !costBasis.IsRoundedTo10)
