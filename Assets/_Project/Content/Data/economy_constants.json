@@ -3,6 +3,21 @@
   "openingCapital": 250000,
   "dailyExpense": { "fromDay": 3, "amount": 500 },
   "initialShelfCapacity": 6,
+  "customers": {
+    "shopPremium": 0.05,
+    "shopPremiumCap": 0.12,
+    "maxRatioToTrueValue": 1.25,
+    "count": { "base": 2, "perShelfItem": 0.5, "max": 5 },
+    "richQuota": { "npcIds": [ "npc.berk", "npc.nermin" ], "maxPerDay": 1 }
+  },
+  "demand": {
+    "liveFromDay": 5,
+    "dailyNoise": 0.02,
+    "meanReversion": 0.20,
+    "min": 0.90,
+    "max": 1.10,
+    "salesPressure": { "perSale": 0.985, "windowDays": 5, "floor": 0.90 }
+  },
   "market": {
     "listingCounts": [
       { "fromDay": 1, "min": 3, "max": 3 },

@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+
 namespace Esnaf.Domain.Negotiation
 {
     /// <summary>
@@ -36,6 +40,18 @@ namespace Esnaf.Domain.Negotiation
         /// <summary>Koz kartları R'yi gerçek değerin bu oranının altına indiremez (taban).</summary>
         public double RejectFloorRatio { get; }
 
+        /// <summary>Satışta: oyuncunun istediği fiyat M × bu orandan yüksekse "çok pahalı" (hakaret); etiket de bu oranı aşarsa müşteri ilgilenmez.</summary>
+        public double SellTooExpensiveRatio { get; }
+
+        /// <summary>"Rapor göster" için geçerli ekspertiz seviyeleri (S2/S3).</summary>
+        public IReadOnlyList<string> SellReportLevelIds { get; }
+
+        /// <summary>Rapor gösterilince müşterinin değer hatası (σ) bu çarpanla küçülür (0,5 = yarıya).</summary>
+        public double SellReportSigmaFactor { get; }
+
+        /// <summary>Rapor gösterilince müşterinin güven kazancı (Rıza Bey gibi NPC'ler kendi değerini verir).</summary>
+        public int SellReportTrustGain { get; }
+
         public int StartTrust { get; }
         public int StartTrustSpread { get; }
 
@@ -69,8 +85,21 @@ namespace Esnaf.Domain.Negotiation
             int moodLowBelow,
             int moodHighFrom,
             int patienceLowAtMost,
-            int patienceMediumAtMost)
+            int patienceMediumAtMost,
+            double sellTooExpensiveRatio,
+            IEnumerable<string> sellReportLevelIds,
+            double sellReportSigmaFactor,
+            int sellReportTrustGain)
         {
+            if (sellReportLevelIds == null)
+            {
+                throw new ArgumentNullException(nameof(sellReportLevelIds));
+            }
+
+            SellTooExpensiveRatio = sellTooExpensiveRatio;
+            SellReportLevelIds = new ReadOnlyCollection<string>(new List<string>(sellReportLevelIds));
+            SellReportSigmaFactor = sellReportSigmaFactor;
+            SellReportTrustGain = sellReportTrustGain;
             PriceBaseShare = priceBaseShare;
             PriceTrustShare = priceTrustShare;
             PriceUrgencyShare = priceUrgencyShare;

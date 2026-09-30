@@ -148,6 +148,47 @@ namespace Esnaf.Domain.Content
         public DailyExpenseDto DailyExpense { get; set; }
         public int? InitialShelfCapacity { get; set; }
         public MarketDto Market { get; set; }
+        public CustomersDto Customers { get; set; }
+        public DemandDto Demand { get; set; }
+    }
+
+    internal sealed class CustomersDto
+    {
+        public double? ShopPremium { get; set; }
+        public double? ShopPremiumCap { get; set; }
+        public double? MaxRatioToTrueValue { get; set; }
+        public CustomerCountDto Count { get; set; }
+        public RichQuotaDto RichQuota { get; set; }
+    }
+
+    internal sealed class CustomerCountDto
+    {
+        public int? Base { get; set; }
+        public double? PerShelfItem { get; set; }
+        public int? Max { get; set; }
+    }
+
+    internal sealed class RichQuotaDto
+    {
+        public List<string> NpcIds { get; set; }
+        public int? MaxPerDay { get; set; }
+    }
+
+    internal sealed class DemandDto
+    {
+        public int? LiveFromDay { get; set; }
+        public double? DailyNoise { get; set; }
+        public double? MeanReversion { get; set; }
+        public double? Min { get; set; }
+        public double? Max { get; set; }
+        public SalesPressureDto SalesPressure { get; set; }
+    }
+
+    internal sealed class SalesPressureDto
+    {
+        public double? PerSale { get; set; }
+        public int? WindowDays { get; set; }
+        public double? Floor { get; set; }
     }
 
     internal sealed class DailyExpenseDto
@@ -295,6 +336,9 @@ namespace Esnaf.Domain.Content
         public int? Patience { get; set; }
         public double? ValueSigma { get; set; }
         public double? PackageRatio { get; set; }
+        public int? AvailableFromDay { get; set; }
+        public List<string> Segments { get; set; }
+        public int? ReportTrustGain { get; set; }
     }
 
     // ---- appraisal_levels.json ----
@@ -356,6 +400,7 @@ namespace Esnaf.Domain.Content
         public NegotiationInsultDto Insult { get; set; }
         public NegotiationNearOfferDto NearOffer { get; set; }
         public NegotiationCardDto Card { get; set; }
+        public NegotiationSellDto Sell { get; set; }
         public NegotiationStartDto Start { get; set; }
         public NegotiationViewDto View { get; set; }
     }
@@ -389,6 +434,14 @@ namespace Esnaf.Domain.Content
         public string ReportLevelId { get; set; }
         public double? ReportPersuasionBonus { get; set; }
         public double? RejectFloorRatio { get; set; }
+    }
+
+    internal sealed class NegotiationSellDto
+    {
+        public double? TooExpensiveRatio { get; set; }
+        public List<string> ReportLevelIds { get; set; }
+        public double? ReportSigmaFactor { get; set; }
+        public int? ReportTrustGain { get; set; }
     }
 
     internal sealed class NegotiationStartDto

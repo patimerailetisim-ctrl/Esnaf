@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
@@ -54,6 +55,7 @@ namespace Esnaf.Domain.Game
             sb.Append("ids.instance=").Append(N(session.InstanceIds.LastIssued)).Append('\n');
             sb.Append("ids.listing=").Append(N(session.ListingIds.LastIssued)).Append('\n');
             sb.Append("ids.appraisal=").Append(N(session.AppraisalIds.LastIssued)).Append('\n');
+            sb.Append("ids.customer=").Append(N(session.CustomerIds.LastIssued)).Append('\n');
 
             AppendEconomy(sb, session);
             AppendInventory(sb, session);
@@ -62,6 +64,7 @@ namespace Esnaf.Domain.Game
             AppendNpcs(sb, session);
             AppendKnowledge(sb, session);
             AppendTrade(sb, session);
+            AppendBusiness(sb, session);
             AppendRng(sb, session);
             return sb.ToString();
         }
@@ -98,6 +101,59 @@ namespace Esnaf.Domain.Game
                 .Append('|').Append(Bits(n.Setup.WrongCardMultiplier))
                 .Append('|').Append(N(n.Setup.Day))
                 .Append('\n');
+        }
+
+        private static void AppendBusiness(StringBuilder sb, GameSession session)
+        {
+            CustomerState customers = session.Customers.State;
+            sb.Append("customers.arrived=").Append(N(customers.Arrived)).Append('\n');
+            sb.Append("customers.missedTotal=").Append(N(customers.MissedTotal)).Append('\n');
+            foreach (CustomerSlot slot in customers.Slots)
+            {
+                sb.Append("K|").Append(N(slot.CustomerId))
+                    .Append('|').Append(E(slot.NpcId))
+                    .Append('|').Append(Bits(slot.ValueDraw))
+                    .Append('|').Append(Bits(slot.TrustDraw))
+                    .Append('|').Append(Bits(slot.PickDraw))
+                    .Append('|').Append(N((int)slot.Status))
+                    .Append('\n');
+            }
+
+            ActiveSale sale = session.TradeState.CurrentSale;
+            if (sale != null)
+            {
+                SaleState n = sale.State;
+                sb.Append("S|").Append(N(sale.CustomerId))
+                    .Append('|').Append(N(sale.InstanceId))
+                    .Append('|').Append(E(sale.NpcId))
+                    .Append('|').Append(N((int)n.Phase))
+                    .Append('|').Append(N(n.Round))
+                    .Append('|').Append(N(n.Patience))
+                    .Append('|').Append(N(n.Trust))
+                    .Append('|').Append(Bits(n.Max))
+                    .Append('|').Append(Bits(n.Offer))
+                    .Append('|').Append(N(n.ShownPrice.Tl))
+                    .Append('|').Append(N(n.DealPrice.Tl))
+                    .Append('|').Append(n.ReportShown ? "1" : "0")
+                    .Append('|').Append(sale.LastAskTooExpensive ? "1" : "0")
+                    .Append('|').Append(N(n.Setup.Opening.Tl))
+                    .Append('|').Append(Bits(n.Setup.Max))
+                    .Append('|').Append(N(n.Setup.Patience))
+                    .Append('|').Append(N(n.Setup.Trust))
+                    .Append('|').Append(Bits(n.Setup.Urgency))
+                    .Append('|').Append(N(n.Setup.Day))
+                    .Append('\n');
+            }
+
+            foreach (KeyValuePair<string, double> index in session.DemandState.Indexes)
+            {
+                sb.Append("D|").Append(E(index.Key)).Append('|').Append(Bits(index.Value)).Append('\n');
+            }
+
+            foreach (DemandSale demandSale in session.DemandState.Sales)
+            {
+                sb.Append("T|").Append(E(demandSale.ModelId)).Append('|').Append(N(demandSale.Day)).Append('\n');
+            }
         }
 
         /// <summary>double'ı kültürden bağımsız, kesin (bit deseni) yazar.</summary>
@@ -158,6 +214,7 @@ namespace Esnaf.Domain.Game
                     .Append('|').Append(i.AcquiredDay.HasValue ? N(i.AcquiredDay.Value) : string.Empty)
                     .Append('|').Append(N(i.PurchasePrice.Tl))
                     .Append('|').Append(N(i.CostBasis.Tl))
+                    .Append('|').Append(N(i.ListPrice.Tl))
                     .Append('|').Append(((int)i.Location).ToString(CultureInfo.InvariantCulture))
                     .Append('|').Append(string.Join(";", i.Attributes.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => E(p.Key) + "=" + Value(p.Value))))
                     .Append('\n');

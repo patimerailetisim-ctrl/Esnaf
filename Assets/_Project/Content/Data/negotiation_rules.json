@@ -7,6 +7,7 @@
     "correctTrustGain": 5, "wrongTrustLoss": 10, "wrongPatienceLoss": 1,
     "reportLevelId": "s3", "reportPersuasionBonus": 0.20, "rejectFloorRatio": 0.65
   },
+  "sell": { "tooExpensiveRatio": 1.15, "reportLevelIds": [ "s2", "s3" ], "reportSigmaFactor": 0.5, "reportTrustGain": 10 },
   "start": { "trust": 50, "trustSpread": 10, "rejectMoodSwing": 0.03 },
   "view": { "moodLowBelow": 40, "moodHighFrom": 70, "patienceLowAtMost": 1, "patienceMediumAtMost": 3 }
 }

@@ -79,7 +79,8 @@ namespace Esnaf.Tests.Game
             Assert.AreEqual(3, lines.Count(l => l.StartsWith("I|", StringComparison.Ordinal)), "ürün örnekleri");
             Assert.AreEqual(3, lines.Count(l => l.StartsWith("M|", StringComparison.Ordinal)), "ilanlar");
             Assert.AreEqual(1, lines.Count(l => l.StartsWith("N|", StringComparison.Ordinal)), "NPC durumları");
-            Assert.AreEqual(2, lines.Count(l => l.StartsWith("R|", StringComparison.Ordinal)), "rastgelelik akışları (market, npc)");
+            Assert.AreEqual(3, lines.Count(l => l.StartsWith("R|", StringComparison.Ordinal)), "rastgelelik akışları (customers, market, npc)");
+            Assert.AreEqual(5, lines.Count(l => l.StartsWith("K|", StringComparison.Ordinal)), "müşteri yuvaları");
         }
 
         [Test]
@@ -217,7 +218,7 @@ namespace Esnaf.Tests.Game
             string[] streams = GameStateDigest.Describe(s).Split('\n')
                 .Where(l => l.StartsWith("R|", StringComparison.Ordinal)).Select(l => l.Split('|')[1]).ToArray();
 
-            CollectionAssert.AreEqual(new[] { "alpha", "market", "zeta" }, streams);
+            CollectionAssert.AreEqual(new[] { "alpha", "customers", "market", "zeta" }, streams);
         }
 
         [Test]

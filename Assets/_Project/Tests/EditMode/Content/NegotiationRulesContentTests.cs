@@ -62,6 +62,10 @@ namespace Esnaf.Tests.Content
             Assert.AreEqual("s3", r.ReportLevelId);
             Assert.AreEqual(0.20, r.ReportPersuasionBonus, 1e-12);
             Assert.AreEqual(0.65, r.RejectFloorRatio, 1e-12);
+            Assert.AreEqual(1.15, r.SellTooExpensiveRatio, 1e-12);
+            CollectionAssert.AreEqual(new[] { "s2", "s3" }, r.SellReportLevelIds.ToArray());
+            Assert.AreEqual(0.5, r.SellReportSigmaFactor, 1e-12);
+            Assert.AreEqual(10, r.SellReportTrustGain);
             Assert.AreEqual(50, r.StartTrust);
             Assert.AreEqual(10, r.StartTrustSpread);
             Assert.AreEqual(0.03, r.RejectMoodSwing, 1e-12);
@@ -92,6 +96,11 @@ namespace Esnaf.Tests.Content
             new object[] { "reportLevelId", new[] { "\"card\"" }, "card.reportLevelId" },
             new object[] { "reportPersuasionBonus", new[] { "\"card\"" }, "card.reportPersuasionBonus" },
             new object[] { "rejectFloorRatio", new[] { "\"card\"" }, "card.rejectFloorRatio" },
+            new object[] { "sell", new string[0], "sell" },
+            new object[] { "tooExpensiveRatio", new[] { "\"sell\"" }, "sell.tooExpensiveRatio" },
+            new object[] { "reportLevelIds", new[] { "\"sell\"" }, "sell.reportLevelIds" },
+            new object[] { "reportSigmaFactor", new[] { "\"sell\"" }, "sell.reportSigmaFactor" },
+            new object[] { "reportTrustGain", new[] { "\"sell\"" }, "sell.reportTrustGain" },
             new object[] { "start", new string[0], "start" },
             new object[] { "trust", new[] { "\"start\"" }, "start.trust" },
             new object[] { "trustSpread", new[] { "\"start\"" }, "start.trustSpread" },
@@ -166,6 +175,15 @@ namespace Esnaf.Tests.Content
             new object[] { "reportPersuasionBonus", "1.1", "card.reportPersuasionBonus", new[] { "\"card\"" } },
             new object[] { "rejectFloorRatio", "0", "card.rejectFloorRatio", new[] { "\"card\"" } },
             new object[] { "rejectFloorRatio", "1.1", "card.rejectFloorRatio", new[] { "\"card\"" } },
+            new object[] { "tooExpensiveRatio", "1.0", "sell.tooExpensiveRatio", new[] { "\"sell\"" } },
+            new object[] { "tooExpensiveRatio", "2.01", "sell.tooExpensiveRatio", new[] { "\"sell\"" } },
+            new object[] { "reportSigmaFactor", "-0.1", "sell.reportSigmaFactor", new[] { "\"sell\"" } },
+            new object[] { "reportSigmaFactor", "1.1", "sell.reportSigmaFactor", new[] { "\"sell\"" } },
+            new object[] { "reportTrustGain", "-1", "sell.reportTrustGain", new[] { "\"sell\"" } },
+            new object[] { "reportTrustGain", "101", "sell.reportTrustGain", new[] { "\"sell\"" } },
+            new object[] { "reportLevelIds", "[]", "sell.reportLevelIds", new[] { "\"sell\"" } },
+            new object[] { "reportLevelIds", "[ \"s2\", \"s2\" ]", "sell.reportLevelIds", new[] { "\"sell\"" } },
+            new object[] { "reportLevelIds", "[ \"\" ]", "sell.reportLevelIds", new[] { "\"sell\"" } },
             new object[] { "trust", "-1", "start.trust", new[] { "\"start\"" } },
             new object[] { "trust", "101", "start.trust", new[] { "\"start\"" } },
             new object[] { "trustSpread", "-1", "start.trustSpread", new[] { "\"start\"" } },
@@ -194,6 +212,12 @@ namespace Esnaf.Tests.Content
         [TestCase("rejectFloorRatio", "1.0", "card")]
         [TestCase("reportPersuasionBonus", "0.0", "card")]
         [TestCase("reportPersuasionBonus", "1.0", "card")]
+        [TestCase("tooExpensiveRatio", "2.0", "sell")]
+        [TestCase("tooExpensiveRatio", "1.01", "sell")]
+        [TestCase("reportSigmaFactor", "0.0", "sell")]
+        [TestCase("reportSigmaFactor", "1.0", "sell")]
+        [TestCase("reportTrustGain", "0", "sell")]
+        [TestCase("reportTrustGain", "100", "sell")]
         [TestCase("trustSpread", "0", "start")]
         [TestCase("trustSpread", "50", "start")]
         [TestCase("rejectMoodSwing", "0.2", "start")]
@@ -334,6 +358,18 @@ namespace Esnaf.Tests.Content
 
             Assert.IsNull(result.Database);
             Assert.IsTrue(result.Issues.Any(i => i.Code == ContentIssueCodes.NegotiationFieldInvalid && i.Message.Contains("s9")));
+        }
+
+        [Test]
+        public void Database_RejectsASellReportLevelThatDoesNotExist()
+        {
+            DictionaryContentSource source = ContentFixtures.ValidSource();
+            source.Add(ContentFileNames.NegotiationRules, Good.Replace("[ \"s2\", \"s3\" ]", "[ \"s2\", \"s7\" ]"));
+
+            ContentLoadResult result = ContentDatabase.Load(source);
+
+            Assert.IsNull(result.Database);
+            Assert.IsTrue(result.Issues.Any(i => i.Code == ContentIssueCodes.NegotiationFieldInvalid && i.Message.Contains("s7")));
         }
 
         [Test]

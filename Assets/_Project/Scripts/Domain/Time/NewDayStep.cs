@@ -19,6 +19,7 @@ namespace Esnaf.Domain.Time
         private readonly ListingGenerator _generator;
         private readonly RngStreams _rng;
         private readonly IEventBus _events;
+        private readonly List<INewDayHook> _hooks;
 
         public string Id
         {
@@ -30,7 +31,7 @@ namespace Esnaf.Domain.Time
             get { return DayEndOrder.NewDay; }
         }
 
-        public NewDayStep(TimeState time, MarketState market, ListingGenerator generator, RngStreams rng, IEventBus events)
+        public NewDayStep(TimeState time, MarketState market, ListingGenerator generator, RngStreams rng, IEventBus events, IEnumerable<INewDayHook> hooks = null)
         {
             if (time == null)
             {
@@ -57,6 +58,7 @@ namespace Esnaf.Domain.Time
             _generator = generator;
             _rng = rng;
             _events = events;
+            _hooks = new List<INewDayHook>(hooks ?? new INewDayHook[0]);
         }
 
         public Result Execute(DayEndContext context)
@@ -80,6 +82,7 @@ namespace Esnaf.Domain.Time
 
             _time.Advance();
             context.NewDay = _time.Day;
+            RunHooks(_time.Day);
             foreach (long id in opened.Value)
             {
                 context.NewListingIds.Add(id);
@@ -104,6 +107,7 @@ namespace Esnaf.Domain.Time
                 return Result.Fail(opened.ErrorCode, opened.Message);
             }
 
+            RunHooks(_time.Day);
             if (_events != null)
             {
                 _events.Publish(new DayStarted(_time.Day));
@@ -111,6 +115,14 @@ namespace Esnaf.Domain.Time
             }
 
             return Result.Ok();
+        }
+
+        private void RunHooks(int day)
+        {
+            for (int i = 0; i < _hooks.Count; i++)
+            {
+                _hooks[i].OnDayOpened(day);
+            }
         }
 
         private Result<IReadOnlyList<long>> Open(int day)

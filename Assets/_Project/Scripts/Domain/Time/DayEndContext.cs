@@ -13,6 +13,9 @@ namespace Esnaf.Domain.Time
         /// <summary>Yeni gün (adım 7 doldurur; öncesinde 0).</summary>
         public int NewDay { get; set; }
 
+        /// <summary>Adım 1: gün içinde satın almadan giden (kaçan) müşteri sayısı.</summary>
+        public int MissedCustomers { get; set; }
+
         /// <summary>Adım 2: o gün işlenen günlük gider (0 olabilir).</summary>
         public Money ExpenseCharged { get; set; }
 

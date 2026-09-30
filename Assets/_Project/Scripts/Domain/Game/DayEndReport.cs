@@ -27,6 +27,9 @@ namespace Esnaf.Domain.Game
         /// <summary>Biten günün özeti (Gün Sonu Özeti ekranı).</summary>
         public DaySummary Summary { get; }
 
+        /// <summary>Gün sonu adım 1: satın almadan giden müşteri sayısı.</summary>
+        public int MissedCustomers { get; }
+
         public DayEndReport(
             int endedDay,
             int newDay,
@@ -34,7 +37,8 @@ namespace Esnaf.Domain.Game
             IEnumerable<long> expiredListingIds,
             IEnumerable<long> newListingIds,
             IEnumerable<string> executedSteps,
-            DaySummary summary)
+            DaySummary summary,
+            int missedCustomers = 0)
         {
             if (expiredListingIds == null)
             {
@@ -63,6 +67,7 @@ namespace Esnaf.Domain.Game
             NewListingIds = new ReadOnlyCollection<long>(new List<long>(newListingIds));
             ExecutedSteps = new ReadOnlyCollection<string>(new List<string>(executedSteps));
             Summary = summary;
+            MissedCustomers = missedCustomers;
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Inventory;
@@ -34,6 +35,7 @@ namespace Esnaf.Domain.Negotiation
         private readonly TimeState _time;
         private readonly TradeState _state;
         private readonly IEventBus _events;
+        private readonly CustomerService _customers;
         private readonly NegotiationEngine _engine;
         private readonly NegotiationSetupFactory _factory;
         private readonly ValueCalculator _calculator;
@@ -50,7 +52,8 @@ namespace Esnaf.Domain.Negotiation
             RngStreams rng,
             TimeState time,
             TradeState state,
-            IEventBus events)
+            IEventBus events,
+            CustomerService customers = null)
         {
             if (content == null || market == null || store == null || inventoryState == null || inventory == null || economy == null
                 || knowledge == null || npcs == null || rng == null || time == null || state == null)
@@ -70,14 +73,10 @@ namespace Esnaf.Domain.Negotiation
             _time = time;
             _state = state;
             _events = events;
+            _customers = customers;
             _engine = new NegotiationEngine(content.Negotiation);
             _factory = new NegotiationSetupFactory(content.Negotiation);
             _calculator = new ValueCalculator(content.ValueTables);
-        }
-
-        public bool IsNegotiating
-        {
-            get { return _state.Current != null; }
         }
 
         /// <summary>Süren pazarlığın görünümü; yoksa null.</summary>
@@ -89,7 +88,7 @@ namespace Esnaf.Domain.Negotiation
 
         public Result<NegotiationView> Start(long listingId)
         {
-            if (_state.Current != null)
+            if (_state.IsBusy)
             {
                 return Result<NegotiationView>.Fail("negotiation.in_progress", "Finish the current negotiation first.");
             }
@@ -229,6 +228,10 @@ namespace Esnaf.Domain.Negotiation
             _market.Remove(active.ListingId);
             _npcs.RecordSoldToPlayer(active.SellerNpcId, active.InstanceId);
             _state.Current = null;
+            if (_customers != null)
+            {
+                _customers.RefreshArrivals();
+            }
 
             if (_events != null)
             {
@@ -279,12 +282,8 @@ namespace Esnaf.Domain.Negotiation
         private NegotiationView ViewOf(ActiveNegotiation active, NegotiationState state, bool insulted)
         {
             NegotiationRules rules = _content.Negotiation;
-            NegotiationLevel mood = state.Trust < rules.MoodLowBelow
-                ? NegotiationLevel.Low
-                : state.Trust >= rules.MoodHighFrom ? NegotiationLevel.High : NegotiationLevel.Medium;
-            NegotiationLevel patience = state.Patience <= rules.PatienceLowAtMost
-                ? NegotiationLevel.Low
-                : state.Patience <= rules.PatienceMediumAtMost ? NegotiationLevel.Medium : NegotiationLevel.High;
+            NegotiationLevel mood = NegotiationLevels.MoodOf(rules, state.Trust);
+            NegotiationLevel patience = NegotiationLevels.PatienceOf(rules, state.Patience);
 
             var cards = new List<NegotiationCardView>();
             foreach (AppraisalResult appraisal in _knowledge.ForInstance(active.InstanceId))

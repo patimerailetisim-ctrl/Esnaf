@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Inventory;
@@ -34,8 +35,13 @@ namespace Esnaf.Domain.Game
         public KnowledgeState Knowledge { get; }
         public EquipmentState Equipment { get; }
         public AppraisalService Appraisal { get; }
+        public IdGenerator CustomerIds { get; }
+        public CustomerService Customers { get; }
+        public DemandState DemandState { get; }
+        public DemandModel Demand { get; }
         public TradeState TradeState { get; }
         public TradeService Trade { get; }
+        public SellService Sell { get; }
         public EconomyState EconomyState { get; }
         public EconomyService EconomyService { get; }
         public InventoryState InventoryState { get; }
@@ -79,16 +85,23 @@ namespace Esnaf.Domain.Game
 
             Appraisal = new AppraisalService(content, Knowledge, Equipment, EconomyService, Store, AppraisalIds, bus, seed);
 
+            DemandState = new DemandState();
+            Demand = new DemandModel(content.Demand, DemandState);
+            CustomerIds = new IdGenerator();
+            Customers = new CustomerService(content, new CustomerState(), CustomerIds, Store, InventoryState, Npcs, Demand, Time, Rng);
             TradeState = new TradeState();
             Trade = new TradeService(
-                content, Market, Store, InventoryState, InventoryService, EconomyService, Knowledge, Npcs, Rng, Time, TradeState, bus);
+                content, Market, Store, InventoryState, InventoryService, EconomyService, Knowledge, Npcs, Rng, Time, TradeState, bus, Customers);
+            Sell = new SellService(content, Customers, TradeState, InventoryService, Store, Npcs, Demand, Knowledge, Time, bus);
 
             ListingGenerator = new ListingGenerator(content, Store, InstanceIds, ListingIds);
-            var newDay = new NewDayStep(Time, Market, ListingGenerator, Rng, bus);
+            var newDay = new NewDayStep(Time, Market, ListingGenerator, Rng, bus, new INewDayHook[] { Customers });
             DayEnd = new DayEndPipeline(new IDayEndStep[]
             {
+                new MissedCustomersStep(Customers),
                 new DailyExpenseStep(EconomyService),
                 new ListingExpiryStep(Market, Store, EconomyService, bus),
+                new DemandUpdateStep(Demand, Rng, content),
                 newDay
             });
             Api = new GameApi(this);

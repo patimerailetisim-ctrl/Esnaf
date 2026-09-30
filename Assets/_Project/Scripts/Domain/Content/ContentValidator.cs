@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
@@ -564,6 +565,26 @@ namespace Esnaf.Domain.Content
             if (c.PackageRatio < 1.0)
             {
                 NpcField(issues, fileName, label, "customer.packageRatio", "must be at least 1.");
+            }
+
+            if (c.AvailableFromDay < 1)
+            {
+                NpcField(issues, fileName, label, "customer.availableFromDay", "must be at least 1.");
+            }
+
+            if (c.ReportTrustGain.HasValue && (c.ReportTrustGain.Value < 0 || c.ReportTrustGain.Value > 100))
+            {
+                NpcField(issues, fileName, label, "customer.reportTrustGain", "must be in [0, 100].");
+            }
+
+            var seenSegments = new HashSet<ProductSegment>();
+            foreach (ProductSegment segment in c.Segments)
+            {
+                if (!seenSegments.Add(segment))
+                {
+                    NpcField(issues, fileName, label, "customer.segments", "lists '" + segment + "' more than once.");
+                    break;
+                }
             }
         }
 
@@ -1184,6 +1205,138 @@ namespace Esnaf.Domain.Content
             }
         }
 
+        private const double MaxShopPremiumCap = 0.5;
+        private const double MaxRatioCeiling = 3.0;
+        private const double MaxDemandNoise = 0.5;
+
+        /// <summary>economy_constants.json "customers" bölümü: değer aralıkları (NPC başvuruları ayrıca <see cref="ValidateCustomerLinks"/>'te).</summary>
+        public static void ValidateCustomers(CustomerConstants c, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (c.ShopPremiumCap < 0.0 || c.ShopPremiumCap > MaxShopPremiumCap)
+            {
+                CustomerField(issues, fileName, "customers.shopPremiumCap", "must be in [0, " + MaxShopPremiumCap + "].");
+            }
+
+            if (c.ShopPremium < 0.0 || c.ShopPremium > c.ShopPremiumCap)
+            {
+                CustomerField(issues, fileName, "customers.shopPremium", "must be in [0, shopPremiumCap].");
+            }
+
+            if (c.MaxRatioToTrueValue < 1.0 || c.MaxRatioToTrueValue > MaxRatioCeiling)
+            {
+                CustomerField(issues, fileName, "customers.maxRatioToTrueValue", "must be in [1, " + MaxRatioCeiling + "].");
+            }
+
+            if (c.CountMax < 1)
+            {
+                CustomerField(issues, fileName, "customers.count.max", "must be at least 1.");
+            }
+
+            if (c.CountBase < 0 || (c.CountMax >= 1 && c.CountBase > c.CountMax))
+            {
+                CustomerField(issues, fileName, "customers.count.base", "must be in [0, max].");
+            }
+
+            if (c.CountPerShelfItem < 0.0)
+            {
+                CustomerField(issues, fileName, "customers.count.perShelfItem", "must not be negative.");
+            }
+
+            if (c.RichMaxPerDay < 0)
+            {
+                CustomerField(issues, fileName, "customers.richQuota.maxPerDay", "must not be negative.");
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string id in c.RichNpcIds)
+            {
+                if (string.IsNullOrWhiteSpace(id) || !seen.Add(id))
+                {
+                    CustomerField(issues, fileName, "customers.richQuota.npcIds", "ids must be non-empty and unique.");
+                    break;
+                }
+            }
+        }
+
+        /// <summary>Zengin müşteri kotasındaki kimlikler ve Gün 1 müşteri havuzu NPC'lerle çapraz denetlenir.</summary>
+        public static void ValidateCustomerLinks(CustomerConstants c, IReadOnlyList<NpcDefinition> npcs, string fileName, ICollection<ContentIssue> issues)
+        {
+            var known = new HashSet<string>(StringComparer.Ordinal);
+            bool dayOne = false;
+            foreach (NpcDefinition npc in npcs)
+            {
+                known.Add(npc.Id);
+                dayOne |= npc.Customer.AvailableFromDay <= 1;
+            }
+
+            foreach (string id in c.RichNpcIds)
+            {
+                if (!known.Contains(id))
+                {
+                    CustomerField(issues, fileName, "customers.richQuota.npcIds", "unknown NPC '" + id + "'.");
+                }
+            }
+
+            if (!dayOne)
+            {
+                CustomerField(issues, fileName, "customers", "at least one NPC must be available as a customer on day 1.");
+            }
+        }
+
+        /// <summary>economy_constants.json "demand" bölümü.</summary>
+        public static void ValidateDemand(DemandConstants d, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (d.LiveFromDay < 1)
+            {
+                DemandField(issues, fileName, "demand.liveFromDay", "must be at least 1.");
+            }
+
+            if (d.DailyNoise < 0.0 || d.DailyNoise >= MaxDemandNoise)
+            {
+                DemandField(issues, fileName, "demand.dailyNoise", "must be in [0, " + MaxDemandNoise + ").");
+            }
+
+            if (d.MeanReversion < 0.0 || d.MeanReversion > 1.0)
+            {
+                DemandField(issues, fileName, "demand.meanReversion", "must be in [0, 1].");
+            }
+
+            if (d.Min <= 0.0 || d.Min > 1.0)
+            {
+                DemandField(issues, fileName, "demand.min", "must be in (0, 1].");
+            }
+
+            if (d.Max < 1.0)
+            {
+                DemandField(issues, fileName, "demand.max", "must be at least 1.");
+            }
+
+            if (d.PressurePerSale <= 0.0 || d.PressurePerSale > 1.0)
+            {
+                DemandField(issues, fileName, "demand.salesPressure.perSale", "must be in (0, 1].");
+            }
+
+            if (d.PressureWindowDays < 1)
+            {
+                DemandField(issues, fileName, "demand.salesPressure.windowDays", "must be at least 1.");
+            }
+
+            if (d.PressureFloor <= 0.0 || d.PressureFloor > 1.0)
+            {
+                DemandField(issues, fileName, "demand.salesPressure.floor", "must be in (0, 1].");
+            }
+        }
+
+        private static void CustomerField(ICollection<ContentIssue> issues, string fileName, string label, string rule)
+        {
+            issues.Add(ContentIssue.Error(ContentIssueCodes.CustomerFieldInvalid, fileName, label + ": " + rule));
+        }
+
+        private static void DemandField(ICollection<ContentIssue> issues, string fileName, string label, string rule)
+        {
+            issues.Add(ContentIssue.Error(ContentIssueCodes.DemandFieldInvalid, fileName, label + ": " + rule));
+        }
+
         private const double MaxWrongCardPenaltyMultiplier = 5.0;
         private const double MaxMoodSwing = 0.2;
 
@@ -1272,6 +1425,36 @@ namespace Esnaf.Domain.Content
                 NegotiationField(issues, fileName, "card.rejectFloorRatio", "must be in (0, 1].");
             }
 
+            if (r.SellTooExpensiveRatio <= 1.0 || r.SellTooExpensiveRatio > 2.0)
+            {
+                NegotiationField(issues, fileName, "sell.tooExpensiveRatio", "must be in (1, 2].");
+            }
+
+            if (r.SellReportSigmaFactor < 0.0 || r.SellReportSigmaFactor > 1.0)
+            {
+                NegotiationField(issues, fileName, "sell.reportSigmaFactor", "must be in [0, 1].");
+            }
+
+            if (r.SellReportTrustGain < 0 || r.SellReportTrustGain > 100)
+            {
+                NegotiationField(issues, fileName, "sell.reportTrustGain", "must be in [0, 100].");
+            }
+
+            var reportIds = new HashSet<string>(StringComparer.Ordinal);
+            if (r.SellReportLevelIds.Count == 0)
+            {
+                NegotiationField(issues, fileName, "sell.reportLevelIds", "needs at least one level.");
+            }
+
+            foreach (string id in r.SellReportLevelIds)
+            {
+                if (string.IsNullOrWhiteSpace(id) || !reportIds.Add(id))
+                {
+                    NegotiationField(issues, fileName, "sell.reportLevelIds", "ids must be non-empty and unique.");
+                    break;
+                }
+            }
+
             if (r.StartTrustSpread < 0)
             {
                 NegotiationField(issues, fileName, "start.trustSpread", "must not be negative.");
@@ -1321,6 +1504,14 @@ namespace Esnaf.Domain.Content
             if (!string.IsNullOrWhiteSpace(r.ReportLevelId) && !appraisal.TryGetLevel(r.ReportLevelId, out level))
             {
                 NegotiationField(issues, fileName, "card.reportLevelId", "unknown appraisal level '" + r.ReportLevelId + "'.");
+            }
+
+            foreach (string id in r.SellReportLevelIds)
+            {
+                if (!appraisal.TryGetLevel(id, out level))
+                {
+                    NegotiationField(issues, fileName, "sell.reportLevelIds", "unknown appraisal level '" + id + "'.");
+                }
             }
         }
 

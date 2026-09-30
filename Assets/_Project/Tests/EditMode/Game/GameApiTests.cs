@@ -229,7 +229,7 @@ namespace Esnaf.Tests.Game
             Assert.AreEqual(Money.Zero, report.ExpenseCharged);
             Assert.AreEqual(0, report.ExpiredListingIds.Count, "Gün 1 ilanlarının ömrü en az 2");
             Assert.AreEqual(5, report.NewListingIds.Count);
-            CollectionAssert.AreEqual(new[] { "daily_expense", "listing_expiry", "new_day" }, report.ExecutedSteps.ToArray());
+            CollectionAssert.AreEqual(new[] { "missed_customers", "daily_expense", "listing_expiry", "demand_update", "new_day" }, report.ExecutedSteps.ToArray());
             Assert.AreEqual(1, report.Summary.Day);
             Assert.AreEqual(Money.FromTl(250000), report.Summary.ClosingCash);
             Assert.AreEqual(Money.Zero, report.Summary.NetProfit);

@@ -41,6 +41,9 @@ namespace Esnaf.Domain.Products
         /// <summary>Alış fiyatı + ekspertiz + tamir (kâr hesabı için).</summary>
         public Money CostBasis { get; set; }
 
+        /// <summary>Dükkândaki etiket fiyatı (satışa çıkarılan fiyat); 0 = etiketsiz (müşteri ilgilenmez).</summary>
+        public Money ListPrice { get; set; }
+
         public ProductLocation Location { get; set; }
 
         public long GetNumber(string key)

@@ -107,8 +107,8 @@ namespace Esnaf.Tests.Game
         {
             GameSession s = New();
 
-            CollectionAssert.AreEqual(new[] { "daily_expense", "listing_expiry", "new_day" }, s.DayEnd.Steps.Select(x => x.Id).ToArray());
-            CollectionAssert.AreEqual(new[] { 2, 4, 7 }, s.DayEnd.Steps.Select(x => x.Order).ToArray());
+            CollectionAssert.AreEqual(new[] { "missed_customers", "daily_expense", "listing_expiry", "demand_update", "new_day" }, s.DayEnd.Steps.Select(x => x.Id).ToArray());
+            CollectionAssert.AreEqual(new[] { 1, 2, 4, 5, 7 }, s.DayEnd.Steps.Select(x => x.Order).ToArray());
         }
 
         [Test]

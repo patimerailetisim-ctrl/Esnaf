@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
@@ -30,7 +31,7 @@ namespace Esnaf.Domain.Game
 
         public Result<DayEndReport> EndDay()
         {
-            if (_session.Trade.IsNegotiating)
+            if (_session.TradeState.IsBusy)
             {
                 return Result<DayEndReport>.Fail("negotiation.in_progress", "Finish or leave the negotiation before ending the day.");
             }
@@ -51,7 +52,8 @@ namespace Esnaf.Domain.Game
                 context.ExpiredListingIds,
                 context.NewListingIds,
                 context.ExecutedStepIds,
-                summary));
+                summary,
+                context.MissedCustomers));
         }
 
         public Result<NegotiationView> StartNegotiation(long listingId)
@@ -77,6 +79,46 @@ namespace Esnaf.Domain.Game
         public Result<NegotiationView> WalkAway()
         {
             return _session.Trade.WalkAway();
+        }
+
+        public Result SetPrice(long instanceId, Money price)
+        {
+            return _session.InventoryService.SetPrice(instanceId, price);
+        }
+
+        public Result<SaleView> StartSale(long customerId)
+        {
+            return _session.Sell.Start(customerId);
+        }
+
+        public Result<SaleView> AskPrice(Money ask)
+        {
+            return _session.Sell.Ask(ask);
+        }
+
+        public Result<SaleView> ShowReport(long appraisalId)
+        {
+            return _session.Sell.ShowReport(appraisalId);
+        }
+
+        public Result<SaleView> AcceptCustomerFinalOffer()
+        {
+            return _session.Sell.AcceptFinal();
+        }
+
+        public Result<SaleView> LetCustomerGo()
+        {
+            return _session.Sell.Leave();
+        }
+
+        public IReadOnlyList<CustomerView> GetCustomers()
+        {
+            return _session.Sell.GetCustomers();
+        }
+
+        public SaleView GetSale()
+        {
+            return _session.Sell.GetCurrent();
         }
 
         public NegotiationView GetNegotiation()

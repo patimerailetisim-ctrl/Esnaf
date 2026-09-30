@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
@@ -48,7 +49,37 @@ namespace Esnaf.Domain.Game
         /// <summary>Masadan kalkar: pazarlık biter, ilan kalkar, bekleyen ekspertiz ücreti gider yazılır.</summary>
         Result<NegotiationView> WalkAway();
 
+        /// <summary>Raftaki ürüne etiket fiyatı koyar/değiştirir (Gün 8). Etiketsiz ürüne müşteri ilgilenmez. Hatalar: instance.unknown, instance.not_in_inventory, price.invalid.</summary>
+        Result SetPrice(long instanceId, Money price);
+
+        /// <summary>
+        /// Gelen bir müşteriyle satış pazarlığı açar. Aynı anda tek pazarlık (alış ya da satış) olur; sürerken gün bitirilemez.
+        /// Hatalar: customer.unknown, customer.no_interest, negotiation.in_progress.
+        /// </summary>
+        Result<SaleView> StartSale(long customerId);
+
+        /// <summary>
+        /// Süren satışta bir fiyat İSTER. İstenen fiyat müşterinin yeni teklifine eşit/altındaysa anlaşılır ve satış müşterinin teklifi üzerinden olur.
+        /// Hatalar: sale.none, negotiation.closed / final_offer_only, ask.invalid.
+        /// </summary>
+        Result<SaleView> AskPrice(Money ask);
+
+        /// <summary>"Rapor göster": S2/S3 raporu müşterinin değer hatasını yarıya indirir, güvenini artırır. Hatalar: sale.none, report.unknown / not_eligible / already_shown.</summary>
+        Result<SaleView> ShowReport(long appraisalId);
+
+        /// <summary>Müşterinin "son teklifim" fiyatını (sabır bitince) kabul eder. Hata: negotiation.no_final_offer.</summary>
+        Result<SaleView> AcceptCustomerFinalOffer();
+
+        /// <summary>Müşteriyi yolcu eder: pazarlık biter, ürün rafta kalır, müşteri o gün geri gelmez.</summary>
+        Result<SaleView> LetCustomerGo();
+
         // ---- sorgular ----
+
+        /// <summary>Şu an dükkânda olan ve bir ürünle ilgilenen müşteriler (gizli değer yok).</summary>
+        IReadOnlyList<CustomerView> GetCustomers();
+
+        /// <summary>Süren satış pazarlığının görünümü; yoksa null.</summary>
+        SaleView GetSale();
 
         /// <summary>Süren pazarlığın görünümü (ruh hali/sabır kademesi, koz kartları); pazarlık yoksa null.</summary>
         NegotiationView GetNegotiation();

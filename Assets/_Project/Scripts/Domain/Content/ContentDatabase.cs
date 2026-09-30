@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
@@ -44,6 +45,12 @@ namespace Esnaf.Domain.Content
         /// <summary>Alış pazarlığı kuralları (negotiation_rules.json).</summary>
         public NegotiationRules Negotiation { get; }
 
+        /// <summary>Müşteri üretimi sabitleri (economy_constants.json "customers").</summary>
+        public CustomerConstants Customers { get; }
+
+        /// <summary>Talep modeli sabitleri (economy_constants.json "demand").</summary>
+        public DemandConstants Demand { get; }
+
         /// <summary>Pazar (ilan üretimi) sabitleri (economy_constants.json "market" bölümü).</summary>
         public MarketConstants MarketConstants { get; }
 
@@ -68,8 +75,12 @@ namespace Esnaf.Domain.Content
             MarketConstants marketConstants,
             IEnumerable<NpcDefinition> npcs,
             AppraisalConfig appraisal,
-            NegotiationRules negotiation)
+            NegotiationRules negotiation,
+            CustomerConstants customers,
+            DemandConstants demand)
         {
+            Customers = customers;
+            Demand = demand;
             Appraisal = appraisal;
             Negotiation = negotiation;
             TransactionTypes = transactionTypes;
@@ -237,6 +248,8 @@ namespace Esnaf.Domain.Content
             // Ekonomi sabitleri (+ pazar bölümü)
             EconomyConstants economyConstants = null;
             MarketConstants marketConstants = null;
+            CustomerConstants customerConstants = null;
+            DemandConstants demandConstants = null;
             if (!source.TryGetText(ContentFileNames.EconomyConstants, out text))
             {
                 issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.EconomyConstants, "Content file not found."));
@@ -250,6 +263,17 @@ namespace Esnaf.Domain.Content
                 }
 
                 marketConstants = ContentParser.ParseMarketConstants(ContentFileNames.EconomyConstants, text, issues);
+                customerConstants = ContentParser.ParseCustomerConstants(ContentFileNames.EconomyConstants, text, issues);
+                if (customerConstants != null)
+                {
+                    ContentValidator.ValidateCustomers(customerConstants, ContentFileNames.EconomyConstants, issues);
+                }
+
+                demandConstants = ContentParser.ParseDemandConstants(ContentFileNames.EconomyConstants, text, issues);
+                if (demandConstants != null)
+                {
+                    ContentValidator.ValidateDemand(demandConstants, ContentFileNames.EconomyConstants, issues);
+                }
             }
 
             // NPC profilleri
@@ -280,6 +304,11 @@ namespace Esnaf.Domain.Content
                 {
                     ContentValidator.ValidateAppraisal(appraisal, valueTables, ContentFileNames.AppraisalLevels, issues);
                 }
+            }
+
+            if (customerConstants != null && npcs != null)
+            {
+                ContentValidator.ValidateCustomerLinks(customerConstants, npcs, ContentFileNames.EconomyConstants, issues);
             }
 
             // Pazarlık kuralları (rapor seviyesi ekspertiz seviyeleriyle çapraz denetlenir)
@@ -345,14 +374,16 @@ namespace Esnaf.Domain.Content
                 || marketConstants == null
                 || npcs == null
                 || appraisal == null
-                || negotiation == null)
+                || negotiation == null
+                || customerConstants == null
+                || demandConstants == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
             return new ContentLoadResult(
                 new ContentDatabase(
-                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal, negotiation),
+                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal, negotiation, customerConstants, demandConstants),
                 issues);
         }
 

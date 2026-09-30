@@ -89,6 +89,34 @@ namespace Esnaf.Domain.Inventory
             return Result.Ok();
         }
 
+        /// <summary>Raftaki ürüne etiket fiyatı koyar/değiştirir (GDD v0.3 3.5 ItemPriced). Etiketsiz ürüne müşteri ilgilenmez.</summary>
+        public Result SetPrice(long instanceId, Money price)
+        {
+            ProductInstance instance;
+            if (!_store.TryGet(instanceId, out instance))
+            {
+                return Result.Fail("instance.unknown", "Unknown product instance " + instanceId + ".");
+            }
+
+            if (instance.Location != ProductLocation.Inventory || !_state.Contains(instanceId))
+            {
+                return Result.Fail("instance.not_in_inventory", "Instance " + instanceId + " is not on the shelf.");
+            }
+
+            if (!IsPositiveRounded(price))
+            {
+                return Result.Fail("price.invalid", "Price must be positive and a multiple of 10 TL.");
+            }
+
+            instance.ListPrice = price;
+            if (_events != null)
+            {
+                _events.Publish(new ItemPriced(instanceId, price));
+            }
+
+            return Result.Ok();
+        }
+
         /// <summary>Raftaki ürünü verilen fiyata satar. Kâr/zarar = satış − maliyet tabanı.</summary>
         public Result<SaleReceipt> Sell(long instanceId, Money price, int day, string buyerNpcId = null)
         {

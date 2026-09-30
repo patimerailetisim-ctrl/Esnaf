@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Content;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
@@ -70,6 +71,10 @@ namespace Esnaf.Tests.Support
         public const string EconomyConstantsJson =
             "{ \"schemaVersion\": 1, \"openingCapital\": 250000," +
             " \"dailyExpense\": { \"fromDay\": 3, \"amount\": 500 }, \"initialShelfCapacity\": 6," +
+            " \"customers\": { \"shopPremium\": 0.05, \"shopPremiumCap\": 0.12, \"maxRatioToTrueValue\": 1.25," +
+            "   \"count\": { \"base\": 2, \"perShelfItem\": 0.5, \"max\": 5 }, \"richQuota\": { \"npcIds\": [ \"npc.test_liar\" ], \"maxPerDay\": 1 } }," +
+            " \"demand\": { \"liveFromDay\": 5, \"dailyNoise\": 0.02, \"meanReversion\": 0.20, \"min\": 0.90, \"max\": 1.10," +
+            "   \"salesPressure\": { \"perSale\": 0.985, \"windowDays\": 5, \"floor\": 0.90 } }," +
             " \"market\": " + MarketJson + " }";
 
         /// <summary>economy_constants.json içindeki "market" bölümünün test kopyası.</summary>
@@ -124,7 +129,7 @@ namespace Esnaf.Tests.Support
             "   \"customer\": { \"openingOfferRatio\": 0.92, \"valueRatio\": 1.00, \"patience\": 3 } }," +
             " { \"id\": \"npc.test_liar\", \"name\": \"Saklayan Test\", \"personality\": \"hurried_indebted\"," +
             "   \"seller\": { \"availableFromDay\": 3, \"askMultiplier\": 1.02, \"rejectRatio\": 0.78, \"patience\": 2, \"valueSigma\": 0.15, \"urgency\": 1.0, \"persuasion\": 0.9, \"concealChance\": 0.6, \"urgentLabelFromDay\": 6 }," +
-            "   \"customer\": { \"openingOfferRatio\": 0.85, \"valueRatio\": 0.95, \"patience\": 3, \"valueSigma\": 0.30, \"packageRatio\": 1.12 } } ] }";
+            "   \"customer\": { \"availableFromDay\": 3, \"segments\": [ \"entry\", \"mid\" ], \"reportTrustGain\": 15, \"openingOfferRatio\": 0.85, \"valueRatio\": 0.95, \"patience\": 3, \"valueSigma\": 0.30, \"packageRatio\": 1.12 } } ] }";
 
         /// <summary>Pazarlık kuralları (negotiation_rules.json) test kopyası; gerçek dosyayla aynı değerler.</summary>
         public const string NegotiationRulesJson =
@@ -133,6 +138,7 @@ namespace Esnaf.Tests.Support
             " \"insult\": { \"ratio\": 0.90, \"trustLoss\": 15, \"extraPatienceLoss\": 1, \"penaltyFromDay\": 5 }," +
             " \"nearOffer\": { \"ratio\": 0.97, \"trustGain\": 5 }," +
             " \"card\": { \"correctTrustGain\": 5, \"wrongTrustLoss\": 10, \"wrongPatienceLoss\": 1, \"reportLevelId\": \"s3\", \"reportPersuasionBonus\": 0.20, \"rejectFloorRatio\": 0.65 }," +
+            " \"sell\": { \"tooExpensiveRatio\": 1.15, \"reportLevelIds\": [ \"s2\", \"s3\" ], \"reportSigmaFactor\": 0.5, \"reportTrustGain\": 10 }," +
             " \"start\": { \"trust\": 50, \"trustSpread\": 10, \"rejectMoodSwing\": 0.03 }," +
             " \"view\": { \"moodLowBelow\": 40, \"moodHighFrom\": 70, \"patienceLowAtMost\": 1, \"patienceMediumAtMost\": 3 } }";
 
@@ -227,6 +233,32 @@ namespace Esnaf.Tests.Support
             }
 
             return config;
+        }
+
+        /// <summary>Test JSON'undan müşteri sabitlerini ayrıştırır.</summary>
+        public static CustomerConstants Customers()
+        {
+            var issues = new List<ContentIssue>();
+            CustomerConstants c = ContentParser.ParseCustomerConstants(ContentFileNames.EconomyConstants, EconomyConstantsJson, issues);
+            if (c == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture customer constants are invalid: " + string.Join("; ", issues));
+            }
+
+            return c;
+        }
+
+        /// <summary>Test JSON'undan talep sabitlerini ayrıştırır.</summary>
+        public static DemandConstants Demand()
+        {
+            var issues = new List<ContentIssue>();
+            DemandConstants d = ContentParser.ParseDemandConstants(ContentFileNames.EconomyConstants, EconomyConstantsJson, issues);
+            if (d == null || issues.Count > 0)
+            {
+                throw new System.InvalidOperationException("Fixture demand constants are invalid: " + string.Join("; ", issues));
+            }
+
+            return d;
         }
 
         /// <summary>Test JSON'undan pazarlık kurallarını ayrıştırır.</summary>

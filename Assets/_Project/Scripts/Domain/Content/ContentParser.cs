@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Npc;
@@ -325,6 +326,101 @@ namespace Esnaf.Domain.Content
             return MapMarket(fileName, file.Market, issues);
         }
 
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde economy_constants.json içindeki "customers" bölümü.</returns>
+        public static CustomerConstants ParseCustomerConstants(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            EconomyConstantsFileDto file = Deserialize<EconomyConstantsFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            const string root = "economy constants";
+            if (!Require(fileName, root, "customers", file.Customers != null, issues))
+            {
+                return null;
+            }
+
+            CustomersDto c = file.Customers;
+            bool ok = Require(fileName, root, "customers.shopPremium", c.ShopPremium.HasValue, issues);
+            ok &= Require(fileName, root, "customers.shopPremiumCap", c.ShopPremiumCap.HasValue, issues);
+            ok &= Require(fileName, root, "customers.maxRatioToTrueValue", c.MaxRatioToTrueValue.HasValue, issues);
+            bool count = Require(fileName, root, "customers.count", c.Count != null, issues);
+            if (count)
+            {
+                ok &= Require(fileName, root, "customers.count.base", c.Count.Base.HasValue, issues);
+                ok &= Require(fileName, root, "customers.count.perShelfItem", c.Count.PerShelfItem.HasValue, issues);
+                ok &= Require(fileName, root, "customers.count.max", c.Count.Max.HasValue, issues);
+            }
+
+            bool rich = Require(fileName, root, "customers.richQuota", c.RichQuota != null, issues);
+            if (rich)
+            {
+                ok &= Require(fileName, root, "customers.richQuota.npcIds", c.RichQuota.NpcIds != null, issues);
+                ok &= Require(fileName, root, "customers.richQuota.maxPerDay", c.RichQuota.MaxPerDay.HasValue, issues);
+            }
+
+            if (!ok || !count || !rich)
+            {
+                return null;
+            }
+
+            return new CustomerConstants(
+                c.ShopPremium.Value,
+                c.ShopPremiumCap.Value,
+                c.MaxRatioToTrueValue.Value,
+                c.Count.Base.Value,
+                c.Count.PerShelfItem.Value,
+                c.Count.Max.Value,
+                c.RichQuota.NpcIds,
+                c.RichQuota.MaxPerDay.Value);
+        }
+
+        /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde economy_constants.json içindeki "demand" bölümü.</returns>
+        public static DemandConstants ParseDemandConstants(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            EconomyConstantsFileDto file = Deserialize<EconomyConstantsFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            const string root = "economy constants";
+            if (!Require(fileName, root, "demand", file.Demand != null, issues))
+            {
+                return null;
+            }
+
+            DemandDto d = file.Demand;
+            bool ok = Require(fileName, root, "demand.liveFromDay", d.LiveFromDay.HasValue, issues);
+            ok &= Require(fileName, root, "demand.dailyNoise", d.DailyNoise.HasValue, issues);
+            ok &= Require(fileName, root, "demand.meanReversion", d.MeanReversion.HasValue, issues);
+            ok &= Require(fileName, root, "demand.min", d.Min.HasValue, issues);
+            ok &= Require(fileName, root, "demand.max", d.Max.HasValue, issues);
+            bool pressure = Require(fileName, root, "demand.salesPressure", d.SalesPressure != null, issues);
+            if (pressure)
+            {
+                ok &= Require(fileName, root, "demand.salesPressure.perSale", d.SalesPressure.PerSale.HasValue, issues);
+                ok &= Require(fileName, root, "demand.salesPressure.windowDays", d.SalesPressure.WindowDays.HasValue, issues);
+                ok &= Require(fileName, root, "demand.salesPressure.floor", d.SalesPressure.Floor.HasValue, issues);
+            }
+
+            if (!ok || !pressure)
+            {
+                return null;
+            }
+
+            return new DemandConstants(
+                d.LiveFromDay.Value,
+                d.DailyNoise.Value,
+                d.MeanReversion.Value,
+                d.Min.Value,
+                d.Max.Value,
+                d.SalesPressure.PerSale.Value,
+                d.SalesPressure.WindowDays.Value,
+                d.SalesPressure.Floor.Value);
+        }
+
         /// <returns>Yapısal veya eksik-alan hatası varsa null; aksi halde ekspertiz kuralları.</returns>
         public static AppraisalConfig ParseAppraisal(string fileName, string json, ICollection<ContentIssue> issues)
         {
@@ -449,6 +545,15 @@ namespace Esnaf.Domain.Content
                 ok &= Require(fileName, root, "card.rejectFloorRatio", file.Card.RejectFloorRatio.HasValue, issues);
             }
 
+            bool sell = Require(fileName, root, "sell", file.Sell != null, issues);
+            if (sell)
+            {
+                ok &= Require(fileName, root, "sell.tooExpensiveRatio", file.Sell.TooExpensiveRatio.HasValue, issues);
+                ok &= Require(fileName, root, "sell.reportLevelIds", file.Sell.ReportLevelIds != null, issues);
+                ok &= Require(fileName, root, "sell.reportSigmaFactor", file.Sell.ReportSigmaFactor.HasValue, issues);
+                ok &= Require(fileName, root, "sell.reportTrustGain", file.Sell.ReportTrustGain.HasValue, issues);
+            }
+
             bool start = Require(fileName, root, "start", file.Start != null, issues);
             if (start)
             {
@@ -466,7 +571,7 @@ namespace Esnaf.Domain.Content
                 ok &= Require(fileName, root, "view.patienceMediumAtMost", file.View.PatienceMediumAtMost.HasValue, issues);
             }
 
-            if (!ok || !price || !insult || !near || !card || !start || !view)
+            if (!ok || !price || !insult || !near || !card || !sell || !start || !view)
             {
                 return null;
             }
@@ -493,7 +598,11 @@ namespace Esnaf.Domain.Content
                 file.View.MoodLowBelow.Value,
                 file.View.MoodHighFrom.Value,
                 file.View.PatienceLowAtMost.Value,
-                file.View.PatienceMediumAtMost.Value);
+                file.View.PatienceMediumAtMost.Value,
+                file.Sell.TooExpensiveRatio.Value,
+                file.Sell.ReportLevelIds,
+                file.Sell.ReportSigmaFactor.Value,
+                file.Sell.ReportTrustGain.Value);
         }
 
         // ---- ortak ----
@@ -930,12 +1039,34 @@ namespace Esnaf.Domain.Content
                 return null;
             }
 
+            var segments = new List<ProductSegment>();
+            if (dto.Segments != null)
+            {
+                for (int i = 0; i < dto.Segments.Count; i++)
+                {
+                    ProductSegment segment;
+                    if (!ProductSegments.TryParse(dto.Segments[i], out segment))
+                    {
+                        issues.Add(ContentIssue.Error(
+                            ContentIssueCodes.ProductSegmentInvalid,
+                            fileName,
+                            label + ": customer.segments[" + i + "]: invalid segment '" + dto.Segments[i] + "' (allowed: entry, mid, upper)."));
+                        return null;
+                    }
+
+                    segments.Add(segment);
+                }
+            }
+
             return new NpcCustomerRole(
                 dto.OpeningOfferRatio.Value,
                 dto.ValueRatio.Value,
                 dto.Patience.Value,
                 dto.ValueSigma ?? 0.0,
-                dto.PackageRatio ?? 1.0);
+                dto.PackageRatio ?? 1.0,
+                dto.AvailableFromDay ?? 1,
+                segments,
+                dto.ReportTrustGain);
         }
 
         private static MarketConstants MapMarket(string fileName, MarketDto dto, ICollection<ContentIssue> issues)

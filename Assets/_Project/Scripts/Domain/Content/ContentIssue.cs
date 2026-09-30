@@ -139,6 +139,10 @@ namespace Esnaf.Domain.Content
         // Pazarlık kuralları (negotiation_rules.json)
         public const string NegotiationFieldInvalid = "negotiation.field.invalid";
 
+        // Müşteri ve talep sabitleri (economy_constants.json)
+        public const string CustomerFieldInvalid = "customers.field.invalid";
+        public const string DemandFieldInvalid = "demand.field.invalid";
+
         // ID manifesti
         public const string ManifestDuplicate = "manifest.duplicate";
         public const string ManifestIdMissingInContent = "manifest.id_missing_in_content";
