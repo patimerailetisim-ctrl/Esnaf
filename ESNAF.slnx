@@ -1,9 +1,0 @@
-﻿<Solution>
-  <Project Path="Esnaf.Core.csproj" />
-  <Project Path="Esnaf.Persistence.csproj" />
-  <Project Path="Esnaf.App.csproj" />
-  <Project Path="Esnaf.Domain.Tests.csproj" />
-  <Project Path="Esnaf.Content.csproj" />
-  <Project Path="Unity.2D.Welcome.csproj" />
-  <Project Path="Esnaf.Domain.csproj" />
-</Solution>

@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "phone.nova_n1_lite",
+      "sector": "phone",
+      "name": "Nova N1 Lite",
+      "brand": "Nova",
+      "segment": "entry",
+      "releaseYear": 2023,
+      "basePrice": 4500,
+      "baseStorageGb": 64,
+      "storageOptions": [
+        { "gb": 64, "mult": 1.00 },
+        { "gb": 128, "mult": 1.15 }
+      ],
+      "ageMonths": { "min": 6, "max": 36 }
+    },
+    {
+      "id": "phone.yildiz_y5",
+      "sector": "phone",
+      "name": "Yıldız Y5",
+      "brand": "Yıldız",
+      "segment": "entry",
+      "releaseYear": 2022,
+      "basePrice": 6000,
+      "baseStorageGb": 64,
+      "storageOptions": [
+        { "gb": 64, "mult": 1.00 },
+        { "gb": 128, "mult": 1.12 }
+      ],
+      "ageMonths": { "min": 12, "max": 48 }
+    },
+    {
+      "id": "phone.samsun_vega_a3",
+      "sector": "phone",
+      "name": "Samsun Vega A3",
+      "brand": "Samsun",
+      "segment": "mid",
+      "releaseYear": 2023,
+      "basePrice": 9500,
+      "baseStorageGb": 128,
+      "storageOptions": [
+        { "gb": 64, "mult": 0.90 },
+        { "gb": 128, "mult": 1.00 },
+        { "gb": 256, "mult": 1.15 }
+      ],
+      "ageMonths": { "min": 6, "max": 36 }
+    },
+    {
+      "id": "phone.nova_n3_pro",
+      "sector": "phone",
+      "name": "Nova N3 Pro",
+      "brand": "Nova",
+      "segment": "mid",
+      "releaseYear": 2023,
+      "basePrice": 12500,
+      "baseStorageGb": 128,
+      "storageOptions": [
+        { "gb": 64, "mult": 0.90 },
+        { "gb": 128, "mult": 1.00 },
+        { "gb": 256, "mult": 1.15 }
+      ],
+      "ageMonths": { "min": 6, "max": 36 }
+    },
+    {
+      "id": "phone.zirve_z5",
+      "sector": "phone",
+      "name": "Zirve Z5",
+      "brand": "Zirve",
+      "segment": "mid",
+      "releaseYear": 2022,
+      "basePrice": 14000,
+      "baseStorageGb": 128,
+      "storageOptions": [
+        { "gb": 128, "mult": 1.00 },
+        { "gb": 256, "mult": 1.15 }
+      ],
+      "ageMonths": { "min": 12, "max": 48 }
+    },
+    {
+      "id": "phone.yildiz_y8_plus",
+      "sector": "phone",
+      "name": "Yıldız Y8 Plus",
+      "brand": "Yıldız",
+      "segment": "mid",
+      "releaseYear": 2023,
+      "basePrice": 17500,
+      "baseStorageGb": 128,
+      "storageOptions": [
+        { "gb": 128, "mult": 1.00 },
+        { "gb": 256, "mult": 1.15 }
+      ],
+      "ageMonths": { "min": 6, "max": 36 }
+    },
+    {
+      "id": "phone.elma_e11",
+      "sector": "phone",
+      "name": "Elma E11",
+      "brand": "Elma",
+      "segment": "mid",
+      "releaseYear": 2021,
+      "basePrice": 19000,
+      "baseStorageGb": 64,
+      "storageOptions": [
+        { "gb": 64, "mult": 1.00 },
+        { "gb": 128, "mult": 1.10 },
+        { "gb": 256, "mult": 1.22 }
+      ],
+      "ageMonths": { "min": 24, "max": 60 }
+    },
+    {
+      "id": "phone.samsun_vega_s21",
+      "sector": "phone",
+      "name": "Samsun Vega S21",
+      "brand": "Samsun",
+      "segment": "upper",
+      "releaseYear": 2022,
+      "basePrice": 24000,
+      "baseStorageGb": 128,
+      "storageOptions": [
+        { "gb": 128, "mult": 1.00 },
+        { "gb": 256, "mult": 1.12 }
+      ],
+      "ageMonths": { "min": 12, "max": 48 }
+    },
+    {
+      "id": "phone.elma_e13_pro",
+      "sector": "phone",
+      "name": "Elma E13 Pro",
+      "brand": "Elma",
+      "segment": "upper",
+      "releaseYear": 2023,
+      "basePrice": 32000,
+      "baseStorageGb": 128,
+      "storageOptions": [
+        { "gb": 128, "mult": 1.00 },
+        { "gb": 256, "mult": 1.12 },
+        { "gb": 512, "mult": 1.28 }
+      ],
+      "ageMonths": { "min": 6, "max": 36 }
+    },
+    {
+      "id": "phone.elma_e14_pro_max",
+      "sector": "phone",
+      "name": "Elma E14 Pro Max",
+      "brand": "Elma",
+      "segment": "upper",
+      "releaseYear": 2024,
+      "basePrice": 46000,
+      "baseStorageGb": 256,
+      "storageOptions": [
+        { "gb": 256, "mult": 1.00 },
+        { "gb": 512, "mult": 1.15 },
+        { "gb": 1024, "mult": 1.30 }
+      ],
+      "ageMonths": { "min": 0, "max": 18 }
+    }
+  ]
+}

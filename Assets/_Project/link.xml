@@ -1,0 +1,8 @@
+<!--
+  IL2CPP (Android/iOS) "managed stripping", Newtonsoft'un yansıma (reflection) ile kullandığı Domain sınıflarını
+  (ör. içerik DTO'ları) derleme sırasında silebilir; bu yalnızca cihaz derlemesinde ortaya çıkan bir hatadır.
+  Bu dosya Esnaf.Domain assembly'sini korur.
+-->
+<linker>
+  <assembly fullname="Esnaf.Domain" preserve="all" />
+</linker>

@@ -35,3 +35,6 @@ TestResults/
 # OS
 .DS_Store
 Thumbs.db
+
+# Unity-generated solution (new format)
+*.slnx
