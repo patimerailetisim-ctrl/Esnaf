@@ -14,8 +14,12 @@ namespace Esnaf.Presentation
         public bool IsLocked { get; }
         public bool IsSelected { get; }
 
-        public AppraisalLevelRowViewModel(string levelId, string name, string feeText, string statusText, bool isDone, bool isLocked, bool isSelected)
+        /// <summary>Kısa seviye kodu (S0, S1, S2, S3).</summary>
+        public string Code { get; }
+
+        public AppraisalLevelRowViewModel(string levelId, string name, string feeText, string statusText, bool isDone, bool isLocked, bool isSelected, string code = null)
         {
+            Code = code ?? levelId;
             LevelId = levelId;
             Name = name;
             FeeText = feeText;
@@ -42,6 +46,18 @@ namespace Esnaf.Presentation
         public string MissLine { get; }
         public string RiskNote { get; }
 
+        /// <summary>Bulgular (ton + metin + güven); <see cref="FindingLines"/> ile aynı gerçek bulgulardan.</summary>
+        public IReadOnlyList<AppraisalFindingViewModel> Findings { get; }
+
+        /// <summary>Bilgi kartları (Ekran, Kamera, Pil, Kasa); yalnızca sonuçta veri olanlar.</summary>
+        public IReadOnlyList<AppraisalInfoCardViewModel> Cards { get; }
+
+        /// <summary>"29.000 ₺ – 33.000 ₺"; bu seviyede değer verilmiyorsa null.</summary>
+        public string ValueHeadline { get; }
+
+        /// <summary>Bulgu sayıları (ör. "2 uyarı • 1 temiz"); bulgu yoksa boş.</summary>
+        public string SummaryLine { get; }
+
         public AppraisalResultViewModel(
             string levelName,
             string feeLine,
@@ -52,8 +68,16 @@ namespace Esnaf.Presentation
             string riskTitle,
             IEnumerable<string> riskLines,
             string missLine,
-            string riskNote)
+            string riskNote,
+            IEnumerable<AppraisalFindingViewModel> findings = null,
+            IEnumerable<AppraisalInfoCardViewModel> cards = null,
+            string valueHeadline = null,
+            string summaryLine = null)
         {
+            Findings = ReadOnly.List(findings);
+            Cards = ReadOnly.List(cards);
+            ValueHeadline = valueHeadline;
+            SummaryLine = summaryLine ?? string.Empty;
             LevelName = levelName;
             FeeLine = feeLine;
             FindingLines = new ReadOnlyCollection<string>(new List<string>(findingLines));
@@ -76,8 +100,28 @@ namespace Esnaf.Presentation
         public AppraisalResultViewModel Result { get; }
         public string ActionText { get; }
 
-        public AppraisalScreenViewModel(string title, IEnumerable<AppraisalLevelRowViewModel> levels, string selectedLevelId, AppraisalResultViewModel result, string actionText)
+        /// <summary>"256 GB • 31 Aylık".</summary>
+        public string Subtitle { get; }
+
+        /// <summary>Seçili seviyenin rozeti ("S2 • Ayrıntılı kontrol"); seçim yoksa null.</summary>
+        public string LevelBadge { get; }
+
+        /// <summary>Telefon modelinin içerik kimliği (ileride gerçek ürün görselini bağlamak için).</summary>
+        public string DefinitionId { get; }
+
+        public AppraisalScreenViewModel(
+            string title,
+            IEnumerable<AppraisalLevelRowViewModel> levels,
+            string selectedLevelId,
+            AppraisalResultViewModel result,
+            string actionText,
+            string subtitle = null,
+            string levelBadge = null,
+            string definitionId = null)
         {
+            DefinitionId = definitionId;
+            Subtitle = subtitle ?? string.Empty;
+            LevelBadge = levelBadge;
             Title = title;
             Levels = new ReadOnlyCollection<AppraisalLevelRowViewModel>(new List<AppraisalLevelRowViewModel>(levels));
             SelectedLevelId = selectedLevelId;

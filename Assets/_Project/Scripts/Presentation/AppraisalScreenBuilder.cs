@@ -34,17 +34,30 @@ namespace Esnaf.Presentation
                     StatusOf(done, locked, level),
                     done,
                     locked,
-                    level.Id == selectedLevelId));
+                    level.Id == selectedLevelId,
+                    level.Id.ToUpperInvariant()));
             }
 
             AppraisalView selected = selectedLevelId == null ? null : Find(known, selectedLevelId);
             AppraisalResultViewModel result = selected == null ? null : BuildResult(selected, listing, content, api);
+            string badge = null;
+            foreach (AppraisalLevelInfo level in content.AppraisalLevels)
+            {
+                if (level.Id == selectedLevelId)
+                {
+                    badge = TurkishTexts.LevelBadge(level.Id.ToUpperInvariant(), level.Name);
+                }
+            }
+
             return new AppraisalScreenViewModel(
                 ListingDetailViewModel.From(listing, content).Title,
                 rows,
                 selectedLevelId,
                 result,
-                selected == null ? TurkishTexts.ActionPerformAppraisal : TurkishTexts.ActionShowAppraisal);
+                selected == null ? TurkishTexts.ActionPerformAppraisal : TurkishTexts.ActionShowAppraisal,
+                TurkishTexts.DeviceSubtitle(listing.StorageGb, listing.AgeMonths),
+                badge,
+                listing.DefinitionId);
         }
 
         private static string StatusOf(bool done, bool locked, AppraisalLevelInfo level)
@@ -82,6 +95,30 @@ namespace Esnaf.Presentation
             {
                 findings.Add(TurkishTexts.Finding(finding.Found, finding.WordingKey, finding.Attribute, finding.Confidence));
             }
+
+            var findingRows = new List<AppraisalFindingViewModel>();
+            var cards = new List<AppraisalInfoCardViewModel>();
+            int warnings = 0;
+            int clean = 0;
+            foreach (FindingView finding in view.Findings)
+            {
+                UiTone tone = finding.Found ? UiTone.Warn : UiTone.Good;
+                string text = TurkishTexts.FindingText(finding.Found, finding.WordingKey, finding.Attribute);
+                string confidence = TurkishTexts.ConfidenceText(finding.Confidence);
+                findingRows.Add(new AppraisalFindingViewModel(tone, text, confidence));
+                cards.Add(new AppraisalInfoCardViewModel(TurkishTexts.AttributeTitle(finding.Attribute), finding.Found ? TurkishTexts.FindingSuspected : TurkishTexts.FindingClean, confidence, tone));
+                if (finding.Found)
+                {
+                    warnings++;
+                }
+                else
+                {
+                    clean++;
+                }
+            }
+
+            cards.Add(RangeCard(TurkishTexts.BatteryCardTitle, view.BatteryRange));
+            cards.Add(RangeCard(TurkishTexts.BodyCardTitle, view.BodyRange));
 
             string levelName = view.LevelId;
             foreach (AppraisalLevelInfo level in content.AppraisalLevels)
@@ -122,7 +159,18 @@ namespace Esnaf.Presentation
                 riskTitle,
                 riskLines,
                 missLine,
-                riskNote);
+                riskNote,
+                findingRows,
+                cards,
+                view.ValueRange == null ? null : TurkishTexts.MoneyRangeText(view.ValueRange),
+                TurkishTexts.FindingSummary(warnings, clean));
+        }
+
+        private static AppraisalInfoCardViewModel RangeCard(string title, NumericRange range)
+        {
+            return range == null
+                ? new AppraisalInfoCardViewModel(title, TurkishTexts.NotMeasured, null, UiTone.Neutral)
+                : new AppraisalInfoCardViewModel(title, TurkishTexts.PercentRangeText(range), null, UiTone.Neutral);
         }
     }
 }

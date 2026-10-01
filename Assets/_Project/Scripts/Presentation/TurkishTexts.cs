@@ -63,6 +63,88 @@ namespace Esnaf.Presentation
             return months.ToString(CultureInfo.InvariantCulture) + " ay";
         }
 
+        /// <summary>"31 Aylık" (üst bar altyazısı).</summary>
+        public static string AgeAdjective(int months)
+        {
+            return months.ToString(CultureInfo.InvariantCulture) + " Ayl\u0131k";
+        }
+
+        /// <summary>"256 GB • 31 Aylık".</summary>
+        public static string DeviceSubtitle(int gigabytes, int months)
+        {
+            return Storage(gigabytes) + " \u2022 " + AgeAdjective(months);
+        }
+
+        /// <summary>"S2 • Ayrıntılı kontrol".</summary>
+        public static string LevelBadge(string code, string name)
+        {
+            return code + " \u2022 " + name;
+        }
+
+        public static string PhoneAngleName(PhoneAngle angle)
+        {
+            switch (angle)
+            {
+                case PhoneAngle.Back:
+                    return "Arka";
+                case PhoneAngle.Side:
+                    return "Yan";
+                case PhoneAngle.TopBottom:
+                    return "Alt/\u00DCst";
+                case PhoneAngle.CameraClose:
+                    return "Kamera";
+                default:
+                    return "\u00D6n";
+            }
+        }
+
+        public const string LevelsCardHeader = "Ekspertiz seviyesi";
+        public const string FindingsHeader = "Bulgular";
+        public const string MarketValueHeader = "Tahmini Piyasa De\u011Feri";
+        public const string RiskHeader = "Risk";
+        public const string ScreenCardTitle = "Ekran";
+        public const string CameraCardTitle = "Kamera";
+        public const string BatteryCardTitle = "Pil";
+        public const string BodyCardTitle = "Kasa";
+        public const string FindingClean = "sorun g\u00F6r\u00FCnm\u00FCyor";
+        public const string FindingSuspected = "sorun olabilir";
+        public const string NotMeasured = "Bu seviyede \u00F6l\u00E7\u00FClmez";
+
+        public static string FindingSummary(int warnings, int clean)
+        {
+            if (warnings + clean == 0)
+            {
+                return string.Empty;
+            }
+
+            return warnings.ToString(CultureInfo.InvariantCulture) + " uyar\u0131 \u2022 " + clean.ToString(CultureInfo.InvariantCulture) + " temiz";
+        }
+
+        public static string PercentRangeText(NumericRange range)
+        {
+            return PercentRange(range);
+        }
+
+        public static string MoneyRangeText(MoneyRange range)
+        {
+            return MoneyFormatter.Format(range.Min) + " \u2013 " + MoneyFormatter.Format(range.Max);
+        }
+
+        public static string FindingText(bool found, string wordingKey, string attribute)
+        {
+            return found ? FindingWording(wordingKey) : AttributeName(attribute) + ": " + FindingClean;
+        }
+
+        public static string ConfidenceText(AppraisalConfidence confidence)
+        {
+            return ConfidenceName(confidence);
+        }
+
+        public static string AttributeTitle(string attribute)
+        {
+            return AttributeName(attribute);
+        }
+
         public static string Asking(Money price)
         {
             return "\u0130stenen: " + MoneyFormatter.Format(price);
