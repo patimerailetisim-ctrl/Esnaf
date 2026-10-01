@@ -485,3 +485,48 @@ namespace Esnaf.Domain.Content
         public int? PatienceMediumAtMost { get; set; }
     }
 }
+
+namespace Esnaf.Domain.Content
+{
+    // ---- accessories.json ----
+
+    internal sealed class AccessoriesFileDto
+    {
+        public int? SchemaVersion { get; set; }
+        public int? ShelfCapacityUnits { get; set; }
+        public System.Collections.Generic.List<AccessoryDto> Accessories { get; set; }
+    }
+
+    internal sealed class AccessoryDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Category { get; set; }
+        public string Condition { get; set; }
+        public long? RetailPrice { get; set; }
+        public string IconKey { get; set; }
+    }
+
+    // ---- wholesale.json ----
+
+    internal sealed class WholesaleFileDto
+    {
+        public int? SchemaVersion { get; set; }
+        public System.Collections.Generic.List<WholesaleSupplierDto> Suppliers { get; set; }
+    }
+
+    internal sealed class WholesaleSupplierDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public System.Collections.Generic.List<WholesaleOfferDto> Offers { get; set; }
+    }
+
+    internal sealed class WholesaleOfferDto
+    {
+        public string AccessoryId { get; set; }
+        public long? UnitCost { get; set; }
+        public int? PackSize { get; set; }
+        public int? AvailableFromDay { get; set; }
+    }
+}

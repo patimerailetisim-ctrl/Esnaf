@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "suppliers": [
+    {
+      "id": "supplier.ucuz_toptan",
+      "name": "Ucuz Toptan",
+      "offers": [
+        { "accessoryId": "accessory.charger_adapter",  "unitCost": 150, "packSize": 10, "availableFromDay": 1 },
+        { "accessoryId": "accessory.charge_cable",     "unitCost": 60,  "packSize": 20, "availableFromDay": 1 },
+        { "accessoryId": "accessory.earphones",        "unitCost": 200, "packSize": 10, "availableFromDay": 1 },
+        { "accessoryId": "accessory.screen_protector", "unitCost": 40,  "packSize": 20, "availableFromDay": 1 },
+        { "accessoryId": "accessory.phone_case",       "unitCost": 70,  "packSize": 20, "availableFromDay": 1 },
+        { "accessoryId": "accessory.powerbank",        "unitCost": 350, "packSize": 5,  "availableFromDay": 3 }
+      ]
+    }
+  ]
+}

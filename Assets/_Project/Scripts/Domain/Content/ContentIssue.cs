@@ -131,6 +131,17 @@ namespace Esnaf.Domain.Content
         public const string PersonalityMissing = "personality.missing";
         public const string PersonalityInconsistent = "personality.inconsistent";
 
+        // Aksesuarlar (accessories.json) ve toptancı (wholesale.json)
+        public const string AccessoryListEmpty = "accessories.empty";
+        public const string AccessoryIdFormat = "accessory.id.format";
+        public const string AccessoryIdDuplicate = "accessory.id.duplicate";
+        public const string AccessoryFieldInvalid = "accessory.field.invalid";
+        public const string WholesaleFieldInvalid = "wholesale.field.invalid";
+        public const string WholesaleIdFormat = "wholesale.id.format";
+        public const string WholesaleIdDuplicate = "wholesale.id.duplicate";
+        public const string WholesaleReferenceMissing = "wholesale.reference.missing";
+        public const string WholesaleOfferDuplicate = "wholesale.offer.duplicate";
+
         // Pazar sabitleri (economy_constants.json "market" bölümü)
         public const string MarketFieldInvalid = "market.field.invalid";
         public const string MarketReferenceMissing = "market.reference.missing";

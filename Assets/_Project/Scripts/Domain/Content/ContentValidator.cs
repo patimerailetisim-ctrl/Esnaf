@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Esnaf.Core;
+using Esnaf.Domain.Accessories;
+using Esnaf.Domain.Wholesale;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
@@ -583,6 +585,110 @@ namespace Esnaf.Domain.Content
         private static void PersonalityIssue(ICollection<ContentIssue> issues, string code, string fileName, string message)
         {
             issues.Add(ContentIssue.Error(code, fileName, message));
+        }
+
+        private static readonly Regex AccessoryIdFormat = new Regex("^accessory\\.[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
+        private static readonly Regex SupplierIdFormat = new Regex("^supplier\\.[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
+
+        /// <summary>Aksesuar kataloğunu denetler: kimlik biçimi/benzersizliği, alanlar, sıfır (new) durum, pozitif satış fiyatı, pozitif kapasite.</summary>
+        public static void ValidateAccessories(AccessoryCatalog catalog, string fileName, ICollection<ContentIssue> issues)
+        {
+            if (catalog.ShelfCapacityUnits <= 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.AccessoryFieldInvalid, fileName, "shelfCapacityUnits must be positive."));
+            }
+
+            if (catalog.Definitions.Count == 0)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.AccessoryListEmpty, fileName, "The file contains no accessories."));
+                return;
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < catalog.Definitions.Count; i++)
+            {
+                AccessoryDefinition a = catalog.Definitions[i];
+                string label = string.IsNullOrWhiteSpace(a.Id) ? "accessories[" + i + "]" : a.Id;
+                if (string.IsNullOrEmpty(a.Id) || !AccessoryIdFormat.IsMatch(a.Id))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.AccessoryIdFormat, fileName, label + ": id '" + a.Id + "' must look like accessory.phone_case (lowercase letters, digits, underscore)."));
+                }
+                else if (!seen.Add(a.Id))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.AccessoryIdDuplicate, fileName, label + ": duplicate id."));
+                }
+
+                AccessoryField(issues, fileName, label, "name", !string.IsNullOrWhiteSpace(a.Name), "must not be empty.");
+                AccessoryField(issues, fileName, label, "category", !string.IsNullOrWhiteSpace(a.Category), "must not be empty.");
+                AccessoryField(issues, fileName, label, "iconKey", !string.IsNullOrWhiteSpace(a.IconKey), "must not be empty.");
+                AccessoryField(issues, fileName, label, "condition", a.Condition == AccessoryDefinition.NewCondition, "must be 'new' (accessories are always new).");
+                AccessoryField(issues, fileName, label, "retailPrice", a.RetailPrice.IsPositive, "must be positive.");
+            }
+        }
+
+        /// <summary>Toptan tekliflerini denetler: toptancı kimliği/adı, aksesuar başvurusu, aynı toptancıda tekrar yok, pozitif birim maliyet, paket &gt; 0, açılış günü ≥ 1.</summary>
+        public static void ValidateWholesale(WholesaleCatalog wholesale, AccessoryCatalog accessories, string fileName, ICollection<ContentIssue> issues)
+        {
+            var supplierNames = new Dictionary<string, string>(StringComparer.Ordinal);
+            var seenOffers = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < wholesale.Offers.Count; i++)
+            {
+                WholesaleOffer o = wholesale.Offers[i];
+                string label = (o.SupplierId ?? "supplier") + " / " + (o.AccessoryId ?? "offers[" + i + "]");
+
+                if (string.IsNullOrEmpty(o.SupplierId) || !SupplierIdFormat.IsMatch(o.SupplierId))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.WholesaleIdFormat, fileName, label + ": supplier id '" + o.SupplierId + "' must look like supplier.ucuz_toptan."));
+                }
+
+                if (o.SupplierId != null)
+                {
+                    string knownName;
+                    if (!supplierNames.TryGetValue(o.SupplierId, out knownName))
+                    {
+                        supplierNames.Add(o.SupplierId, o.SupplierName);
+                    }
+                    else if (knownName != o.SupplierName)
+                    {
+                        issues.Add(ContentIssue.Error(ContentIssueCodes.WholesaleIdDuplicate, fileName, label + ": supplier id '" + o.SupplierId + "' is used by two different suppliers."));
+                    }
+                }
+
+                WholesaleField(issues, fileName, label, "supplier name", !string.IsNullOrWhiteSpace(o.SupplierName), "must not be empty.");
+
+                AccessoryDefinition definition;
+                if (!accessories.TryGet(o.AccessoryId, out definition))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.WholesaleReferenceMissing, fileName, label + ": accessoryId '" + o.AccessoryId + "' is not defined in " + ContentFileNames.Accessories + "."));
+                }
+                else if (!seenOffers.Add(o.SupplierId + "|" + o.AccessoryId))
+                {
+                    issues.Add(ContentIssue.Error(ContentIssueCodes.WholesaleOfferDuplicate, fileName, label + ": this supplier already offers this accessory."));
+                }
+
+                WholesaleField(issues, fileName, label, "unitCost", o.UnitCost.IsPositive, "must be positive.");
+                WholesaleField(issues, fileName, label, "packSize", o.PackSize > 0, "must be positive.");
+                WholesaleField(issues, fileName, label, "availableFromDay", o.AvailableFromDay >= 1, "must be 1 or later.");
+            }
+        }
+
+        private static void AccessoryField(ICollection<ContentIssue> issues, string fileName, string label, string field, bool ok, string rule)
+        {
+            if (!ok)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.AccessoryFieldInvalid, fileName, label + ": " + field + " " + rule));
+            }
+        }
+
+        private static void WholesaleField(ICollection<ContentIssue> issues, string fileName, string label, string field, bool ok, string rule)
+        {
+            if (!ok)
+            {
+                issues.Add(ContentIssue.Error(ContentIssueCodes.WholesaleFieldInvalid, fileName, label + ": " + field + " " + rule));
+            }
         }
 
         private static void ValidateSeller(NpcSellerRole s, string label, string fileName, ICollection<ContentIssue> issues)

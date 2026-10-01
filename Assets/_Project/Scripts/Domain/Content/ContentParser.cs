@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Esnaf.Core;
+using Esnaf.Domain.Accessories;
+using Esnaf.Domain.Wholesale;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Business;
@@ -1123,6 +1125,117 @@ namespace Esnaf.Domain.Content
                 case "haggling": trait = CustomerTrait.Haggling; return true;
                 default: trait = CustomerTrait.Patience; return false;
             }
+        }
+
+        /// <returns>Yapısal hata varsa null; aksi halde aksesuar kataloğu (dosyadaki sırayla). Değer kurallarını ContentValidator denetler.</returns>
+        public static AccessoryCatalog ParseAccessories(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            AccessoriesFileDto file = Deserialize<AccessoriesFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            bool ok = Require(fileName, "root", "shelfCapacityUnits", file.ShelfCapacityUnits.HasValue, issues);
+            if (file.Accessories == null)
+            {
+                issues.Add(FieldMissing(fileName, "accessories"));
+                return null;
+            }
+
+            var list = new List<AccessoryDefinition>(file.Accessories.Count);
+            for (int i = 0; i < file.Accessories.Count; i++)
+            {
+                AccessoryDto dto = file.Accessories[i];
+                string label = "accessories[" + i + "]" + (dto != null && dto.Id != null ? " (" + dto.Id + ")" : string.Empty);
+                if (dto == null)
+                {
+                    issues.Add(FieldMissing(fileName, label));
+                    ok = false;
+                    continue;
+                }
+
+                bool item = Require(fileName, label, "id", dto.Id != null, issues);
+                item &= Require(fileName, label, "name", dto.Name != null, issues);
+                item &= Require(fileName, label, "category", dto.Category != null, issues);
+                item &= Require(fileName, label, "condition", dto.Condition != null, issues);
+                item &= Require(fileName, label, "retailPrice", dto.RetailPrice.HasValue, issues);
+                item &= Require(fileName, label, "iconKey", dto.IconKey != null, issues);
+                if (!item)
+                {
+                    ok = false;
+                    continue;
+                }
+
+                list.Add(new AccessoryDefinition(dto.Id, dto.Name, dto.Category, dto.Condition, Money.FromTl(dto.RetailPrice.Value), dto.IconKey));
+            }
+
+            return ok ? new AccessoryCatalog(file.ShelfCapacityUnits.Value, list) : null;
+        }
+
+        /// <returns>Yapısal hata varsa null; aksi halde toptan teklifleri (toptancıların sırasıyla düz liste).</returns>
+        public static WholesaleCatalog ParseWholesale(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            WholesaleFileDto file = Deserialize<WholesaleFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            if (file.Suppliers == null)
+            {
+                issues.Add(FieldMissing(fileName, "suppliers"));
+                return null;
+            }
+
+            bool ok = true;
+            var offers = new List<WholesaleOffer>();
+            for (int i = 0; i < file.Suppliers.Count; i++)
+            {
+                WholesaleSupplierDto supplier = file.Suppliers[i];
+                string label = "suppliers[" + i + "]" + (supplier != null && supplier.Id != null ? " (" + supplier.Id + ")" : string.Empty);
+                if (supplier == null)
+                {
+                    issues.Add(FieldMissing(fileName, label));
+                    ok = false;
+                    continue;
+                }
+
+                bool head = Require(fileName, label, "id", supplier.Id != null, issues);
+                head &= Require(fileName, label, "name", supplier.Name != null, issues);
+                head &= Require(fileName, label, "offers", supplier.Offers != null, issues);
+                if (!head)
+                {
+                    ok = false;
+                    continue;
+                }
+
+                for (int j = 0; j < supplier.Offers.Count; j++)
+                {
+                    WholesaleOfferDto dto = supplier.Offers[j];
+                    string offerLabel = label + ": offers[" + j + "]";
+                    if (dto == null)
+                    {
+                        issues.Add(FieldMissing(fileName, offerLabel));
+                        ok = false;
+                        continue;
+                    }
+
+                    bool item = Require(fileName, offerLabel, "accessoryId", dto.AccessoryId != null, issues);
+                    item &= Require(fileName, offerLabel, "unitCost", dto.UnitCost.HasValue, issues);
+                    item &= Require(fileName, offerLabel, "packSize", dto.PackSize.HasValue, issues);
+                    item &= Require(fileName, offerLabel, "availableFromDay", dto.AvailableFromDay.HasValue, issues);
+                    if (!item)
+                    {
+                        ok = false;
+                        continue;
+                    }
+
+                    offers.Add(new WholesaleOffer(supplier.Id, supplier.Name, dto.AccessoryId, Money.FromTl(dto.UnitCost.Value), dto.PackSize.Value, dto.AvailableFromDay.Value));
+                }
+            }
+
+            return ok ? new WholesaleCatalog(offers) : null;
         }
 
         private static NpcDefinition MapNpc(string fileName, int index, NpcDto dto, ICollection<ContentIssue> issues)

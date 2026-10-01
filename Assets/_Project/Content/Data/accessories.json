@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "shelfCapacityUnits": 60,
+  "accessories": [
+    { "id": "accessory.charger_adapter",   "name": "Şarj Adaptörü",  "category": "charging",   "condition": "new", "retailPrice": 250, "iconKey": "charger_adapter" },
+    { "id": "accessory.charge_cable",      "name": "Şarj Kablosu",   "category": "charging",   "condition": "new", "retailPrice": 120, "iconKey": "charge_cable" },
+    { "id": "accessory.earphones",         "name": "Kulaklık",       "category": "audio",      "condition": "new", "retailPrice": 380, "iconKey": "earphones" },
+    { "id": "accessory.screen_protector",  "name": "Kırılmaz Cam",   "category": "protection", "condition": "new", "retailPrice": 120, "iconKey": "screen_protector" },
+    { "id": "accessory.phone_case",        "name": "Telefon Kılıfı", "category": "protection", "condition": "new", "retailPrice": 160, "iconKey": "phone_case" },
+    { "id": "accessory.powerbank",         "name": "Powerbank",      "category": "charging",   "condition": "new", "retailPrice": 600, "iconKey": "powerbank" }
+  ]
+}

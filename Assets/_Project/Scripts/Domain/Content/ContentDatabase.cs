@@ -6,7 +6,9 @@ using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
+using Esnaf.Domain.Accessories;
 using Esnaf.Domain.Npc;
+using Esnaf.Domain.Wholesale;
 using Esnaf.Domain.Products;
 
 namespace Esnaf.Domain.Content
@@ -63,6 +65,12 @@ namespace Esnaf.Domain.Content
         /// <summary>Müşteri kişilik arketipleri ve ölçekleri (npc_profiles.json); bölümler yoksa boş katalog.</summary>
         public PersonalityCatalog Personalities { get; }
 
+        /// <summary>Sıfır aksesuar tanımları ve aksesuar rafı kapasitesi (accessories.json); dosya yoksa boş katalog.</summary>
+        public AccessoryCatalog Accessories { get; }
+
+        /// <summary>Toptancı teklifleri (wholesale.json); dosya yoksa boş katalog.</summary>
+        public WholesaleCatalog Wholesale { get; }
+
         /// <summary>Durum profilleri, dosyadaki sırayla, salt okunur.</summary>
         public IReadOnlyList<ConditionProfile> ConditionProfiles
         {
@@ -81,8 +89,12 @@ namespace Esnaf.Domain.Content
             NegotiationRules negotiation,
             CustomerConstants customers,
             DemandConstants demand,
-            PersonalityCatalog personalities)
+            PersonalityCatalog personalities,
+            AccessoryCatalog accessories,
+            WholesaleCatalog wholesale)
         {
+            Accessories = accessories;
+            Wholesale = wholesale;
             Personalities = personalities;
             Customers = customers;
             Demand = demand;
@@ -349,6 +361,27 @@ namespace Esnaf.Domain.Content
                 ContentValidator.ValidateMarket(marketConstants, npcs, products, valueTables, ContentFileNames.EconomyConstants, issues);
             }
 
+            // Aksesuarlar ve toptancı (isteğe bağlı dosyalar: yoksa boş katalog)
+            AccessoryCatalog accessories = AccessoryCatalog.Empty;
+            WholesaleCatalog wholesale = WholesaleCatalog.Empty;
+            if (source.TryGetText(ContentFileNames.Accessories, out text))
+            {
+                accessories = ContentParser.ParseAccessories(ContentFileNames.Accessories, text, issues);
+                if (accessories != null)
+                {
+                    ContentValidator.ValidateAccessories(accessories, ContentFileNames.Accessories, issues);
+                }
+            }
+
+            if (source.TryGetText(ContentFileNames.Wholesale, out text))
+            {
+                wholesale = ContentParser.ParseWholesale(ContentFileNames.Wholesale, text, issues);
+                if (wholesale != null && accessories != null)
+                {
+                    ContentValidator.ValidateWholesale(wholesale, accessories, ContentFileNames.Wholesale, issues);
+                }
+            }
+
             // ID manifesti
             IReadOnlyList<string> manifestIds = null;
             if (source.TryGetText(ContentFileNames.IdManifest, out text))
@@ -374,6 +407,26 @@ namespace Esnaf.Domain.Content
                     contentIds.Add(npcs[i].Id);
                 }
 
+                if (accessories != null)
+                {
+                    foreach (AccessoryDefinition accessory in accessories.Definitions)
+                    {
+                        contentIds.Add(accessory.Id);
+                    }
+                }
+
+                if (wholesale != null)
+                {
+                    var supplierIds = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (WholesaleOffer offer in wholesale.Offers)
+                    {
+                        if (supplierIds.Add(offer.SupplierId))
+                        {
+                            contentIds.Add(offer.SupplierId);
+                        }
+                    }
+                }
+
                 ContentValidator.ValidateManifest(manifestIds, contentIds, ContentFileNames.IdManifest, issues);
             }
 
@@ -389,14 +442,16 @@ namespace Esnaf.Domain.Content
                 || negotiation == null
                 || customerConstants == null
                 || demandConstants == null
-                || personalities == null)
+                || personalities == null
+                || accessories == null
+                || wholesale == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
             return new ContentLoadResult(
                 new ContentDatabase(
-                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal, negotiation, customerConstants, demandConstants, personalities),
+                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal, negotiation, customerConstants, demandConstants, personalities, accessories, wholesale),
                 issues);
         }
 

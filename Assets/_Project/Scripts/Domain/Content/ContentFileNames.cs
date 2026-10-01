@@ -13,6 +13,11 @@ namespace Esnaf.Domain.Content
         public const string AppraisalLevels = "appraisal_levels.json";
         public const string NegotiationRules = "negotiation_rules.json";
 
+        /// <summary>İsteğe bağlı: dosya yoksa aksesuar/toptancı kataloğu boştur (telefon içeriği etkilenmez).</summary>
+        public const string Accessories = "accessories.json";
+
+        public const string Wholesale = "wholesale.json";
+
         /// <summary>Her içerik dosyasının en üstündeki "schemaVersion" değeri bu olmalı.</summary>
         public const int SupportedSchemaVersion = 1;
     }

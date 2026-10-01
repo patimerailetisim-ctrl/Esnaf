@@ -20,6 +20,13 @@
     "npc.riza",
     "npc.nermin",
     "npc.cengiz",
-    "npc.ayse"
+    "npc.ayse",
+    "accessory.charger_adapter",
+    "accessory.charge_cable",
+    "accessory.earphones",
+    "accessory.screen_protector",
+    "accessory.phone_case",
+    "accessory.powerbank",
+    "supplier.ucuz_toptan"
   ]
 }
