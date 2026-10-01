@@ -37,7 +37,7 @@ namespace Esnaf.Tests.Presentation
             { "negotiation.closed", "Bu pazarlık sona erdi." },
             { "negotiation.final_offer_only", "Satıcı son fiyatını söyledi; kabul et ya da kalk." },
             { "negotiation.no_final_offer", "Satıcı henüz son fiyat vermedi." },
-            { "offer.invalid", "Geçersiz teklif." },
+            { "offer.invalid", "Geçersiz teklif: pozitif ve 10 ₺'nin katı olmalı." },
             { "card.unknown", "Bilinmeyen koz kartı." },
             { "card.already_used", "Bu koz kartı zaten kullanıldı." },
             { "appraisal.no_value_range", "Bu seviye değer aralığı vermediği için risk kartı yok." },
@@ -147,7 +147,6 @@ namespace Esnaf.Tests.Presentation
             Assert.AreEqual("Geri", TurkishTexts.BackButton);
             Assert.AreEqual("Ekspertiz", TurkishTexts.AppraisalButton);
             Assert.AreEqual("Pazarl\u0131k", TurkishTexts.NegotiationButton);
-            Assert.AreEqual("Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.", TurkishTexts.NegotiationComingSoon);
         }
 
         // ---------- ekspertiz ----------
@@ -225,6 +224,78 @@ namespace Esnaf.Tests.Presentation
         {
             Assert.AreEqual("Bu seviye de\u011Fer aral\u0131\u011F\u0131 vermedi\u011Fi i\u00E7in risk kart\u0131 yok.", TurkishTexts.Error("appraisal.no_value_range"));
             Assert.AreEqual("Bilinmeyen ekspertiz sonucu.", TurkishTexts.Error("appraisal.unknown"));
+        }
+
+        // ---------- pazarl\u0131k ----------
+
+        [Test]
+        public void NegotiationTexts_AreFixed()
+        {
+            Assert.AreEqual("Pazarl\u0131k", TurkishTexts.NegotiationTitle);
+            Assert.AreEqual("Teklif Ver", TurkishTexts.MakeOfferButton);
+            Assert.AreEqual("Koz Kullan", TurkishTexts.UseCardButton);
+            Assert.AreEqual("Son Fiyat\u0131 Kabul Et", TurkishTexts.AcceptFinalButton);
+            Assert.AreEqual("Vazge\u00E7", TurkishTexts.WalkAwayButton);
+            Assert.AreEqual("Teklifin (\u20BA):", TurkishTexts.OfferLabel);
+            Assert.AreEqual("Koz kartlar\u0131", TurkishTexts.CardsHeader);
+            Assert.AreEqual("\u00D6nce bir koz kart\u0131 se\u00E7.", TurkishTexts.NoCardSelected);
+            Assert.AreEqual("Elinde koz kart\u0131 yok (ekspertiz yapt\u0131r\u0131nca kartlar \u00E7\u0131kabilir).", TurkishTexts.NoCards);
+            Assert.AreEqual("Bir teklif tutar\u0131 gir.", TurkishTexts.OfferEmpty);
+            Assert.AreEqual("Teklif yaln\u0131zca rakamlardan olu\u015Fmal\u0131.", TurkishTexts.OfferNotNumber);
+            Assert.AreEqual("Teklif negatif olamaz.", TurkishTexts.OfferNegative);
+            Assert.AreEqual("Teklif s\u0131f\u0131rdan b\u00FCy\u00FCk olmal\u0131.", TurkishTexts.OfferNotPositive);
+            Assert.AreEqual("Teklif \u00E7ok b\u00FCy\u00FCk.", TurkishTexts.OfferTooLarge);
+        }
+
+        [Test]
+        public void NegotiationLines_AreWrittenInTurkish()
+        {
+            Money price = Money.FromTl(9500);
+            Assert.AreEqual("\u0130lan fiyat\u0131: 9.500 \u20BA", TurkishTexts.AskingLine(price));
+            Assert.AreEqual("Sat\u0131c\u0131n\u0131n g\u00FCncel fiyat\u0131: 9.500 \u20BA", TurkishTexts.ShownPriceLine(price));
+            Assert.AreEqual("Nakdin: 9.500 \u20BA", TurkishTexts.CashLine(price));
+            Assert.AreEqual("Tur: 3", TurkishTexts.Round(3));
+            Assert.AreEqual("Son teklifin: 9.500 \u20BA", TurkishTexts.YourOffer(price));
+            Assert.AreEqual("Sat\u0131c\u0131: \u0130stedi\u011Fim fiyat 9.500 \u20BA.", TurkishTexts.ReplyOpening(price));
+            Assert.AreEqual("Sat\u0131c\u0131 kar\u015F\u0131 teklif verdi: 9.500 \u20BA.", TurkishTexts.ReplyCounter(price));
+            Assert.AreEqual("Sat\u0131c\u0131 fiyat\u0131nda direniyor: 9.500 \u20BA.", TurkishTexts.ReplyHolding(price));
+            Assert.AreEqual("Sat\u0131c\u0131: Son fiyat\u0131m 9.500 \u20BA. Kabul et ya da kalk.", TurkishTexts.ReplyFinal(price));
+            Assert.AreEqual("Teklifin sat\u0131c\u0131y\u0131 g\u00FCcendirdi.", TurkishTexts.Insulted);
+            Assert.AreEqual("Sat\u0131n al\u0131nd\u0131: Nova N3 Pro \u2014 9.500 \u20BA. Rafa eklendi (2/6).", TurkishTexts.Purchased("Nova N3 Pro", price, 2, 6));
+            Assert.AreEqual("Pazarl\u0131ktan vazge\u00E7tin; ilan pazardan kalkt\u0131.", TurkishTexts.WalkedAway);
+        }
+
+        [Test]
+        public void PhaseMoodAndPatience_AreWrittenInTurkish()
+        {
+            Assert.AreEqual("Pazarl\u0131k s\u00FCr\u00FCyor", TurkishTexts.Phase(Esnaf.Domain.Negotiation.NegotiationPhase.Active));
+            Assert.AreEqual("Sat\u0131c\u0131 son fiyat\u0131n\u0131 s\u00F6yledi", TurkishTexts.Phase(Esnaf.Domain.Negotiation.NegotiationPhase.FinalOffer));
+            Assert.AreEqual("Anla\u015F\u0131ld\u0131", TurkishTexts.Phase(Esnaf.Domain.Negotiation.NegotiationPhase.Deal));
+            Assert.AreEqual("Pazarl\u0131k sona erdi", TurkishTexts.Phase(Esnaf.Domain.Negotiation.NegotiationPhase.Failed));
+            Assert.AreEqual("D\u00FC\u015F\u00FCk", TurkishTexts.Level(Esnaf.Domain.Negotiation.NegotiationLevel.Low));
+            Assert.AreEqual("Orta", TurkishTexts.Level(Esnaf.Domain.Negotiation.NegotiationLevel.Medium));
+            Assert.AreEqual("Y\u00FCksek", TurkishTexts.Level(Esnaf.Domain.Negotiation.NegotiationLevel.High));
+            Assert.AreEqual("Sat\u0131c\u0131n\u0131n ruh hali: Orta", TurkishTexts.MoodLine(Esnaf.Domain.Negotiation.NegotiationLevel.Medium));
+            Assert.AreEqual("Sab\u0131r: Y\u00FCksek", TurkishTexts.PatienceLine(Esnaf.Domain.Negotiation.NegotiationLevel.High));
+        }
+
+        [TestCase(false, "\u2022 Ekran de\u011Fi\u015Ftirilmi\u015F olabilir \u2014 orta g\u00FCven \u2014 sorun de\u011Feri 800 \u20BA")]
+        [TestCase(true, "\u2022 Ekran de\u011Fi\u015Ftirilmi\u015F olabilir \u2014 orta g\u00FCven \u2014 sorun de\u011Feri 800 \u20BA (kullan\u0131ld\u0131)")]
+        public void CardLine_ShowsTheProblemAndMarksAUsedCard(bool used, string expected)
+        {
+            Assert.AreEqual(expected, TurkishTexts.Card("appraisal.finding.screen_replaced", "screen", AppraisalConfidence.Medium, Money.FromTl(800), used));
+        }
+
+        [Test]
+        public void Reply_IsDescribedFromThePriceMovement_AndThePhase()
+        {
+            Money shown = Money.FromTl(9000);
+
+            Assert.AreEqual(TurkishTexts.ReplyCounter(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.Active, shown, Money.FromTl(9500)));
+            Assert.AreEqual(TurkishTexts.ReplyHolding(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.Active, shown, shown), "fiyat oynamadıysa karşı teklif denmez");
+            Assert.AreEqual(TurkishTexts.ReplyHolding(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.Active, shown, Money.FromTl(8500)));
+            Assert.AreEqual(TurkishTexts.ReplyFinal(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.FinalOffer, shown, Money.FromTl(9500)));
+            Assert.AreEqual(TurkishTexts.ReplyFinal(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.FinalOffer, shown, shown));
         }
     }
 }

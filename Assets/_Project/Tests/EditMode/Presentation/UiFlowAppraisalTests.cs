@@ -168,7 +168,7 @@ namespace Esnaf.Tests.Presentation
             using (UiFlow flow = Flow(session))
             {
                 flow.OpenListing(flow.Listings[0].ListingId);
-                flow.RequestNegotiation();
+                flow.SelectListing(-5);
                 Assert.IsNotNull(flow.StatusMessage);
 
                 Assert.IsTrue(flow.OpenAppraisal());

@@ -3,6 +3,7 @@ using System;
 using System.Globalization;
 using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Negotiation;
 
 namespace Esnaf.Presentation
 {
@@ -25,7 +26,7 @@ namespace Esnaf.Presentation
             { "negotiation.closed", "Bu pazarlık sona erdi." },
             { "negotiation.final_offer_only", "Satıcı son fiyatını söyledi; kabul et ya da kalk." },
             { "negotiation.no_final_offer", "Satıcı henüz son fiyat vermedi." },
-            { "offer.invalid", "Geçersiz teklif." },
+            { "offer.invalid", "Geçersiz teklif: pozitif ve 10 ₺'nin katı olmalı." },
             { "card.unknown", "Bilinmeyen koz kartı." },
             { "card.already_used", "Bu koz kartı zaten kullanıldı." },
             { "appraisal.no_value_range", "Bu seviye değer aralığı vermediği için risk kartı yok." },
@@ -90,7 +91,6 @@ namespace Esnaf.Presentation
         public const string BackButton = "Geri";
         public const string AppraisalButton = "Ekspertiz";
         public const string NegotiationButton = "Pazarl\u0131k";
-        public const string NegotiationComingSoon = "Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.";
 
         public static string DetailStorage(int gigabytes)
         {
@@ -248,6 +248,133 @@ namespace Esnaf.Presentation
         {
             int percent = (int)Math.Round(probability * 100.0, MidpointRounding.AwayFromZero);
             return "Aral\u0131k d\u0131\u015F\u0131 kalma olas\u0131l\u0131\u011F\u0131: %" + percent.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public const string NegotiationTitle = "Pazarl\u0131k";
+        public const string MakeOfferButton = "Teklif Ver";
+        public const string UseCardButton = "Koz Kullan";
+        public const string AcceptFinalButton = "Son Fiyat\u0131 Kabul Et";
+        public const string WalkAwayButton = "Vazge\u00E7";
+        public const string OfferLabel = "Teklifin (\u20BA):";
+        public const string CardsHeader = "Koz kartlar\u0131";
+        public const string NoCardSelected = "\u00D6nce bir koz kart\u0131 se\u00E7.";
+        public const string NoCards = "Elinde koz kart\u0131 yok (ekspertiz yapt\u0131r\u0131nca kartlar \u00E7\u0131kabilir).";
+        public const string OfferEmpty = "Bir teklif tutar\u0131 gir.";
+        public const string OfferNotNumber = "Teklif yaln\u0131zca rakamlardan olu\u015Fmal\u0131.";
+        public const string OfferNegative = "Teklif negatif olamaz.";
+        public const string OfferNotPositive = "Teklif s\u0131f\u0131rdan b\u00FCy\u00FCk olmal\u0131.";
+        public const string OfferTooLarge = "Teklif \u00E7ok b\u00FCy\u00FCk.";
+        public const string Insulted = "Teklifin sat\u0131c\u0131y\u0131 g\u00FCcendirdi.";
+        public const string WalkedAway = "Pazarl\u0131ktan vazge\u00E7tin; ilan pazardan kalkt\u0131.";
+
+        public static string AskingLine(Money price)
+        {
+            return "\u0130lan fiyat\u0131: " + MoneyFormatter.Format(price);
+        }
+
+        public static string ShownPriceLine(Money price)
+        {
+            return "Sat\u0131c\u0131n\u0131n g\u00FCncel fiyat\u0131: " + MoneyFormatter.Format(price);
+        }
+
+        public static string CashLine(Money cash)
+        {
+            return "Nakdin: " + MoneyFormatter.Format(cash);
+        }
+
+        public static string Round(int round)
+        {
+            return "Tur: " + round.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string YourOffer(Money offer)
+        {
+            return "Son teklifin: " + MoneyFormatter.Format(offer);
+        }
+
+        public static string ReplyOpening(Money price)
+        {
+            return "Sat\u0131c\u0131: \u0130stedi\u011Fim fiyat " + MoneyFormatter.Format(price) + ".";
+        }
+
+        public static string ReplyCounter(Money price)
+        {
+            return "Sat\u0131c\u0131 kar\u015F\u0131 teklif verdi: " + MoneyFormatter.Format(price) + ".";
+        }
+
+        public static string ReplyHolding(Money price)
+        {
+            return "Sat\u0131c\u0131 fiyat\u0131nda direniyor: " + MoneyFormatter.Format(price) + ".";
+        }
+
+        public static string ReplyFinal(Money price)
+        {
+            return "Sat\u0131c\u0131: Son fiyat\u0131m " + MoneyFormatter.Format(price) + ". Kabul et ya da kalk.";
+        }
+
+        /// <summary>
+        /// Satıcının turdan sonraki cevabı, YALNIZCA dönen görünümden anlatılır: son fiyat geldiyse "son fiyatım", fiyat önceki fiyattan düştüyse
+        /// "karşı teklif", düşmediyse "direniyor". Karar oyundadır; bu yalnızca metindir.
+        /// </summary>
+        public static string Reply(NegotiationPhase phase, Money shown, Money previousShown)
+        {
+            if (phase == NegotiationPhase.FinalOffer)
+            {
+                return ReplyFinal(shown);
+            }
+
+            return shown < previousShown ? ReplyCounter(shown) : ReplyHolding(shown);
+        }
+
+        public static string Purchased(string model, Money price, int shelfCount, int shelfCapacity)
+        {
+            return "Sat\u0131n al\u0131nd\u0131: " + model + " \u2014 " + MoneyFormatter.Format(price) + ". Rafa eklendi ("
+                + shelfCount.ToString(CultureInfo.InvariantCulture) + "/" + shelfCapacity.ToString(CultureInfo.InvariantCulture) + ").";
+        }
+
+        public static string Phase(NegotiationPhase phase)
+        {
+            switch (phase)
+            {
+                case NegotiationPhase.Active:
+                    return "Pazarl\u0131k s\u00FCr\u00FCyor";
+                case NegotiationPhase.FinalOffer:
+                    return "Sat\u0131c\u0131 son fiyat\u0131n\u0131 s\u00F6yledi";
+                case NegotiationPhase.Deal:
+                    return "Anla\u015F\u0131ld\u0131";
+                default:
+                    return "Pazarl\u0131k sona erdi";
+            }
+        }
+
+        public static string Level(NegotiationLevel level)
+        {
+            switch (level)
+            {
+                case NegotiationLevel.Low:
+                    return "D\u00FC\u015F\u00FCk";
+                case NegotiationLevel.Medium:
+                    return "Orta";
+                default:
+                    return "Y\u00FCksek";
+            }
+        }
+
+        public static string MoodLine(NegotiationLevel mood)
+        {
+            return "Sat\u0131c\u0131n\u0131n ruh hali: " + Level(mood);
+        }
+
+        public static string PatienceLine(NegotiationLevel patience)
+        {
+            return "Sab\u0131r: " + Level(patience);
+        }
+
+        /// <summary>Koz kartı satırı: bulgunun adı, güveni ve ürün değerindeki etkisi (ekspertiz kartından); kullanıldıysa işaretlenir.</summary>
+        public static string Card(string wordingKey, string attribute, AppraisalConfidence confidence, Money problemValue, bool used)
+        {
+            string line = Finding(true, wordingKey, attribute, confidence) + " \u2014 sorun de\u011Feri " + MoneyFormatter.Format(problemValue);
+            return used ? line + " (kullan\u0131ld\u0131)" : line;
         }
 
         public static string Error(string code)

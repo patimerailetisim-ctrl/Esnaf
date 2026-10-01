@@ -33,3 +33,6 @@ Hedef dilim: Yeni Oyun → İlanlar → Telefon Detayı → Ekspertiz → Alım 
 - Ücret: oyundan düşer (nakit üst barda olaylarla güncellenir); aynı ilan + aynı seviye ikinci kez ücret almaz (I5), "Sonucu Göster" yazar. Kilit/cihaz hataları API'den gelir ve Türkçe mesajla gösterilir; durum değişmez.
 - Gösterim kararları: kilit durumu ("Kilitli (Gün N'de açılır)") ve ücret yazısı içerikteki veriden gösterilir (karar API'dedir); "Cihaz gerekir" yalnızca bilgidir (cihaz sahipliği için API sorgusu yok). Risk kartı pazarlık olmadığı için İSTENEN FİYATLA hesaplanır ("istenen fiyatla alırsan"); değer aralığı vermeyen seviyede (s0) kart yoktur ve neden yazılır. Bulgu yoksa asla "sorun yok" denmez, "sorun görünmüyor" denir.
 - Pazarlık düğmesi hâlâ hazır-ama-uygulanmadı (Adım 5).
+
+## Adım 5: Pazarlık ekranı (tamamlandı)
+Ayrıntı: `docs/DAY10_STEP5_SCOPE.md`. Telefon Detayı → Pazarlık → teklif / koz / son fiyat / vazgeç; satın alma `TradeService` tarafından yapılır, nakit/ilan/raf API durumundan okunur ve "Rafa eklendi" mesajı gösterilir. Raf ekranı Adım 6'dadır.

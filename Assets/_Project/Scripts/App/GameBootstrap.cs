@@ -25,6 +25,7 @@ namespace Esnaf.App
         private ListingsView _listings;
         private DetailView _detail;
         private AppraisalPanelView _appraisal;
+        private NegotiationPanelView _negotiation;
 
         private void Awake()
         {
@@ -61,6 +62,7 @@ namespace Esnaf.App
             _listings = new ListingsView(canvas.transform, _flow);
             _detail = new DetailView(canvas.transform, _flow);
             _appraisal = new AppraisalPanelView(canvas.transform, _flow);
+            _negotiation = new NegotiationPanelView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
             _flow.Changed += ShowScreen;
             ShowScreen();
@@ -81,6 +83,7 @@ namespace Esnaf.App
             _listings.Show();
             _detail.Show();
             _appraisal.Show();
+            _negotiation.Show();
         }
     }
 }

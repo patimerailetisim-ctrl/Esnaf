@@ -6,8 +6,8 @@ namespace Esnaf.App.Ui
 {
     /// <summary>
     /// Telefon Detayı ekranı: seçili ilanın bilgileri, "Geri", "Ekspertiz" ve "Pazarlık" düğmeleri ve durum mesajı.
-    /// Yalnızca <see cref="UiFlow"/> ile konuşur (Detail, Back, OpenAppraisal, RequestNegotiation); oyun kuralı yoktur.
-    /// Ekspertiz düğmesi Ekspertiz ekranını açar; pazarlık sonraki adımda UiFlow içinde uygulanır (düğme hazırdır).
+    /// Yalnızca <see cref="UiFlow"/> ile konuşur (Detail, Back, OpenAppraisal, OpenNegotiation); oyun kuralı yoktur.
+    /// Ekspertiz düğmesi Ekspertiz ekranını, Pazarlık düğmesi Pazarlık ekranını açar.
     /// </summary>
     internal sealed class DetailView
     {
@@ -77,7 +77,7 @@ namespace Esnaf.App.Ui
 
         private void OnNegotiationClicked()
         {
-            _flow.RequestNegotiation();
+            _flow.OpenNegotiation();
         }
     }
 }

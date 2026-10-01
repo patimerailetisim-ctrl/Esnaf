@@ -496,7 +496,7 @@ namespace Esnaf.Tests.Presentation
             {
                 long id = flow.Listings[0].ListingId;
                 flow.OpenListing(id);
-                flow.RequestNegotiation();
+                flow.SelectListing(-5);
                 Assert.IsNotNull(flow.StatusMessage);
                 int raised = 0;
                 flow.Changed += () => raised++;
@@ -523,28 +523,6 @@ namespace Esnaf.Tests.Presentation
 
                 Assert.AreEqual(0, raised);
                 Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
-            }
-        }
-
-        [Test]
-        public void TheNegotiationButton_IsPreparedButNotImplementedYet_AndOnlyWorksOnTheDetailScreen()
-        {
-            GameSession session = NewSession();
-            using (UiFlow flow = Flow(session))
-            {
-                string digest = session.Api.GetStateDigest();
-                flow.RequestNegotiation();
-                Assert.IsNull(flow.StatusMessage, "detay ekran\u0131nda de\u011Filken bir \u015Fey yapmaz");
-
-                flow.OpenListing(flow.Listings[0].ListingId);
-                int raised = 0;
-                flow.Changed += () => raised++;
-                flow.RequestNegotiation();
-
-                Assert.AreEqual("Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.", flow.StatusMessage);
-                Assert.AreEqual(1, raised);
-                Assert.AreEqual(UiScreen.Detail, flow.CurrentScreen);
-                Assert.AreEqual(digest, session.Api.GetStateDigest(), "oyun durumu de\u011Fi\u015Fmez (hen\u00FCz uygulanmad\u0131)");
             }
         }
 

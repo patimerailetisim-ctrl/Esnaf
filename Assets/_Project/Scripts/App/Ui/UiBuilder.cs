@@ -110,6 +110,29 @@ namespace Esnaf.App.Ui
             return button;
         }
 
+        /// <summary>Tamsayı girişli tek satırlık metin kutusu (eski InputField + Text). Değişince <paramref name="onChanged"/> çağrılır.</summary>
+        public static InputField CreateIntegerField(Transform parent, string name, string placeholder, int fontSize, UnityAction<string> onChanged)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(InputField));
+            go.transform.SetParent(parent, false);
+            go.GetComponent<Image>().color = new Color(0.95f, 0.96f, 0.98f, 1f);
+
+            Text text = CreateText(go.transform, "Text", fontSize, TextAnchor.MiddleCenter, new Color(0.08f, 0.09f, 0.12f, 1f));
+            Stretch(text.rectTransform, Vector2.zero, Vector2.one, new Vector2(10f, 6f), new Vector2(-10f, -6f));
+            Text hint = CreateText(go.transform, "Placeholder", fontSize - 8, TextAnchor.MiddleCenter, new Color(0.45f, 0.47f, 0.52f, 1f));
+            hint.text = placeholder;
+            Stretch(hint.rectTransform, Vector2.zero, Vector2.one, new Vector2(10f, 6f), new Vector2(-10f, -6f));
+
+            var field = go.GetComponent<InputField>();
+            field.targetGraphic = go.GetComponent<Image>();
+            field.textComponent = text;
+            field.placeholder = hint;
+            field.contentType = InputField.ContentType.IntegerNumber;
+            field.characterLimit = 10;
+            field.onValueChanged.AddListener(onChanged);
+            return field;
+        }
+
         /// <summary>Dikey kaydırmalı liste: ScrollRect + içerik (VerticalLayoutGroup + ContentSizeFitter). İçerik nesnesini döndürür.</summary>
         public static RectTransform CreateVerticalList(Transform parent, string name, Color background, float spacing, float padding)
         {
