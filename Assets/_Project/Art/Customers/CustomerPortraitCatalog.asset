@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eda449a8cd9a42318985c674aa36ff72, type: 3}
+  m_Name: CustomerPortraitCatalog
+  m_EditorClassIdentifier: Esnaf.App::Esnaf.App.Ui.CustomerPortraitCatalog
+  _entries:
+  - _name: Ahmet
+    _sprite: {fileID: 21300000, guid: 5d65de1621a7cab4e825cdb50b9cae41, type: 3}
+  - _name: Arda
+    _sprite: {fileID: 21300000, guid: 4e957e87ae10d7748834230899a89e8b, type: 3}
+  - _name: Berk
+    _sprite: {fileID: 21300000, guid: c13a45b69e2bb9240a805720a2f04462, type: 3}
+  - _name: Burak
+    _sprite: {fileID: 21300000, guid: 71f3ecdf8edcbb1419a50734a330e3db, type: 3}
+  - _name: Buse
+    _sprite: {fileID: 21300000, guid: 19cd9be91108ee64591be8b7782066c4, type: 3}
+  - _name: Can
+    _sprite: {fileID: 21300000, guid: b7e448e5fbeb4004c94e673e8eed973c, type: 3}
+  - _name: Ceren
+    _sprite: {fileID: 21300000, guid: 6e5215b407ecd4e4f8e76f1f8fbfa3a1, type: 3}
+  - _name: Damla
+    _sprite: {fileID: 21300000, guid: 6db28419eaa4e1840842f3ea606ffc12, type: 3}
+  - _name: Derya
+    _sprite: {fileID: 21300000, guid: 3f733fbe8156bd74a9402192f2c71746, type: 3}
+  - _name: Ece
+    _sprite: {fileID: 21300000, guid: 92aa607878479d846a34fc9c664c5096, type: 3}
+  - _name: Efe
+    _sprite: {fileID: 21300000, guid: d1e2aea1869206a4dbd56008143379ea, type: 3}
+  - _name: Elif
+    _sprite: {fileID: 21300000, guid: a8a073cced382a142826a9f37423b118, type: 3}
+  - _name: Emre
+    _sprite: {fileID: 21300000, guid: 4b0db63f4828bb84287dccabf274e97a, type: 3}
+  - _name: Eren
+    _sprite: {fileID: 21300000, guid: 3c3ef391e7e68cf4a953e53654d200b5, type: 3}
+  - _name: Kaan
+    _sprite: {fileID: 21300000, guid: 0c103a158af0fea45868b167223ee10e, type: 3}
+  - _name: Kerem
+    _sprite: {fileID: 21300000, guid: 3816ea610f02ad447860b258bcd16477, type: 3}
+  - _name: Mehmet
+    _sprite: {fileID: 21300000, guid: 854897a12e879174497ebbbaec8ad05e, type: 3}
+  - _name: Melis
+    _sprite: {fileID: 21300000, guid: 5723a0e82eb64594391fb877ae3c4c57, type: 3}
+  - _name: Mert
+    _sprite: {fileID: 21300000, guid: 0d2598b37c93d5f40a0eaf5f9b8da9ee, type: 3}
+  - _name: Merve
+    _sprite: {fileID: 21300000, guid: 1fb8cdb16d45745449610ee1f4a03845, type: 3}
+  - _name: Murat
+    _sprite: {fileID: 21300000, guid: 548d3757ee10a5b4f9c952d62bf2258d, type: 3}
+  - _name: Onur
+    _sprite: {fileID: 21300000, guid: 2df60d8209fafa64f82f922ce9ee08af, type: 3}
+  - _name: "O\u011Fuz"
+    _sprite: {fileID: 21300000, guid: 4394c63991c66454fb580f9aafb49e95, type: 3}
+  - _name: Selin
+    _sprite: {fileID: 21300000, guid: e7b56ff0fdf162941a610c2818cb1032, type: 3}
+  - _name: Sude
+    _sprite: {fileID: 21300000, guid: d746bbe455cb17d4e87e67f4cb20392e, type: 3}
+  - _name: "Yi\u011Fit"
+    _sprite: {fileID: 21300000, guid: e0db987c5cad88943b1fc0cf22b4b2b5, type: 3}
+  - _name: Zeynep
+    _sprite: {fileID: 21300000, guid: d9d9b2f072ff0c645b352695bfbb9f4b, type: 3}
+  - _name: "\u0130rem"
+    _sprite: {fileID: 21300000, guid: ebf733c12b392e043bba679b5049bdb2, type: 3}
