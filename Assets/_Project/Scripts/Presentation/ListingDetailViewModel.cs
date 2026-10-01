@@ -15,6 +15,7 @@ namespace Esnaf.Presentation
         public string InvoiceLine { get; }
         public string SellerLine { get; }
         public string RemainingLine { get; }
+        public string BuyButtonText { get; }
 
         private ListingDetailViewModel(ListingView listing, ContentPresentation content)
         {
@@ -27,6 +28,7 @@ namespace Esnaf.Presentation
             InvoiceLine = TurkishTexts.Invoice(listing.HasInvoice);
             SellerLine = TurkishTexts.Seller(content.NpcName(listing.SellerNpcId));
             RemainingLine = TurkishTexts.DetailRemaining(listing.RemainingDays);
+            BuyButtonText = TurkishTexts.BuyNowLabel(listing.AskingPrice);
         }
 
         public static ListingDetailViewModel From(ListingView listing, ContentPresentation content)

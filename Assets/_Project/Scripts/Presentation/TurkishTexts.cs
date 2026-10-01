@@ -30,7 +30,8 @@ namespace Esnaf.Presentation
             { "card.unknown", "Bilinmeyen koz kartı." },
             { "card.already_used", "Bu koz kartı zaten kullanıldı." },
             { "appraisal.no_value_range", "Bu seviye değer aralığı vermediği için risk kartı yok." },
-            { "appraisal.unknown", "Bilinmeyen ekspertiz sonucu." }
+            { "appraisal.unknown", "Bilinmeyen ekspertiz sonucu." },
+            { "price.invalid", "Bu ilanın fiyatı geçersiz." }
         };
 
         public static IReadOnlyCollection<string> KnownErrorCodes
@@ -375,6 +376,29 @@ namespace Esnaf.Presentation
         {
             string line = Finding(true, wordingKey, attribute, confidence) + " \u2014 sorun de\u011Feri " + MoneyFormatter.Format(problemValue);
             return used ? line + " (kullan\u0131ld\u0131)" : line;
+        }
+
+        public const string ShelfTitle = "Raf";
+        public const string ShelfEmpty = "Rafta \u00FCr\u00FCn yok.";
+
+        public static string BuyNowLabel(Money price)
+        {
+            return "Sat\u0131n Al \u2014 " + MoneyFormatter.Format(price);
+        }
+
+        public static string ShelfButton(int count, int capacity)
+        {
+            return "Raf (" + count.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture) + ")";
+        }
+
+        public static string ShelfCapacity(int count, int capacity)
+        {
+            return "Doluluk: " + count.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ShelfCost(Money costBasis)
+        {
+            return "Maliyet: " + MoneyFormatter.Format(costBasis);
         }
 
         public static string Error(string code)

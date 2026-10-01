@@ -76,6 +76,11 @@ namespace Esnaf.Domain.Game
             return _session.Trade.AcceptFinal();
         }
 
+        public Result<Money> BuyListing(long listingId)
+        {
+            return _session.Trade.BuyNow(listingId);
+        }
+
         public Result<NegotiationView> WalkAway()
         {
             return _session.Trade.WalkAway();

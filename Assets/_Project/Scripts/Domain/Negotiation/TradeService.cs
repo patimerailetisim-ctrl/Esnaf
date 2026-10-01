@@ -162,6 +162,47 @@ namespace Esnaf.Domain.Negotiation
             return Result<NegotiationView>.Ok(ViewOf(active, work, result.Insulted));
         }
 
+        /// <summary>
+        /// Pazarlıksız alış (Gün 10 Adım 6, kullanıcı kararı): ilanı İSTENEN fiyattan satın alır. Alış hattı <see cref="Buy"/> ile aynıdır
+        /// (InventoryService.Acquire: defter, raf, bekleyen ekspertiz ücretinin maliyete eklenmesi; ilan kalkar, satıcı "oyuncuya sattı" diye kaydedilir,
+        /// müşteri gelişleri yenilenir, ListingPurchased yayınlanır). Pazarlık yoktur: NegotiationStarted/OfferMade/NegotiationEnded yayınlanmaz,
+        /// satıcı karşılaşması sayılmaz, rastgelelik kullanılmaz. Pazarlık/satış sürerken yapılamaz. Başarısızlıkta HİÇBİR durum değişmez.
+        /// </summary>
+        public Result<Money> BuyNow(long listingId)
+        {
+            if (_state.IsBusy)
+            {
+                return Result<Money>.Fail("negotiation.in_progress", "Finish the current negotiation first.");
+            }
+
+            MarketListing listing;
+            if (!_market.TryGet(listingId, out listing))
+            {
+                return Result<Money>.Fail("listing.unknown", "Unknown listing " + listingId + ".");
+            }
+
+            Money price = listing.AskingPrice;
+            Result acquired = _inventory.Acquire(listing.InstanceId, price, _time.Day);
+            if (acquired.IsFailure)
+            {
+                return Result<Money>.Fail(acquired.ErrorCode, acquired.Message);
+            }
+
+            _market.Remove(listing.ListingId);
+            _npcs.RecordSoldToPlayer(listing.SellerNpcId, listing.InstanceId);
+            if (_customers != null)
+            {
+                _customers.RefreshArrivals();
+            }
+
+            if (_events != null)
+            {
+                _events.Publish(new ListingPurchased(listing.ListingId, listing.InstanceId, listing.SellerNpcId, price));
+            }
+
+            return Result<Money>.Ok(price);
+        }
+
         public Result<NegotiationView> AcceptFinal()
         {
             ActiveNegotiation active = _state.Current;

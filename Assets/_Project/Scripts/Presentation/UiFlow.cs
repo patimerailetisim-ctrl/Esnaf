@@ -6,6 +6,7 @@ using Esnaf.Core;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
+using Esnaf.Domain.Inventory;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Time;
@@ -58,6 +59,7 @@ namespace Esnaf.Presentation
                 _subscriptions.Add(events.Subscribe<ListingExpired>(e => Refresh()));
                 _subscriptions.Add(events.Subscribe<ListingPurchased>(e => Refresh()));
                 _subscriptions.Add(events.Subscribe<NegotiationEnded>(e => Refresh()));
+                _subscriptions.Add(events.Subscribe<ItemAddedToShelf>(e => Refresh()));
             }
         }
 
@@ -74,6 +76,12 @@ namespace Esnaf.Presentation
 
         /// <summary>Pazarlık ekranı (yalnızca CurrentScreen == Negotiation iken dolu; aksi halde null).</summary>
         public NegotiationScreenViewModel NegotiationScreen { get; private set; }
+
+        /// <summary>Raf ekranı (yalnızca CurrentScreen == Shelf iken dolu; aksi halde null). Salt okunurdur.</summary>
+        public ShelfScreenViewModel ShelfScreen { get; private set; }
+
+        /// <summary>İlanlar ekranındaki Raf düğmesinin yazısı: "Raf (n/kapasite)" (IGameApi.GetInventory).</summary>
+        public string ShelfButtonText { get; private set; }
 
         public TopBarViewModel TopBar { get; private set; }
 
@@ -160,7 +168,7 @@ namespace Esnaf.Presentation
             return true;
         }
 
-        /// <summary>Bir adım geri: Ekspertiz → Detay, Pazarlık → Detay (pazarlık açık kalır), Detay → İlanlar (seçim korunur, mesaj temizlenir). İlanlar ekranındaysa hiçbir şey yapmaz.</summary>
+        /// <summary>Bir adım geri: Ekspertiz → Detay, Pazarlık → Detay (pazarlık açık kalır), Detay → İlanlar, Raf → İlanlar (seçim korunur, mesaj temizlenir). İlanlar ekranındaysa hiçbir şey yapmaz.</summary>
         public void Back()
         {
             if (CurrentScreen == UiScreen.Appraisal)
@@ -171,7 +179,7 @@ namespace Esnaf.Presentation
             {
                 CurrentScreen = UiScreen.Detail; // pazarlık oyunda açık kalır; geri dönülünce kaldığı yerden sürer
             }
-            else if (CurrentScreen == UiScreen.Detail)
+            else if (CurrentScreen == UiScreen.Detail || CurrentScreen == UiScreen.Shelf)
             {
                 CurrentScreen = UiScreen.Listings;
             }
@@ -401,6 +409,42 @@ namespace Esnaf.Presentation
             return result;
         }
 
+        /// <summary>İlanlar ekranından salt okunur Raf ekranını açar. İlanlar ekranında değilse hiçbir şey yapmaz (false).</summary>
+        public bool OpenShelf()
+        {
+            if (CurrentScreen != UiScreen.Listings)
+            {
+                return false;
+            }
+
+            CurrentScreen = UiScreen.Shelf;
+            StatusMessage = null;
+            Rebuild();
+            RaiseChanged();
+            return true;
+        }
+
+        /// <summary>
+        /// "Satın Al": seçili ilanı pazarlıksız, İSTENEN fiyattan satın alır (IGameApi.BuyListing). Para, raf ve ilan listesi oyundan okunur;
+        /// başarıda İlanlar ekranına döner ve "Satın alındı … Rafa eklendi" der, hatada (nakit, raf dolu, pazarlık sürüyor…) Türkçe nedeni söyler.
+        /// Yalnızca Telefon Detayı ekranında çalışır.
+        /// </summary>
+        public Result<Money> BuyNow()
+        {
+            if (CurrentScreen != UiScreen.Detail)
+            {
+                return Result<Money>.Fail("ui.not_on_detail_screen", "The detail screen is not open.");
+            }
+
+            string model = Detail.Title;
+            Result<Money> result = _api.BuyListing(_selectedListingId.Value);
+            StatusMessage = result.IsSuccess
+                ? TurkishTexts.Purchased(model, result.Value, _api.GetInventory().Count, _content.ShelfCapacity)
+                : TurkishTexts.Error(result.ErrorCode);
+            Refresh();
+            return result;
+        }
+
         public void ClearSelection()
         {
             if (_selectedListingId == null)
@@ -609,7 +653,11 @@ namespace Esnaf.Presentation
             {
                 _selectedListingId = null;
                 _selectedLevelId = null;
-                CurrentScreen = UiScreen.Listings;
+                if (CurrentScreen != UiScreen.Shelf)
+                {
+                    CurrentScreen = UiScreen.Listings;
+                }
+
                 Detail = null;
                 AppraisalScreen = null;
                 NegotiationScreen = null;
@@ -636,6 +684,25 @@ namespace Esnaf.Presentation
             }
 
             Listings = new ReadOnlyCollection<ListingRowViewModel>(rows);
+
+            IReadOnlyList<StockLine> stock = _api.GetInventory();
+            ShelfButtonText = TurkishTexts.ShelfButton(stock.Count, _content.ShelfCapacity);
+            ShelfScreen = CurrentScreen == UiScreen.Shelf ? BuildShelf(stock) : null;
+        }
+
+        private ShelfScreenViewModel BuildShelf(IReadOnlyList<StockLine> stock)
+        {
+            var items = new List<ShelfItemRowViewModel>();
+            foreach (StockLine line in stock)
+            {
+                items.Add(new ShelfItemRowViewModel(_content.ModelName(line.DefinitionId), TurkishTexts.ShelfCost(line.CostBasis)));
+            }
+
+            return new ShelfScreenViewModel(
+                TurkishTexts.ShelfTitle,
+                TurkishTexts.ShelfCapacity(stock.Count, _content.ShelfCapacity),
+                items,
+                items.Count == 0 ? TurkishTexts.ShelfEmpty : null);
         }
 
         private TopBarViewModel BuildTopBar()

@@ -128,6 +128,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual(1, bus.SubscriberCount<ListingsGenerated>());
                 Assert.AreEqual(1, bus.SubscriberCount<ListingExpired>());
                 Assert.AreEqual(1, bus.SubscriberCount<Esnaf.Domain.Negotiation.ListingPurchased>());
+                Assert.AreEqual(1, bus.SubscriberCount<Esnaf.Domain.Inventory.ItemAddedToShelf>());
             }
 
             Assert.AreEqual(0, bus.SubscriberCount<ListingsGenerated>());

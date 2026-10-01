@@ -41,7 +41,8 @@ namespace Esnaf.Tests.Presentation
             { "card.unknown", "Bilinmeyen koz kartı." },
             { "card.already_used", "Bu koz kartı zaten kullanıldı." },
             { "appraisal.no_value_range", "Bu seviye değer aralığı vermediği için risk kartı yok." },
-            { "appraisal.unknown", "Bilinmeyen ekspertiz sonucu." }
+            { "appraisal.unknown", "Bilinmeyen ekspertiz sonucu." },
+            { "price.invalid", "Bu ilanın fiyatı geçersiz." }
         };
 
         [TestCaseSource(nameof(ExpectedCodes))]
@@ -65,7 +66,7 @@ namespace Esnaf.Tests.Presentation
         [Test]
         public void Error_UnknownCode_FallsBackToAGenericMessageThatKeepsTheCode()
         {
-            Assert.AreEqual("Bir sorun oluştu (price.invalid).", TurkishTexts.Error("price.invalid"));
+            Assert.AreEqual("Bir sorun oluştu (instance.unknown).", TurkishTexts.Error("instance.unknown"));
         }
 
         [TestCase(null)]
@@ -296,6 +297,17 @@ namespace Esnaf.Tests.Presentation
             Assert.AreEqual(TurkishTexts.ReplyHolding(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.Active, shown, Money.FromTl(8500)));
             Assert.AreEqual(TurkishTexts.ReplyFinal(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.FinalOffer, shown, Money.FromTl(9500)));
             Assert.AreEqual(TurkishTexts.ReplyFinal(shown), TurkishTexts.Reply(Esnaf.Domain.Negotiation.NegotiationPhase.FinalOffer, shown, shown));
+        }
+
+        [Test]
+        public void BuyAndShelfTexts_AreWrittenInTurkish()
+        {
+            Assert.AreEqual("Sat\u0131n Al \u2014 9.500 \u20BA", TurkishTexts.BuyNowLabel(Money.FromTl(9500)));
+            Assert.AreEqual("Raf (2/6)", TurkishTexts.ShelfButton(2, 6));
+            Assert.AreEqual("Raf", TurkishTexts.ShelfTitle);
+            Assert.AreEqual("Doluluk: 2/6", TurkishTexts.ShelfCapacity(2, 6));
+            Assert.AreEqual("Rafta \u00FCr\u00FCn yok.", TurkishTexts.ShelfEmpty);
+            Assert.AreEqual("Maliyet: 9.500 \u20BA", TurkishTexts.ShelfCost(Money.FromTl(9500)));
         }
     }
 }

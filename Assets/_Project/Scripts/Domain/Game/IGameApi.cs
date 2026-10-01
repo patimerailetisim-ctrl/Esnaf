@@ -49,6 +49,13 @@ namespace Esnaf.Domain.Game
         /// <summary>Masadan kalkar: pazarlık biter, ilan kalkar, bekleyen ekspertiz ücreti gider yazılır.</summary>
         Result<NegotiationView> WalkAway();
 
+        /// <summary>
+        /// Pazarlıksız alış (Gün 10 Adım 6, kullanıcı kararı): ilanı İSTENEN fiyattan satın alıp rafa koyar; döndürülen değer ödenen fiyattır.
+        /// Alış hattı pazarlıktakiyle aynıdır (defter, raf, bekleyen ekspertiz ücretinin maliyete eklenmesi, olaylar, NPC kaydı); rastgelelik kullanmaz.
+        /// Pazarlık/satış sürerken yapılamaz. Hatalar: negotiation.in_progress, listing.unknown, inventory.full, cash.insufficient (durum değişmez).
+        /// </summary>
+        Result<Money> BuyListing(long listingId);
+
         /// <summary>Raftaki ürüne etiket fiyatı koyar/değiştirir (Gün 8). Etiketsiz ürüne müşteri ilgilenmez. Hatalar: instance.unknown, instance.not_in_inventory, price.invalid.</summary>
         Result SetPrice(long instanceId, Money price);
 

@@ -36,3 +36,6 @@ Hedef dilim: Yeni Oyun → İlanlar → Telefon Detayı → Ekspertiz → Alım 
 
 ## Adım 5: Pazarlık ekranı (tamamlandı)
 Ayrıntı: `docs/DAY10_STEP5_SCOPE.md`. Telefon Detayı → Pazarlık → teklif / koz / son fiyat / vazgeç; satın alma `TradeService` tarafından yapılır, nakit/ilan/raf API durumundan okunur ve "Rafa eklendi" mesajı gösterilir. Raf ekranı Adım 6'dadır.
+
+## Adım 6: Satın Al + Raf (tamamlandı)
+Ayrıntı: `docs/DAY10_STEP6_SCOPE.md`. Pazarlıksız alış için `IGameApi.BuyListing` eklendi (kullanıcı onaylı yeni komut, GDD'de yoktu); salt okunur Raf ekranı eklendi.

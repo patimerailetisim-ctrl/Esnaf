@@ -6,7 +6,7 @@ namespace Esnaf.App.Ui
 {
     /// <summary>
     /// İlanlar ekranı: başlık, kaydırmalı ilan listesi, durum mesajı ve "Günü Bitir" düğmesi. Yalnızca <see cref="UiFlow"/> ile konuşur
-    /// (satırlar ListingRowViewModel, tıklama OpenListing: seçer ve detaya geçer, düğme EndDay); oyun kuralı yoktur. Liste her değişimde yeniden kurulur.
+    /// (satırlar ListingRowViewModel, tıklama OpenListing: seçer ve detaya geçer, düğme EndDay, Raf düğmesi OpenShelf); oyun kuralı yoktur. Liste her değişimde yeniden kurulur.
     /// </summary>
     internal sealed class ListingsView
     {
@@ -22,6 +22,7 @@ namespace Esnaf.App.Ui
         private readonly RectTransform _content;
         private readonly Text _empty;
         private readonly Text _status;
+        private readonly Text _shelfLabel;
 
         public ListingsView(Transform canvas, UiFlow flow)
         {
@@ -47,7 +48,11 @@ namespace Esnaf.App.Ui
             UiBuilder.Stretch(_status.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, BottomBarHeight), new Vector2(-40f, BottomBarHeight + StatusHeight));
 
             Button endDay = UiBuilder.CreateButton(root, "EndDayButton", TurkishTexts.EndDayButton, 52, new Color(0.7f, 0.3f, 0.25f, 1f), OnEndDayClicked);
-            UiBuilder.Stretch(endDay.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, 25f), new Vector2(-40f, BottomBarHeight - 25f));
+            UiBuilder.Stretch(endDay.GetComponent<RectTransform>(), new Vector2(0.38f, 0f), new Vector2(1f, 0f), new Vector2(10f, 25f), new Vector2(-40f, BottomBarHeight - 25f));
+
+            Button shelf = UiBuilder.CreateButton(root, "ShelfButton", TurkishTexts.ShelfButton(0, 0), 46, new Color(0.3f, 0.33f, 0.42f, 1f), OnShelfClicked);
+            UiBuilder.Stretch(shelf.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.38f, 0f), new Vector2(40f, 25f), new Vector2(-10f, BottomBarHeight - 25f));
+            _shelfLabel = shelf.GetComponentInChildren<Text>();
         }
 
         public void Show()
@@ -71,6 +76,7 @@ namespace Esnaf.App.Ui
 
             _empty.gameObject.SetActive(_flow.Listings.Count == 0);
             _status.text = _flow.StatusMessage ?? string.Empty;
+            _shelfLabel.text = _flow.ShelfButtonText;
         }
 
         private void AddRow(ListingRowViewModel row)
@@ -88,6 +94,11 @@ namespace Esnaf.App.Ui
                 + row.StorageText + "  •  " + row.AgeText + "  •  " + row.PriceText + "\n"
                 + row.RemainingText + "  •  " + row.BoxText + "  •  " + row.InvoiceText;
             UiBuilder.Stretch(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(30f, 0f), new Vector2(-30f, 0f));
+        }
+
+        private void OnShelfClicked()
+        {
+            _flow.OpenShelf();
         }
 
         private void OnEndDayClicked()

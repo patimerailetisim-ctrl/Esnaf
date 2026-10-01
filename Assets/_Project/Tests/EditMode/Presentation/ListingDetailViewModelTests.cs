@@ -33,6 +33,7 @@ namespace Esnaf.Tests.Presentation
             Assert.AreEqual("Fatura: yok", d.InvoiceLine);
             Assert.AreEqual("Satıcı: Kemal Abi", d.SellerLine);
             Assert.AreEqual("Süre: 4 gün kaldı", d.RemainingLine);
+            Assert.AreEqual("Satın Al — 12.750 ₺", d.BuyButtonText);
         }
 
         [Test]

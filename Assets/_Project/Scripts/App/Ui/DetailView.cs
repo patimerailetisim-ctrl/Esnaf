@@ -6,20 +6,21 @@ namespace Esnaf.App.Ui
 {
     /// <summary>
     /// Telefon Detayı ekranı: seçili ilanın bilgileri, "Geri", "Ekspertiz" ve "Pazarlık" düğmeleri ve durum mesajı.
-    /// Yalnızca <see cref="UiFlow"/> ile konuşur (Detail, Back, OpenAppraisal, OpenNegotiation); oyun kuralı yoktur.
-    /// Ekspertiz düğmesi Ekspertiz ekranını, Pazarlık düğmesi Pazarlık ekranını açar.
+    /// Yalnızca <see cref="UiFlow"/> ile konuşur (Detail, Back, OpenAppraisal, OpenNegotiation, BuyNow); oyun kuralı yoktur.
+    /// Ekspertiz düğmesi Ekspertiz ekranını, Pazarlık düğmesi Pazarlık ekranını açar, "Satın Al" pazarlıksız satın alır.
     /// </summary>
     internal sealed class DetailView
     {
         private const float BackHeight = 120f;
         private const float StatusHeight = 90f;
-        private const float ButtonsHeight = 170f;
+        private const float ButtonsHeight = 290f;
 
         private readonly UiFlow _flow;
         private readonly GameObject _root;
         private readonly Text _title;
         private readonly Text _lines;
         private readonly Text _status;
+        private readonly Text _buyLabel;
 
         public DetailView(Transform canvas, UiFlow flow)
         {
@@ -43,10 +44,14 @@ namespace Esnaf.App.Ui
             UiBuilder.Stretch(_status.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, ButtonsHeight), new Vector2(-40f, ButtonsHeight + StatusHeight));
 
             Button appraisal = UiBuilder.CreateButton(root, "AppraisalButton", TurkishTexts.AppraisalButton, 50, new Color(0.25f, 0.5f, 0.45f, 1f), OnAppraisalClicked);
-            UiBuilder.Stretch(appraisal.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.5f, 0f), new Vector2(40f, 25f), new Vector2(-15f, ButtonsHeight - 25f));
+            UiBuilder.Stretch(appraisal.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.5f, 0f), new Vector2(40f, 25f), new Vector2(-15f, 145f));
 
             Button negotiation = UiBuilder.CreateButton(root, "NegotiationButton", TurkishTexts.NegotiationButton, 50, new Color(0.7f, 0.45f, 0.2f, 1f), OnNegotiationClicked);
-            UiBuilder.Stretch(negotiation.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(1f, 0f), new Vector2(15f, 25f), new Vector2(-40f, ButtonsHeight - 25f));
+            UiBuilder.Stretch(negotiation.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(1f, 0f), new Vector2(15f, 25f), new Vector2(-40f, 145f));
+
+            Button buy = UiBuilder.CreateButton(root, "BuyButton", TurkishTexts.BuyNowLabel(Esnaf.Core.Money.Zero), 48, new Color(0.2f, 0.55f, 0.3f, 1f), OnBuyClicked);
+            UiBuilder.Stretch(buy.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, 160f), new Vector2(-40f, 270f));
+            _buyLabel = buy.GetComponentInChildren<Text>();
         }
 
         public void Show()
@@ -63,6 +68,7 @@ namespace Esnaf.App.Ui
             _lines.text = detail.StorageLine + "\n" + detail.AgeLine + "\n" + detail.PriceLine + "\n"
                 + detail.BoxLine + "\n" + detail.InvoiceLine + "\n" + detail.SellerLine + "\n" + detail.RemainingLine;
             _status.text = _flow.StatusMessage ?? string.Empty;
+            _buyLabel.text = detail.BuyButtonText;
         }
 
         private void OnBackClicked()
@@ -73,6 +79,11 @@ namespace Esnaf.App.Ui
         private void OnAppraisalClicked()
         {
             _flow.OpenAppraisal();
+        }
+
+        private void OnBuyClicked()
+        {
+            _flow.BuyNow();
         }
 
         private void OnNegotiationClicked()
