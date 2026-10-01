@@ -22,7 +22,7 @@ namespace Esnaf.App.Ui
         {
             UiKit.Clear(host);
 
-            Sprite sprite = PhoneImages.Provider == null ? null : PhoneImages.Provider(definitionId, angle);
+            Sprite sprite = PhoneImages.Get(definitionId, angle);
             if (sprite != null)
             {
                 var go = new GameObject("PhoneImage", typeof(RectTransform), typeof(Image));
@@ -136,5 +136,25 @@ namespace Esnaf.App.Ui
     internal static class PhoneImages
     {
         public static Func<string, PhoneAngle, Sprite> Provider;
+
+        /// <summary>Provider yoksa veya bu model/açı için görsel yoksa null (çağıran mock'a düşer).</summary>
+        public static Sprite Get(string definitionId, PhoneAngle angle)
+        {
+            return Provider == null || definitionId == null ? null : Provider(definitionId, angle);
+        }
+
+        /// <summary>Modelin en az bir gerçek görseli var mı. Varsa ekran yalnızca görseli olan açıları sunar; yoksa mock'un tüm açıları.</summary>
+        public static bool HasAny(string definitionId, PhoneAngle[] angles)
+        {
+            foreach (PhoneAngle angle in angles)
+            {
+                if (Get(definitionId, angle) != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

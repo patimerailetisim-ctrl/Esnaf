@@ -191,6 +191,13 @@ namespace Esnaf.App.Ui
             UiBuilder.Stretch(stage, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(24f, 132f), new Vector2(-24f, -100f));
             stage.GetComponent<Image>().raycastTarget = false;
 
+            // Gerçek görseli olan modelde yalnızca görseli olan açılar sunulur (mock'ta tüm açılar).
+            PhoneAngle[] angles = AvailableAngles(screen.DefinitionId);
+            if (System.Array.IndexOf(angles, _angle) < 0)
+            {
+                _angle = angles[0];
+            }
+
             var phone = new GameObject("Phone", typeof(RectTransform)).GetComponent<RectTransform>();
             phone.SetParent(stage, false);
             phone.anchorMin = new Vector2(0.5f, 0.5f);
@@ -199,19 +206,38 @@ namespace Esnaf.App.Ui
             phone.localScale = new Vector3(0.9f, 0.9f, 1f);
             PhoneMockView.Draw(phone, screen.DefinitionId, _angle);
 
-            RectTransform angles = UiBuilder.CreatePanel(hero, "Angles", new Color(0f, 0f, 0f, 0f));
-            angles.GetComponent<Image>().raycastTarget = false;
-            UiBuilder.Stretch(angles, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(24f, 24f), new Vector2(-24f, 112f));
-            HorizontalLayoutGroup layout = UiKit.Row(angles, 12f, 0);
+            RectTransform anglesRow = UiBuilder.CreatePanel(hero, "Angles", new Color(0f, 0f, 0f, 0f));
+            anglesRow.GetComponent<Image>().raycastTarget = false;
+            UiBuilder.Stretch(anglesRow, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(24f, 24f), new Vector2(-24f, 112f));
+            HorizontalLayoutGroup layout = UiKit.Row(anglesRow, 12f, 0);
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = true;
-            foreach (PhoneAngle angle in Angles)
+            foreach (PhoneAngle angle in angles)
             {
                 PhoneAngle chosen = angle;
                 bool selected = angle == _angle;
-                UiKit.RoundedButton(angles, "Angle_" + angle, TurkishTexts.PhoneAngleName(angle), 32,
+                UiKit.RoundedButton(anglesRow, "Angle_" + angle, TurkishTexts.PhoneAngleName(angle), 32,
                     selected ? UiTheme.Ink : UiTheme.CardSoft, selected ? Color.white : UiTheme.Ink, () => OnAngleClicked(chosen));
             }
+        }
+
+        private static PhoneAngle[] AvailableAngles(string definitionId)
+        {
+            if (!PhoneImages.HasAny(definitionId, Angles))
+            {
+                return Angles;
+            }
+
+            var available = new System.Collections.Generic.List<PhoneAngle>();
+            foreach (PhoneAngle angle in Angles)
+            {
+                if (PhoneImages.Get(definitionId, angle) != null)
+                {
+                    available.Add(angle);
+                }
+            }
+
+            return available.ToArray();
         }
 
         private void AddResult(AppraisalResultViewModel result)

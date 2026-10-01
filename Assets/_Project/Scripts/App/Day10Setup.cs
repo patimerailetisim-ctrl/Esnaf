@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using Esnaf.App.Ui;
 using Esnaf.Content;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -22,7 +23,8 @@ namespace Esnaf.App
         private static void Setup()
         {
             ContentCatalog catalog = CreateOrUpdateCatalog();
-            CreateMainScene(catalog);
+            PhoneImageCatalog phoneImages = PhoneSpriteImport.CreateOrUpdateCatalog();
+            CreateMainScene(catalog, phoneImages);
             Debug.Log("Esnaf: ContentCatalog ve Main sahnesi hazır. Main sahnesini açıp Play'e basın.");
         }
 
@@ -61,7 +63,7 @@ namespace Esnaf.App
             return catalog;
         }
 
-        private static void CreateMainScene(ContentCatalog catalog)
+        private static void CreateMainScene(ContentCatalog catalog, PhoneImageCatalog phoneImages)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -76,6 +78,7 @@ namespace Esnaf.App
             var bootstrap = bootstrapObject.AddComponent<GameBootstrap>();
             var serialized = new SerializedObject(bootstrap);
             serialized.FindProperty("_catalog").objectReferenceValue = catalog;
+            serialized.FindProperty("_phoneImages").objectReferenceValue = phoneImages;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             EditorSceneManager.SaveScene(scene, ScenePath);

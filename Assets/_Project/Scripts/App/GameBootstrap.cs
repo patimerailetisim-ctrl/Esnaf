@@ -1,3 +1,4 @@
+using System;
 using Esnaf.App.Ui;
 using Esnaf.Content;
 using Esnaf.Domain.Content;
@@ -15,6 +16,10 @@ namespace Esnaf.App
     {
         [SerializeField]
         private ContentCatalog _catalog;
+
+        /// <summary>Gerçek telefon görselleri (isteğe bağlı). Atanmazsa ekspertiz ekranı mock telefonu çizer.</summary>
+        [SerializeField]
+        private PhoneImageCatalog _phoneImages;
 
         [SerializeField]
         private int _seed = 20260101;
@@ -58,6 +63,8 @@ namespace Esnaf.App
             _session = GameSession.NewGame(result.Database, (ulong)_seed);
             _flow = new UiFlow(_session.Api, new ContentPresentation(result.Database), _session.Bus);
 
+            PhoneImages.Provider = _phoneImages == null ? null : (Func<string, PhoneAngle, Sprite>)_phoneImages.GetSprite;
+
             Canvas canvas = UiBuilder.CreateCanvas("Canvas");
             UiBuilder.EnsureEventSystem();
             _listings = new ListingsView(canvas.transform, _flow);
@@ -72,6 +79,7 @@ namespace Esnaf.App
 
         private void OnDestroy()
         {
+            PhoneImages.Provider = null;
             if (_flow != null)
             {
                 _flow.Changed -= ShowScreen;
