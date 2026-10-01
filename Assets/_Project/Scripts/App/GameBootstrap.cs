@@ -32,6 +32,7 @@ namespace Esnaf.App
         private AppraisalPanelView _appraisal;
         private NegotiationPanelView _negotiation;
         private ShelfView _shelf;
+        private SalePanelView _sale;
 
         private void Awake()
         {
@@ -85,9 +86,45 @@ namespace Esnaf.App
             _appraisal = new AppraisalPanelView(canvas.transform, _flow);
             _negotiation = new NegotiationPanelView(canvas.transform, _flow);
             _shelf = new ShelfView(canvas.transform, _flow);
+            _sale = new SalePanelView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
             _flow.Changed += ShowScreen;
             ShowScreen();
+        }
+
+        /// <summary>
+        /// Yalnızca el ile deneme yardımcısı (Play Mode'da bileşen başlığındaki ⋮ menüsü ya da üst menüde Esnaf > Test: ...): ilk ilanı istenen fiyattan alır ve etikete aynı fiyatı koyar,
+        /// böylece Müşteriler ekranında müşteri çıkar. Yalnızca IGameApi'yi kullanır (BuyListing, SetPrice); oyun kuralı değildir.
+        /// </summary>
+        [ContextMenu("Test: ilk ilani al ve etiketle (musteri gelsin)")]
+        public void DebugBuyAndPriceFirstListing()
+        {
+            if (_session == null || _flow == null)
+            {
+                Debug.LogWarning("GameBootstrap: oyun başlamamış (Play Mode'da çalıştırın).");
+                return;
+            }
+
+            var listings = _session.Api.GetListings();
+            if (listings.Count == 0)
+            {
+                Debug.LogWarning("GameBootstrap: ilan yok.");
+                return;
+            }
+
+            Esnaf.Core.Money asking = listings[0].AskingPrice;
+            var bought = _session.Api.BuyListing(listings[0].ListingId);
+            if (bought.IsFailure)
+            {
+                Debug.LogWarning("GameBootstrap: satın alma olmadı: " + bought.ErrorCode);
+                return;
+            }
+
+            var stock = _session.Api.GetInventory();
+            long instanceId = stock[stock.Count - 1].InstanceId;
+            var priced = _session.Api.SetPrice(instanceId, asking);
+            Debug.Log("GameBootstrap: etiket " + (priced.IsSuccess ? "konuldu: " + asking.Tl + " TL" : "olmadı: " + priced.ErrorCode));
+            _flow.Refresh();
         }
 
         private void OnDestroy()
@@ -108,6 +145,7 @@ namespace Esnaf.App
             _appraisal.Show();
             _negotiation.Show();
             _shelf.Show();
+            _sale.Show();
         }
     }
 }

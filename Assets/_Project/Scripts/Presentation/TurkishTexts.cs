@@ -31,7 +31,14 @@ namespace Esnaf.Presentation
             { "card.already_used", "Bu koz kartı zaten kullanıldı." },
             { "appraisal.no_value_range", "Bu seviye değer aralığı vermediği için risk kartı yok." },
             { "appraisal.unknown", "Bilinmeyen ekspertiz sonucu." },
-            { "price.invalid", "Bu ilanın fiyatı geçersiz." }
+            { "price.invalid", "Bu ilanın fiyatı geçersiz." },
+            { "sale.none", "Süren bir satış yok." },
+            { "customer.unknown", "Bu müşteri artık dükkânda değil." },
+            { "customer.no_interest", "Müşteri rafta ilgilendiği bir ürün bulamadı." },
+            { "ask.invalid", "Geçersiz fiyat: pozitif ve 10 ₺'nin katı olmalı." },
+            { "report.unknown", "Bu rapor bu ürüne ait değil." },
+            { "report.not_eligible", "Bu seviyedeki rapor müşteriye gösterilemez." },
+            { "report.already_shown", "Raporu zaten gösterdin." }
         };
 
         public static IReadOnlyCollection<string> KnownErrorCodes
@@ -172,6 +179,82 @@ namespace Esnaf.Presentation
         }
 
         public const string BackButton = "Geri";
+
+        // ---- müşteri satış ekranı ----
+        public const string CustomersTitle = "M\u00FC\u015Fteriler";
+        public const string NoCustomers = "\u015Eu an d\u00FCkk\u00E2nda ilgilenen m\u00FC\u015Fteri yok. Rafa etiket fiyat\u0131 konulmu\u015F \u00FCr\u00FCnlere m\u00FC\u015Fteri bakar.";
+        public const string SaleDoneButton = "Ba\u015Fka m\u00FC\u015Fteriye bakal\u0131m.";
+        public const string ReplyGreet = "Tabii abi, buyur.";
+        public const string ReplyReport = "Ekspertizi yap\u0131ld\u0131, raporu g\u00F6stereyim.";
+        public const string ReplyLetGo = "Olmad\u0131 abi, ba\u015Fka sefere.";
+        public const string ReplyAcceptFinalPrefix = "Tamam abi, ";
+        public const string PriceStepperHint = "Se\u00E7ti\u011Fin fiyat";
+
+        public static string CustomersButton(int count)
+        {
+            return count == 0 ? CustomersTitle : CustomersTitle + " (" + count.ToString(CultureInfo.InvariantCulture) + ")";
+        }
+
+        /// <summary>"Elma E13 Pro'ya bakıyor".</summary>
+        public static string CustomerInterest(string model)
+        {
+            return model + " i\u00E7in geldi";
+        }
+
+        /// <summary>Oyuncunun cevabı olarak söylediği fiyat: "6.500 ₺ olur abi."</summary>
+        public static string ReplyPrice(Money price)
+        {
+            return MoneyFormatter.Format(price) + " olur abi.";
+        }
+
+        public static string ReplyAcceptFinal(Money price)
+        {
+            return ReplyAcceptFinalPrefix + MoneyFormatter.Format(price) + "'ye olsun.";
+        }
+
+        public static string BudgetOf(NegotiationLevel level)
+        {
+            switch (level)
+            {
+                case NegotiationLevel.Low:
+                    return "B\u00FCt\u00E7e: s\u0131n\u0131rl\u0131";
+                case NegotiationLevel.High:
+                    return "B\u00FCt\u00E7e: rahat";
+                default:
+                    return "B\u00FCt\u00E7e: normal";
+            }
+        }
+
+        public static string CustomerMood(NegotiationLevel level)
+        {
+            switch (level)
+            {
+                case NegotiationLevel.Low:
+                    return "Mesafeli";
+                case NegotiationLevel.High:
+                    return "Rahat";
+                default:
+                    return "Il\u0131ml\u0131";
+            }
+        }
+
+        public static string CustomerPatience(NegotiationLevel level)
+        {
+            switch (level)
+            {
+                case NegotiationLevel.Low:
+                    return "Sab\u0131rs\u0131z";
+                case NegotiationLevel.High:
+                    return "Sab\u0131rl\u0131";
+                default:
+                    return "Makul";
+            }
+        }
+
+        public static string SaleDeal(Money price)
+        {
+            return "Sat\u0131ld\u0131: " + MoneyFormatter.Format(price);
+        }
         public const string AppraisalButton = "Ekspertiz";
         public const string NegotiationButton = "Pazarl\u0131k";
 

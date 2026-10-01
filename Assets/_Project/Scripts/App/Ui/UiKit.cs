@@ -157,6 +157,27 @@ namespace Esnaf.App.Ui
             return layout;
         }
 
+        /// <summary>Satır kaydıran etiket (isteğe bağlı kalın).</summary>
+        public static Text Label(Transform parent, string name, string text, int size, Color color, bool bold = false, TextAnchor anchor = TextAnchor.UpperLeft)
+        {
+            Text label = UiBuilder.CreateWrappedText(parent, name, size, anchor, color);
+            label.text = text ?? string.Empty;
+            if (bold)
+            {
+                label.fontStyle = FontStyle.Bold;
+            }
+
+            return label;
+        }
+
+        /// <summary>Çocuklarını dikey dizen, içeriğine göre yüksekliği büyüyen kart.</summary>
+        public static RectTransform AutoCard(Transform parent, string name, Color fill, float spacing = 12f, int padding = 32)
+        {
+            RectTransform card = Card(parent, name, fill);
+            Column(card, spacing, padding);
+            return card;
+        }
+
         private static LayoutElement EnsureLayout(RectTransform rect)
         {
             LayoutElement layout = rect.GetComponent<LayoutElement>();

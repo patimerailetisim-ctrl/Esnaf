@@ -30,6 +30,7 @@ namespace Esnaf.Presentation
         private Money? _lastOffer;
         private Money _previousShown;
         private int _selectedCardIndex = -1;
+        private readonly SaleUiState _sale = new SaleUiState();
 
         /// <summary>En büyük kabul edilen teklif kutusu değeri (TL). Gerçek doğrulama yine API'dedir.</summary>
         public const long MaxOffer = 1000000000L;
@@ -82,6 +83,12 @@ namespace Esnaf.Presentation
 
         /// <summary>İlanlar ekranındaki Raf düğmesinin yazısı: "Raf (n/kapasite)" (IGameApi.GetInventory).</summary>
         public string ShelfButtonText { get; private set; }
+
+        /// <summary>Müşteri satış ekranı (yalnızca CurrentScreen == Sale iken dolu; aksi halde null).</summary>
+        public SaleScreenViewModel SaleScreen { get; private set; }
+
+        /// <summary>İlanlar ekranındaki Müşteriler düğmesinin yazısı: "Müşteriler (n)" (IGameApi.GetCustomers).</summary>
+        public string CustomersButtonText { get; private set; }
 
         public TopBarViewModel TopBar { get; private set; }
 
@@ -182,6 +189,14 @@ namespace Esnaf.Presentation
             else if (CurrentScreen == UiScreen.Detail || CurrentScreen == UiScreen.Shelf)
             {
                 CurrentScreen = UiScreen.Listings;
+            }
+            else if (CurrentScreen == UiScreen.Sale)
+            {
+                CurrentScreen = UiScreen.Listings; // süren satış oyunda açık kalır; Müşteriler'e dönünce kaldığı yerden sürer
+                if (_api.GetSale() == null)
+                {
+                    ResetSaleState();
+                }
             }
             else
             {
@@ -425,6 +440,130 @@ namespace Esnaf.Presentation
         }
 
         /// <summary>
+        /// İlanlar ekranından Müşteri satış ekranını açar. Süren bir satış varsa kaldığı yerden sürer; yoksa dükkândaki müşteriler listelenir.
+        /// İlanlar ekranında değilse hiçbir şey yapmaz (false).
+        /// </summary>
+        public bool OpenCustomers()
+        {
+            if (CurrentScreen != UiScreen.Listings)
+            {
+                return false;
+            }
+
+            CurrentScreen = UiScreen.Sale;
+            StatusMessage = null;
+            SaleView running = _api.GetSale();
+            if (running != null && !_sale.Initialized)
+            {
+                ResumeSale(running);
+            }
+
+            Rebuild();
+            RaiseChanged();
+            return true;
+        }
+
+        /// <summary>Müşteriyle konuşmaya başlar (IGameApi.StartSale). Hata olursa StatusMessage Türkçe nedeni söyler. Satış ekranında değilse hiçbir şey yapmaz.</summary>
+        public Result<SaleView> StartSale(long customerId)
+        {
+            if (CurrentScreen != UiScreen.Sale)
+            {
+                return Result<SaleView>.Fail("ui.not_on_sale_screen", "The sale screen is not open.");
+            }
+
+            Result<SaleView> result = _api.StartSale(customerId);
+            if (result.IsFailure)
+            {
+                StatusMessage = TurkishTexts.Error(result.ErrorCode);
+                Refresh();
+                return result;
+            }
+
+            ResetSaleState();
+            SaleView view = result.Value;
+            _sale.Initialized = true;
+            _sale.DefinitionId = DefinitionOf(view.InstanceId);
+            _sale.AskTl = DefaultAsk(view.ShownPrice);
+            _sale.CustomerLine = SaleDialogue.Greeting(PersonalityOf(view), _content.ModelName(_sale.DefinitionId));
+            StatusMessage = null;
+            Refresh();
+            return result;
+        }
+
+        /// <summary>"Tabii abi, buyur.": yalnızca konuşmayı ilerletir (oyuna dokunmaz); müşteri fiyatı sorar.</summary>
+        public bool SaleGreet()
+        {
+            SaleView view = CurrentScreen == UiScreen.Sale ? _api.GetSale() : null;
+            if (view == null || _sale.Stage != 0)
+            {
+                return false;
+            }
+
+            _sale.Stage = 1;
+            _sale.PlayerLine = TurkishTexts.ReplyGreet;
+            _sale.CustomerLine = SaleDialogue.AfterGreeting(view.Profile == null ? NegotiationLevel.Medium : view.Profile.Knowledge);
+            StatusMessage = null;
+            Rebuild();
+            RaiseChanged();
+            return true;
+        }
+
+        /// <summary>Fiyat seçicisini <paramref name="delta"/> TL kaydırır (en az 10, en çok <see cref="MaxOffer"/>); yalnızca ekran değeridir, oyuna dokunmaz.</summary>
+        public void AdjustSalePrice(int delta)
+        {
+            if (CurrentScreen != UiScreen.Sale || _api.GetSale() == null)
+            {
+                return;
+            }
+
+            _sale.AskTl = Math.Min(MaxOffer, Math.Max(10L, _sale.AskTl + delta));
+            Rebuild();
+            RaiseChanged();
+        }
+
+        /// <summary>"6.500 ₺ olur abi.": seçili fiyatı IGameApi.AskPrice'a gönderir. Anlaşma olursa satış oyunda yapılmıştır.</summary>
+        public Result<SaleView> SaleAsk()
+        {
+            Money ask = Money.FromTl(_sale.AskTl);
+            return SendSale(() => _api.AskPrice(ask), TurkishTexts.ReplyPrice(ask), SaleSpeech.Ask);
+        }
+
+        /// <summary>"Ekspertizi yapıldı…": raporu müşteriye gösterir (IGameApi.ShowReport).</summary>
+        public Result<SaleView> SaleShowReport(long appraisalId)
+        {
+            return SendSale(() => _api.ShowReport(appraisalId), TurkishTexts.ReplyReport, SaleSpeech.Report);
+        }
+
+        /// <summary>Müşterinin son fiyatını kabul eder (IGameApi.AcceptCustomerFinalOffer).</summary>
+        public Result<SaleView> SaleAcceptFinal()
+        {
+            SaleView view = CurrentScreen == UiScreen.Sale ? _api.GetSale() : null;
+            string line = view == null ? string.Empty : TurkishTexts.ReplyAcceptFinal(view.ShownPrice);
+            return SendSale(() => _api.AcceptCustomerFinalOffer(), line, SaleSpeech.Ask);
+        }
+
+        /// <summary>"Olmadı abi, başka sefere.": müşteriyi yolcu eder (IGameApi.LetCustomerGo); ürün rafta kalır.</summary>
+        public Result<SaleView> SaleLetGo()
+        {
+            return SendSale(() => _api.LetCustomerGo(), TurkishTexts.ReplyLetGo, SaleSpeech.Ask);
+        }
+
+        /// <summary>Biten satıştan müşteri listesine döner (yalnızca arayüz durumunu temizler).</summary>
+        public bool SaleNext()
+        {
+            if (CurrentScreen != UiScreen.Sale || _api.GetSale() != null || _sale.Final == null)
+            {
+                return false;
+            }
+
+            ResetSaleState();
+            StatusMessage = null;
+            Rebuild();
+            RaiseChanged();
+            return true;
+        }
+
+        /// <summary>
         /// "Satın Al": seçili ilanı pazarlıksız, İSTENEN fiyattan satın alır (IGameApi.BuyListing). Para, raf ve ilan listesi oyundan okunur;
         /// başarıda İlanlar ekranına döner ve "Satın alındı … Rafa eklendi" der, hatada (nakit, raf dolu, pazarlık sürüyor…) Türkçe nedeni söyler.
         /// Yalnızca Telefon Detayı ekranında çalışır.
@@ -478,6 +617,105 @@ namespace Esnaf.Presentation
             {
                 subscription.Dispose();
             }
+        }
+
+        private enum SaleSpeech
+        {
+            Ask,
+            Report
+        }
+
+        // Satış komutunu API'ye gönderir; sonucu ekrana yansıtır. Anlaşma/ayrılma ile satış biterse son görünüm saklanır (ekran "bitti" gösterir).
+        private Result<SaleView> SendSale(Func<Result<SaleView>> command, string playerLine, SaleSpeech speech)
+        {
+            if (CurrentScreen != UiScreen.Sale || _api.GetSale() == null)
+            {
+                return Result<SaleView>.Fail("ui.no_sale", "There is no sale in progress.");
+            }
+
+            Result<SaleView> result = command();
+            if (result.IsFailure)
+            {
+                StatusMessage = TurkishTexts.Error(result.ErrorCode);
+                Refresh();
+                return result;
+            }
+
+            SaleView view = result.Value;
+            StatusMessage = null;
+            _sale.PlayerLine = playerLine;
+            NegotiationLevel mood = view.Mood;
+            if (view.Phase == NegotiationPhase.Deal)
+            {
+                _sale.Final = view;
+                _sale.CustomerLine = SaleDialogue.Deal(view.DealPrice);
+            }
+            else if (view.Phase == NegotiationPhase.Failed)
+            {
+                _sale.Final = view;
+                _sale.CustomerLine = SaleDialogue.Left();
+            }
+            else if (speech == SaleSpeech.Report)
+            {
+                _sale.CustomerLine = SaleDialogue.AfterReport(mood);
+            }
+            else
+            {
+                NegotiationLevel haggling = view.Profile == null ? NegotiationLevel.Medium : view.Profile.Haggling;
+                _sale.CustomerLine = SaleDialogue.AfterAsk(view.Phase, view.ShownPrice, view.LastAskTooExpensive, mood, view.Patience, haggling);
+            }
+
+            Refresh();
+            return result;
+        }
+
+        // Yeni açılan oturumda (ör. UiFlow yeniden kuruldu) süren satış için ekran durumunu oyundan kurar.
+        private void ResumeSale(SaleView view)
+        {
+            ResetSaleState();
+            _sale.Initialized = true;
+            _sale.DefinitionId = DefinitionOf(view.InstanceId);
+            _sale.AskTl = DefaultAsk(view.ShownPrice);
+            _sale.Stage = view.Round > 0 || view.Phase != NegotiationPhase.Active ? 1 : 0;
+            _sale.CustomerLine = _sale.Stage == 0
+                ? SaleDialogue.Greeting(PersonalityOf(view), _content.ModelName(_sale.DefinitionId))
+                : SaleDialogue.AfterAsk(view.Phase, view.ShownPrice, view.LastAskTooExpensive, view.Mood, view.Patience, view.Profile == null ? NegotiationLevel.Medium : view.Profile.Haggling);
+        }
+
+        private void ResetSaleState()
+        {
+            _sale.Stage = 0;
+            _sale.AskTl = 0L;
+            _sale.CustomerLine = null;
+            _sale.PlayerLine = null;
+            _sale.Final = null;
+            _sale.DefinitionId = null;
+            _sale.Initialized = false;
+        }
+
+        private static string PersonalityOf(SaleView view)
+        {
+            return view.Profile == null ? null : view.Profile.PersonalityId;
+        }
+
+        private string DefinitionOf(long instanceId)
+        {
+            foreach (StockLine line in _api.GetInventory())
+            {
+                if (line.InstanceId == instanceId)
+                {
+                    return line.DefinitionId;
+                }
+            }
+
+            return null;
+        }
+
+        // Fiyat seçicinin başlangıcı: müşterinin görünen teklifinin biraz üstü, 100 ₺'ye yukarı yuvarlı (yalnızca ekran varsayılanı; karar oyundadır).
+        private static long DefaultAsk(Money shown)
+        {
+            long up = (long)Math.Ceiling(shown.Tl * 1.2 / SaleScreenBuilder.PriceStep) * SaleScreenBuilder.PriceStep;
+            return Math.Max(10L, up);
         }
 
         private void RaiseChanged()
@@ -653,7 +891,7 @@ namespace Esnaf.Presentation
             {
                 _selectedListingId = null;
                 _selectedLevelId = null;
-                if (CurrentScreen != UiScreen.Shelf)
+                if (CurrentScreen != UiScreen.Shelf && CurrentScreen != UiScreen.Sale)
                 {
                     CurrentScreen = UiScreen.Listings;
                 }
@@ -688,6 +926,8 @@ namespace Esnaf.Presentation
             IReadOnlyList<StockLine> stock = _api.GetInventory();
             ShelfButtonText = TurkishTexts.ShelfButton(stock.Count, _content.ShelfCapacity);
             ShelfScreen = CurrentScreen == UiScreen.Shelf ? BuildShelf(stock) : null;
+            CustomersButtonText = TurkishTexts.CustomersButton(_api.GetCustomers().Count);
+            SaleScreen = CurrentScreen == UiScreen.Sale ? SaleScreenBuilder.Build(_api, _content, _sale) : null;
         }
 
         private ShelfScreenViewModel BuildShelf(IReadOnlyList<StockLine> stock)

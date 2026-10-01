@@ -112,31 +112,12 @@ namespace Esnaf.App.Ui
 
         // ---------- yardımcılar ----------
 
-        private static Text Label(Transform parent, string name, string text, int size, Color color, bool bold = false, TextAnchor anchor = TextAnchor.UpperLeft)
-        {
-            Text label = UiBuilder.CreateWrappedText(parent, name, size, anchor, color);
-            label.text = text ?? string.Empty;
-            if (bold)
-            {
-                label.fontStyle = FontStyle.Bold;
-            }
-
-            return label;
-        }
-
-        private static RectTransform AutoCard(Transform parent, string name, Color fill, float spacing = 12f, int padding = 32)
-        {
-            RectTransform card = UiKit.Card(parent, name, fill);
-            UiKit.Column(card, spacing, padding);
-            return card;
-        }
-
         // ---------- bölümler ----------
 
         private void AddLevelsCard(AppraisalScreenViewModel screen)
         {
-            RectTransform card = AutoCard(_content, "LevelsCard", UiTheme.Card, 18f, 28);
-            Label(card, "Header", TurkishTexts.LevelsCardHeader, 36, UiTheme.Muted, true);
+            RectTransform card = UiKit.AutoCard(_content, "LevelsCard", UiTheme.Card, 18f, 28);
+            UiKit.Label(card, "Header", TurkishTexts.LevelsCardHeader, 36, UiTheme.Muted, true);
 
             RectTransform row = UiBuilder.CreatePanel(card, "Row", new Color(0f, 0f, 0f, 0f));
             row.GetComponent<Image>().raycastTarget = false;
@@ -163,13 +144,13 @@ namespace Esnaf.App.Ui
             label.gameObject.SetActive(false);
             RectTransform rect = chip.GetComponent<RectTransform>();
 
-            Text code = Label(rect, "Code", level.Code, 52, ink, true, TextAnchor.MiddleCenter);
+            Text code = UiKit.Label(rect, "Code", level.Code, 52, ink, true, TextAnchor.MiddleCenter);
             UiBuilder.Stretch(code.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(8f, -74f), new Vector2(-8f, -12f));
 
-            Text name = Label(rect, "Name", level.Name, 25, ink, false, TextAnchor.MiddleCenter);
+            Text name = UiKit.Label(rect, "Name", level.Name, 25, ink, false, TextAnchor.MiddleCenter);
             UiBuilder.Stretch(name.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(8f, 62f), new Vector2(-8f, -76f));
 
-            Text status = Label(rect, "Status", level.FeeText + "\n" + level.StatusText, 22, level.IsSelected ? UiTheme.Ink : UiTheme.Muted, false, TextAnchor.MiddleCenter);
+            Text status = UiKit.Label(rect, "Status", level.FeeText + "\n" + level.StatusText, 22, level.IsSelected ? UiTheme.Ink : UiTheme.Muted, false, TextAnchor.MiddleCenter);
             UiBuilder.Stretch(status.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(6f, 6f), new Vector2(-6f, 64f));
         }
 
@@ -250,9 +231,9 @@ namespace Esnaf.App.Ui
 
         private void AddMarketValueCard(AppraisalResultViewModel result)
         {
-            RectTransform card = AutoCard(_content, "MarketValueCard", UiTheme.Card, 8f, 34);
-            Label(card, "Header", TurkishTexts.MarketValueHeader.ToUpperInvariant(), 32, UiTheme.Muted, true);
-            Text value = Label(card, "Value", result.ValueHeadline ?? TurkishTexts.ValueRange(null), result.ValueHeadline == null ? 40 : 72, UiTheme.Ink, true);
+            RectTransform card = UiKit.AutoCard(_content, "MarketValueCard", UiTheme.Card, 8f, 34);
+            UiKit.Label(card, "Header", TurkishTexts.MarketValueHeader.ToUpperInvariant(), 32, UiTheme.Muted, true);
+            Text value = UiKit.Label(card, "Value", result.ValueHeadline ?? TurkishTexts.ValueRange(null), result.ValueHeadline == null ? 40 : 72, UiTheme.Ink, true);
             value.horizontalOverflow = HorizontalWrapMode.Wrap;
 
             RectTransform accent = UiKit.Rounded(card, "Accent", UiTheme.Gold);
@@ -260,10 +241,10 @@ namespace Esnaf.App.Ui
             accent.GetComponent<Image>().raycastTarget = false;
 
             string footer = result.LevelName + " • " + result.FeeLine;
-            Label(card, "Footer", footer, 32, UiTheme.Muted);
+            UiKit.Label(card, "Footer", footer, 32, UiTheme.Muted);
             if (!string.IsNullOrEmpty(result.SummaryLine))
             {
-                Label(card, "Summary", result.SummaryLine, 32, UiTheme.Muted);
+                UiKit.Label(card, "Summary", result.SummaryLine, 32, UiTheme.Muted);
             }
         }
 
@@ -308,15 +289,15 @@ namespace Esnaf.App.Ui
             dot.GetComponent<Image>().raycastTarget = false;
             UiBuilder.Stretch(dot, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -62f), new Vector2(52f, -38f));
 
-            Text title = Label(card, "Title", info.Title, 34, UiTheme.Muted, true);
+            Text title = UiKit.Label(card, "Title", info.Title, 34, UiTheme.Muted, true);
             UiBuilder.Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(68f, -72f), new Vector2(-20f, -28f));
 
-            Text value = Label(card, "Value", info.Value, 40, UiTheme.Ink, true);
+            Text value = UiKit.Label(card, "Value", info.Value, 40, UiTheme.Ink, true);
             UiBuilder.Stretch(value.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(28f, 54f), new Vector2(-20f, -84f));
 
             if (!string.IsNullOrEmpty(info.Note))
             {
-                Text note = Label(card, "Note", info.Note, 28, UiTheme.Muted);
+                Text note = UiKit.Label(card, "Note", info.Note, 28, UiTheme.Muted);
                 UiBuilder.Stretch(note.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(28f, 16f), new Vector2(-20f, 56f));
             }
         }
@@ -328,8 +309,8 @@ namespace Esnaf.App.Ui
                 return;
             }
 
-            RectTransform card = AutoCard(_content, "FindingsCard", UiTheme.Card, 14f, 32);
-            Label(card, "Header", TurkishTexts.FindingsHeader, 40, UiTheme.Ink, true);
+            RectTransform card = UiKit.AutoCard(_content, "FindingsCard", UiTheme.Card, 14f, 32);
+            UiKit.Label(card, "Header", TurkishTexts.FindingsHeader, 40, UiTheme.Ink, true);
 
             foreach (AppraisalFindingViewModel finding in result.Findings)
             {
@@ -343,34 +324,34 @@ namespace Esnaf.App.Ui
                 dot.GetComponent<Image>().raycastTarget = false;
                 UiKit.Size2(dot, 34f, 34f);
 
-                Text text = Label(row, "Text", finding.Text + "\n<size=28><color=#6B7890>" + finding.ConfidenceText + "</color></size>", 38, UiTheme.Ink);
+                Text text = UiKit.Label(row, "Text", finding.Text + "\n<size=28><color=#6B7890>" + finding.ConfidenceText + "</color></size>", 38, UiTheme.Ink);
                 UiKit.Flex(text.rectTransform, 1f);
             }
         }
 
         private void AddRiskCard(AppraisalResultViewModel result)
         {
-            RectTransform card = AutoCard(_content, "RiskCard", UiTheme.WarnSoft, 10f, 32);
-            Label(card, "Header", TurkishTexts.RiskHeader, 40, UiTheme.Ink, true);
+            RectTransform card = UiKit.AutoCard(_content, "RiskCard", UiTheme.WarnSoft, 10f, 32);
+            UiKit.Label(card, "Header", TurkishTexts.RiskHeader, 40, UiTheme.Ink, true);
             if (result.RiskNote != null)
             {
-                Label(card, "Note", result.RiskNote, 36, UiTheme.Ink);
+                UiKit.Label(card, "Note", result.RiskNote, 36, UiTheme.Ink);
                 return;
             }
 
-            Label(card, "Title", result.RiskTitle, 34, UiTheme.Muted);
+            UiKit.Label(card, "Title", result.RiskTitle, 34, UiTheme.Muted);
             foreach (string line in result.RiskLines)
             {
-                Label(card, "Scenario", line, 34, UiTheme.Ink);
+                UiKit.Label(card, "Scenario", line, 34, UiTheme.Ink);
             }
 
-            Label(card, "Miss", result.MissLine, 34, UiTheme.Ink, true);
+            UiKit.Label(card, "Miss", result.MissLine, 34, UiTheme.Ink, true);
         }
 
         private void AddNote(string text)
         {
-            RectTransform card = AutoCard(_content, "NoteCard", UiTheme.Card, 8f, 36);
-            Label(card, "Note", text, 40, UiTheme.Ink, false, TextAnchor.MiddleCenter);
+            RectTransform card = UiKit.AutoCard(_content, "NoteCard", UiTheme.Card, 8f, 36);
+            UiKit.Label(card, "Note", text, 40, UiTheme.Ink, false, TextAnchor.MiddleCenter);
         }
 
         // ---------- tıklamalar ----------

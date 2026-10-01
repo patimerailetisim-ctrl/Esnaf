@@ -42,7 +42,14 @@ namespace Esnaf.Tests.Presentation
             { "card.already_used", "Bu koz kartı zaten kullanıldı." },
             { "appraisal.no_value_range", "Bu seviye değer aralığı vermediği için risk kartı yok." },
             { "appraisal.unknown", "Bilinmeyen ekspertiz sonucu." },
-            { "price.invalid", "Bu ilanın fiyatı geçersiz." }
+            { "price.invalid", "Bu ilanın fiyatı geçersiz." },
+            { "sale.none", "Süren bir satış yok." },
+            { "customer.unknown", "Bu müşteri artık dükkânda değil." },
+            { "customer.no_interest", "Müşteri rafta ilgilendiği bir ürün bulamadı." },
+            { "ask.invalid", "Geçersiz fiyat: pozitif ve 10 ₺'nin katı olmalı." },
+            { "report.unknown", "Bu rapor bu ürüne ait değil." },
+            { "report.not_eligible", "Bu seviyedeki rapor müşteriye gösterilemez." },
+            { "report.already_shown", "Raporu zaten gösterdin." }
         };
 
         [TestCaseSource(nameof(ExpectedCodes))]
