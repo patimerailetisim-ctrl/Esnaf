@@ -13,9 +13,63 @@ MonoBehaviour:
   m_Name: PhoneImageCatalog
   m_EditorClassIdentifier: Esnaf.App::Esnaf.App.Ui.PhoneImageCatalog
   _entries:
+  - _definitionId: phone.nova_n1_lite
+    _front: {fileID: 21300000, guid: 82caee2c8e9d10e46a3e3354773689bc, type: 3}
+    _back: {fileID: 21300000, guid: a3f84e96bb848b14fbf854be158a522f, type: 3}
+    _side: {fileID: 21300000, guid: d2ad01343ebc8084eb5c616f123b43d7, type: 3}
+    _camera: {fileID: 21300000, guid: 47c2b44774c8d8c4bb3629026492c7fb, type: 3}
+    _allViews: {fileID: 21300000, guid: 37ed8ffc79bbd9041a94c517ec1c3edb, type: 3}
+  - _definitionId: phone.yildiz_y5
+    _front: {fileID: 21300000, guid: 7040faef6b801aa4ba6be7543d39c910, type: 3}
+    _back: {fileID: 21300000, guid: 6643ebb2f82eaef44b00b053878911bb, type: 3}
+    _side: {fileID: 21300000, guid: 4d261c5898938044cb16b4d792629ff2, type: 3}
+    _camera: {fileID: 21300000, guid: 8ec833e6568ad0343947192678169611, type: 3}
+    _allViews: {fileID: 21300000, guid: b628a8c7cf560ad489a87d8dcfabd3e2, type: 3}
+  - _definitionId: phone.samsun_vega_a3
+    _front: {fileID: 21300000, guid: ef8e9bae5d4bd5e41bbf422212053104, type: 3}
+    _back: {fileID: 21300000, guid: e2cd29fe96393b8419bcd19087b5fc19, type: 3}
+    _side: {fileID: 21300000, guid: 9c0c76ef4f983fd43afcf32dde51006e, type: 3}
+    _camera: {fileID: 21300000, guid: ed4b7677e367b504e92dce011749ad12, type: 3}
+    _allViews: {fileID: 21300000, guid: 3dd7c85f4c697574d9d426621f8fc5a3, type: 3}
+  - _definitionId: phone.nova_n3_pro
+    _front: {fileID: 21300000, guid: f2c4b0dddc9765d4cada124e1e5eb4e6, type: 3}
+    _back: {fileID: 21300000, guid: 237ea9186ab422449ac0fb8143f02834, type: 3}
+    _side: {fileID: 21300000, guid: afa1f9d554911cf42b386371a97ed704, type: 3}
+    _camera: {fileID: 21300000, guid: 111dd3e64f652124887e1180a75ef21a, type: 3}
+    _allViews: {fileID: 21300000, guid: 10d2398cd9af5b44fadd0999f17e86d8, type: 3}
+  - _definitionId: phone.zirve_z5
+    _front: {fileID: 21300000, guid: c653f5855f63b6948b0add3644cb50df, type: 3}
+    _back: {fileID: 21300000, guid: 8f4a2522753e9174193ea10646f7e9ff, type: 3}
+    _side: {fileID: 21300000, guid: 83c9b6365c1743d4db9e3a8879b2d14f, type: 3}
+    _camera: {fileID: 21300000, guid: 82d54d6e09397354a939a40b9b8357af, type: 3}
+    _allViews: {fileID: 21300000, guid: 8fce6be5b04fd93428bae68fd2f8a94f, type: 3}
+  - _definitionId: phone.yildiz_y8_plus
+    _front: {fileID: 21300000, guid: 10027474e4d270b46ae232845c431be8, type: 3}
+    _back: {fileID: 21300000, guid: e4ae6ad80eb034d4ba97f1b88861f7f6, type: 3}
+    _side: {fileID: 21300000, guid: 4e22acaba5aca0e4b8f57114575f01ac, type: 3}
+    _camera: {fileID: 21300000, guid: c850f1c20adec5541a3fe301e0c03196, type: 3}
+    _allViews: {fileID: 21300000, guid: 3276b7a5b98b2ed40a54ad2aecbbfcbb, type: 3}
+  - _definitionId: phone.elma_e11
+    _front: {fileID: 21300000, guid: a55fb93d9a05fd1439169c9a2b979650, type: 3}
+    _back: {fileID: 21300000, guid: c1eb403fb708fac4d938ff571f5e6eb8, type: 3}
+    _side: {fileID: 21300000, guid: d65e3087c00624e479148109647c33e4, type: 3}
+    _camera: {fileID: 21300000, guid: 123452c5db689444285b5e98f7e60066, type: 3}
+    _allViews: {fileID: 21300000, guid: 42ac00e66474a8b4faf84e82ade363aa, type: 3}
+  - _definitionId: phone.samsun_vega_s21
+    _front: {fileID: 21300000, guid: 5e9b4862eeb6ed04f8e1245f5b748afd, type: 3}
+    _back: {fileID: 21300000, guid: 9b6ebe540fe966d46a8cbbb3fb73c05b, type: 3}
+    _side: {fileID: 21300000, guid: 6292a9a54513d964c80e8ca324b32fec, type: 3}
+    _camera: {fileID: 21300000, guid: 0cff580916f55334f968a42e0959548f, type: 3}
+    _allViews: {fileID: 21300000, guid: 6ea4022c32992014aa0c88043dc5c1fd, type: 3}
   - _definitionId: phone.elma_e13_pro
     _front: {fileID: 21300000, guid: b2917b683f934cb468d4eb956544aff9, type: 3}
     _back: {fileID: 21300000, guid: 2514168cb0348f74e96b71cd7608eb96, type: 3}
     _side: {fileID: 21300000, guid: 5b09fbd5569360a40ba8fae2aa982906, type: 3}
     _camera: {fileID: 21300000, guid: 4e155f37bb8f66c4687292e246790e70, type: 3}
     _allViews: {fileID: 21300000, guid: 49a2846a5d4feb842b8476da07af0bdb, type: 3}
+  - _definitionId: phone.elma_e14_pro_max
+    _front: {fileID: 21300000, guid: 80a8f944edc6e2e4b8102c5ef4d5c3f6, type: 3}
+    _back: {fileID: 21300000, guid: 426073b7e84430543b299e576a5595da, type: 3}
+    _side: {fileID: 21300000, guid: 7529dbeadf5df8e41bd677d86f20fdc1, type: 3}
+    _camera: {fileID: 21300000, guid: 57901fad829d6c645b91da0b893b6282, type: 3}
+    _allViews: {fileID: 21300000, guid: 8695193a17239394ca7b183bdd39a005, type: 3}
