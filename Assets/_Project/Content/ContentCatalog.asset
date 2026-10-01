@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7b0271d1a6bb8240a1a0607dc79322b, type: 3}
+  m_Name: ContentCatalog
+  m_EditorClassIdentifier: Esnaf.Content::Esnaf.Content.ContentCatalog
+  _contentFiles:
+  - {fileID: 4900000, guid: 42a1844fbb38f904a9b20225dc652f31, type: 3}
+  - {fileID: 4900000, guid: f4cfa60937fa63b48829d4ba236a41a7, type: 3}
+  - {fileID: 4900000, guid: 2d2129b59816d894db94e9511275dd03, type: 3}
+  - {fileID: 4900000, guid: b1b44369b2a2a59428072f523beb9657, type: 3}
+  - {fileID: 4900000, guid: ac0fbd617f01a2c4ab43bfe2a54e0077, type: 3}
+  - {fileID: 4900000, guid: 7503d6d9686e011459c040dd1962fca4, type: 3}
+  - {fileID: 4900000, guid: 2832dd8de692cf34594c78959cd2428c, type: 3}
+  - {fileID: 4900000, guid: 93b22791db69b224e87fc8d085d45c27, type: 3}
+  - {fileID: 4900000, guid: bab9a52ad8a02164a9f31fa877be1f8c, type: 3}
