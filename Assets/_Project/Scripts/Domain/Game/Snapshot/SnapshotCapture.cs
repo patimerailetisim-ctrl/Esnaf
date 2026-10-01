@@ -38,7 +38,29 @@ namespace Esnaf.Domain.Game
                 Knowledge = s.Knowledge.All.Select(CaptureAppraisal).ToList(),
                 Customers = CaptureCustomers(s),
                 ActiveNegotiation = CaptureNegotiation(s.TradeState.Current),
-                ActiveSale = CaptureSale(s.TradeState.CurrentSale)
+                ActiveSale = CaptureSale(s.TradeState.CurrentSale),
+                Accessories = CaptureAccessories(s)
+            };
+        }
+
+        // Boş stok yazılmaz (null): aksesuarsız kayıtlar eskisiyle aynı metni/sağlamayı verir.
+        private static AccessoriesSnapshot CaptureAccessories(GameSession s)
+        {
+            if (s.AccessoryStock.TotalUnits == 0)
+            {
+                return null;
+            }
+
+            return new AccessoriesSnapshot
+            {
+                Stock = s.AccessoryStock.AccessoryIds
+                    .Select(id => new AccessoryStockLineSnapshot
+                    {
+                        AccessoryId = id,
+                        Quantity = s.AccessoryStock.Quantity(id),
+                        TotalCost = s.AccessoryStock.TotalCost(id).Tl
+                    })
+                    .ToList()
             };
         }
 

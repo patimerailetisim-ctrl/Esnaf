@@ -100,6 +100,30 @@ namespace Esnaf.Domain.Economy
             return result;
         }
 
+        /// <summary>
+        /// Toptancıdan aksesuar paketi alışı: nakit düşer, defterde TEK satır yazılır (tür wholesale_purchase; aksesuar = definitionId, toptancı = npcId,
+        /// adet = not argümanı). Hata olursa (tutar geçersiz, nakit yetmez) defter ve nakit değişmez. Stoğa girişi çağıran (WholesaleService) yapar.
+        /// </summary>
+        public Result<TransactionRecord> RecordWholesalePurchase(string supplierId, string accessoryId, int quantity, Money totalCost, int day)
+        {
+            Result<TransactionRecord> check = CheckSpend(totalCost);
+            if (check.IsFailure)
+            {
+                return check;
+            }
+
+            Money oldCash = _state.Cash;
+            Result<TransactionRecord> result = _state.Ledger.Append(
+                TransactionTypeIds.WholesalePurchase, -totalCost, day, null, accessoryId, supplierId,
+                memoArgs: new[] { quantity.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+            if (result.IsSuccess)
+            {
+                Publish(result.Value, oldCash);
+            }
+
+            return result;
+        }
+
         public Result<TransactionRecord> RecordSale(long instanceId, string definitionId, string buyerNpcId, Money price, Money costBasis, int day)
         {
             if (!IsPositiveRounded(price) || costBasis.IsNegative || !costBasis.IsRoundedTo10)

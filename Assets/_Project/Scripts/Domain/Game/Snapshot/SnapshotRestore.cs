@@ -104,6 +104,7 @@ namespace Esnaf.Domain.Game
             RestorePendingAppraisals(s, snap);
             RestoreDemand(s, content, snap);
             RestoreCustomers(s, content, snap);
+            RestoreAccessories(s, content, snap);
             RestoreCounters(s, snap);
             RestoreTrade(s, content, snap, unknownIds);
             RepairUnknownDefinitions(s, unknownIds);
@@ -118,6 +119,30 @@ namespace Esnaf.Domain.Game
         }
 
         // ---------- bölümler ----------
+
+        // Bölüm yoksa (eski kayıt / boş stok) stok boş kalır. Varsa: kimlikler içerikte tanımlı ve benzersiz, adet > 0, maliyet ≥ 0, toplam kapasiteyi aşmaz.
+        private static void RestoreAccessories(GameSession s, ContentDatabase content, GameSnapshot snap)
+        {
+            if (snap.Accessories == null)
+            {
+                return;
+            }
+
+            Need(snap.Accessories.Stock, "accessories.stock");
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (AccessoryStockLineSnapshot line in snap.Accessories.Stock)
+            {
+                Bad(line == null || string.IsNullOrEmpty(line.AccessoryId), "accessories.stock id (empty)");
+                Bad(!seen.Add(line.AccessoryId), "accessories.stock id '" + line.AccessoryId + "' (duplicate)");
+                Esnaf.Domain.Accessories.AccessoryDefinition definition;
+                Bad(!content.Accessories.TryGet(line.AccessoryId, out definition), "accessories.stock id '" + line.AccessoryId + "' (not in the content)");
+                Bad(line.Quantity <= 0, "accessories.stock '" + line.AccessoryId + "' quantity (must be positive)");
+                Bad(line.TotalCost < 0, "accessories.stock '" + line.AccessoryId + "' totalCost (must not be negative)");
+
+                Result added = s.AccessoryStock.Add(line.AccessoryId, line.Quantity, Money.FromTl(line.TotalCost));
+                Bad(added.IsFailure, "accessories.stock '" + line.AccessoryId + "' (" + added.ErrorCode + ")");
+            }
+        }
 
         private static void RestoreRng(GameSession s, GameSnapshot snap)
         {

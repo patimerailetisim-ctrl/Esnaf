@@ -65,8 +65,25 @@ namespace Esnaf.Domain.Game
             AppendKnowledge(sb, session);
             AppendTrade(sb, session);
             AppendBusiness(sb, session);
+            AppendAccessories(sb, session);
             AppendRng(sb, session);
             return sb.ToString();
+        }
+
+        // Yalnızca stok doluyken yazılır: aksesuarsız oyunların özeti (ve fixture özeti) eskisiyle aynı kalır.
+        private static void AppendAccessories(StringBuilder sb, GameSession session)
+        {
+            if (session.AccessoryStock.TotalUnits == 0)
+            {
+                return;
+            }
+
+            foreach (string id in session.AccessoryStock.AccessoryIds)
+            {
+                sb.Append("accessory.").Append(id).Append('=')
+                    .Append(N(session.AccessoryStock.Quantity(id))).Append(',')
+                    .Append(N(session.AccessoryStock.TotalCost(id).Tl)).Append('\n');
+            }
         }
 
         private static void AppendTrade(StringBuilder sb, GameSession session)

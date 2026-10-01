@@ -26,6 +26,26 @@ namespace Esnaf.Domain.Game
 
         /// <summary>Süren satış pazarlığı (T17); yoksa null.</summary>
         public SaleSnapshot ActiveSale { get; set; }
+
+        /// <summary>
+        /// Aksesuar stoğu (Day 11.2.3). İSTEĞE BAĞLI: stok boşken YAZILMAZ (null), eski kayıtlarda da yoktur; yoksa boş stok sayılır.
+        /// Böylece aksesuarsız kayıtların metni ve sağlaması eskisiyle aynı kalır (Save v1 bozulmaz).
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public AccessoriesSnapshot Accessories { get; set; }
+    }
+
+    /// <summary>Aksesuar stoğunun düz verisi: kalem başına adet ve toplam maliyet tabanı (kimliğe göre sıralı). Kapasite içerikten gelir.</summary>
+    public sealed class AccessoriesSnapshot
+    {
+        public List<AccessoryStockLineSnapshot> Stock { get; set; }
+    }
+
+    public sealed class AccessoryStockLineSnapshot
+    {
+        public string AccessoryId { get; set; }
+        public int Quantity { get; set; }
+        public long TotalCost { get; set; }
     }
 
     public sealed class TimeSnapshot

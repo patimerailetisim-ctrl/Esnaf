@@ -24,6 +24,9 @@ namespace Esnaf.Domain.Economy
         public Money SalesIncome { get; }
         public Money PurchaseSpend { get; }
 
+        /// <summary>O gün toptancıdan alınan aksesuar paketlerinin toplamı (wholesale_purchase; nakit çıkışı, telefon alışı <see cref="PurchaseSpend"/> değildir). Ürün örneği gerektirmez.</summary>
+        public Money WholesaleSpend { get; }
+
         /// <summary>O gün ödenen tüm ekspertiz ücretleri (ürüne eklenenler ve boşa gidenler dahil; nakit çıkışı).</summary>
         public Money AppraisalSpend { get; }
 
@@ -46,10 +49,10 @@ namespace Esnaf.Domain.Economy
             get { return SalesIncome; }
         }
 
-        /// <summary>Toplam gider = alış + ekspertiz + tamir + günlük gider (yatırım hariç: yatırım gider değildir).</summary>
+        /// <summary>Toplam gider = telefon alışı + toptan aksesuar alışı + ekspertiz + tamir + günlük gider (yatırım hariç: yatırım gider değildir).</summary>
         public Money TotalSpending
         {
-            get { return PurchaseSpend + AppraisalSpend + RepairSpend + DailyExpense; }
+            get { return PurchaseSpend + WholesaleSpend + AppraisalSpend + RepairSpend + DailyExpense; }
         }
 
         public IReadOnlyList<StockLine> Stock { get; }
@@ -77,6 +80,7 @@ namespace Esnaf.Domain.Economy
             IEnumerable<SoldItemSummary> sales,
             Money salesIncome,
             Money purchaseSpend,
+            Money wholesaleSpend,
             Money appraisalSpend,
             Money repairSpend,
             Money dailyExpense,
@@ -96,6 +100,7 @@ namespace Esnaf.Domain.Economy
             Sales = new ReadOnlyCollection<SoldItemSummary>(new List<SoldItemSummary>(sales));
             SalesIncome = salesIncome;
             PurchaseSpend = purchaseSpend;
+            WholesaleSpend = wholesaleSpend;
             AppraisalSpend = appraisalSpend;
             RepairSpend = repairSpend;
             DailyExpense = dailyExpense;

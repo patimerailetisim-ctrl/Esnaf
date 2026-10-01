@@ -7,5 +7,6 @@ namespace Esnaf.Domain.Economy
         public const string Stock = "wealth.stock";
         public const string BusinessAssets = "wealth.business_assets";
         public const string PendingAppraisals = "wealth.pending_appraisals";
+        public const string AccessoryStock = "wealth.accessory_stock";
     }
 }

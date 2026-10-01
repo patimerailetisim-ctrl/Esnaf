@@ -21,6 +21,9 @@ namespace Esnaf.Domain.Economy
         /// <summary>Çekirdek değil: kayıt yüklenirken içerikte kalmamış bir ürünün otomatik iadesi (GDD v0.3 6.7).</summary>
         public const string ContentRefund = "content_refund";
 
+        /// <summary>Çekirdek değil: toptancıdan aksesuar paketi alışı. Nakit düşer, maliyet aksesuar stoğuna girer (kâr etkisi yok; satışta maliyet olur).</summary>
+        public const string WholesalePurchase = "wholesale_purchase";
+
         public static readonly IReadOnlyList<string> Required = new ReadOnlyCollection<string>(new[]
         {
             OpeningCapital, Purchase, Sale, Appraisal, WastedAppraisal, Repair, DailyExpense, Investment

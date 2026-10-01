@@ -46,6 +46,12 @@ namespace Esnaf.Domain.Game
         public EconomyService EconomyService { get; }
         public InventoryState InventoryState { get; }
         public InventoryService InventoryService { get; }
+        /// <summary>Aksesuar stoğu (telefon rafından ayrı; Day 11.2.2: yalnızca çalışma anı durumu, henüz kaydedilmez).</summary>
+        public Esnaf.Domain.Accessories.AccessoryStock AccessoryStock { get; }
+
+        /// <summary>Toptancı satın alma servisi (Day 11.2.2); henüz IGameApi'de görünmez.</summary>
+        public Esnaf.Domain.Wholesale.WholesaleService WholesaleService { get; }
+
         public WealthCalculator Wealth { get; }
         public DaySummaryBuilder Summaries { get; }
         public LedgerView LedgerView { get; }
@@ -86,12 +92,17 @@ namespace Esnaf.Domain.Game
             InventoryState = new InventoryState(content.EconomyConstants.InitialShelfCapacity);
             InventoryService = new InventoryService(InventoryState, Store, EconomyService, bus);
 
+            // İçerikte aksesuar yoksa kapasite 0'dır; stok yine de kurulur (en az 1 birim) ve boş kalır.
+            AccessoryStock = new Esnaf.Domain.Accessories.AccessoryStock(Math.Max(1, content.Accessories.ShelfCapacityUnits));
+            WholesaleService = new Esnaf.Domain.Wholesale.WholesaleService(content.Wholesale, content.Accessories, AccessoryStock, EconomyService);
+
             Wealth = new WealthCalculator(new IWealthContributor[]
             {
                 new CashWealthContributor(EconomyState),
                 new StockWealthContributor(InventoryState, Store),
                 new BusinessAssetsWealthContributor(EconomyState),
-                new PendingAppraisalWealthContributor(EconomyState)
+                new PendingAppraisalWealthContributor(EconomyState),
+                new Esnaf.Domain.Accessories.AccessoryStockWealthContributor(AccessoryStock)
             });
             Summaries = new DaySummaryBuilder(EconomyState, content.TransactionTypes);
             LedgerView = new LedgerView(EconomyState, content.TransactionTypes);

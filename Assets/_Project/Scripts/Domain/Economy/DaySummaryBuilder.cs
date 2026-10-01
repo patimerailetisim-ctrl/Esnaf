@@ -63,6 +63,7 @@ namespace Esnaf.Domain.Economy
 
             Money salesIncome = Money.Zero;
             Money purchase = Money.Zero;
+            Money wholesale = Money.Zero;
             Money appraisal = Money.Zero;
             Money repair = Money.Zero;
             Money expense = Money.Zero;
@@ -77,6 +78,9 @@ namespace Esnaf.Domain.Economy
                         break;
                     case TransactionTypeIds.Purchase:
                         purchase += record.Amount.Abs();
+                        break;
+                    case TransactionTypeIds.WholesalePurchase:
+                        wholesale += record.Amount.Abs();
                         break;
                     case TransactionTypeIds.Appraisal:
                         appraisal += record.Amount.Abs();
@@ -110,6 +114,7 @@ namespace Esnaf.Domain.Economy
                 figures.Sales,
                 salesIncome,
                 purchase,
+                wholesale,
                 appraisal,
                 repair,
                 expense,

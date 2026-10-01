@@ -57,6 +57,21 @@ namespace Esnaf.Domain.Accessories
             return accessoryId != null && _lines.TryGetValue(accessoryId, out line) ? Money.FromTl(line.TotalCost) : Money.Zero;
         }
 
+        /// <summary>Stoktaki TÜM kalemlerin toplam maliyet tabanı (servet hesabı için).</summary>
+        public Money StockCost
+        {
+            get
+            {
+                long total = 0;
+                foreach (Line line in _lines.Values)
+                {
+                    total += line.TotalCost;
+                }
+
+                return Money.FromTl(total);
+            }
+        }
+
         /// <summary>Stokta adedi 0'dan büyük kalemlerin kimlikleri (kimliğe göre sıralı: belirlenimci).</summary>
         public IReadOnlyList<string> AccessoryIds
         {
