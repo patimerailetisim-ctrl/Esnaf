@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Esnaf.Core;
+using Esnaf.Domain.Npc;
 
 namespace Esnaf.Domain.Negotiation
 {
@@ -47,6 +48,9 @@ namespace Esnaf.Domain.Negotiation
         /// <summary>Bu ürün için gösterilebilecek raporlar.</summary>
         public IReadOnlyList<SaleReportView> Reports { get; }
 
+        /// <summary>Müşterinin kişilik profili (düzeyler); kişilik kataloğu yoksa null.</summary>
+        public CustomerProfile Profile { get; }
+
         public SaleView(
             long customerId,
             string npcId,
@@ -59,7 +63,8 @@ namespace Esnaf.Domain.Negotiation
             NegotiationLevel patience,
             bool lastAskTooExpensive,
             bool reportShown,
-            IEnumerable<SaleReportView> reports)
+            IEnumerable<SaleReportView> reports,
+            CustomerProfile profile = null)
         {
             if (reports == null)
             {
@@ -77,6 +82,7 @@ namespace Esnaf.Domain.Negotiation
             Patience = patience;
             LastAskTooExpensive = lastAskTooExpensive;
             ReportShown = reportShown;
+            Profile = profile;
             Reports = new ReadOnlyCollection<SaleReportView>(new List<SaleReportView>(reports));
         }
     }

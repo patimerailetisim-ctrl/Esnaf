@@ -482,6 +482,104 @@ namespace Esnaf.Domain.Content
             }
         }
 
+        private static readonly Regex PersonalityIdFormat = new Regex("^[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// Kişilik kataloğunu ve NPC bağlarını denetler. Katalog varsa her NPC'nin kişiliği olmalı ve NPC'nin GERÇEK sayıları
+        /// (sabır, aciliyet, bilgi, bütçe, pazarlık) arketipin beklentisine uymalıdır: kişilik etiket değil, mekaniğin özetidir.
+        /// </summary>
+        public static void ValidatePersonalities(
+            PersonalityCatalog catalog, IReadOnlyList<NpcDefinition> npcs, NegotiationRules rules, string fileName, ICollection<ContentIssue> issues)
+        {
+            int before = issues.Count;
+            if (catalog.IsEmpty)
+            {
+                for (int i = 0; i < npcs.Count; i++)
+                {
+                    if (npcs[i].PersonalityId != null)
+                    {
+                        PersonalityIssue(issues, ContentIssueCodes.PersonalityUnknown, fileName, npcs[i].Id + ": personalityId '" + npcs[i].PersonalityId + "' has no personalities catalog.");
+                    }
+                }
+
+                return;
+            }
+
+            ValidateScale(catalog.Scales.Urgency, "urgency", fileName, issues);
+            ValidateScale(catalog.Scales.Knowledge, "knowledge", fileName, issues);
+            ValidateScale(catalog.Scales.Budget, "budget", fileName, issues);
+            ValidateScale(catalog.Scales.Haggling, "haggling", fileName, issues);
+
+            var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < catalog.Definitions.Count; i++)
+            {
+                PersonalityDefinition d = catalog.Definitions[i];
+                string label = string.IsNullOrEmpty(d.Id) ? "personalities[" + i + "]" : d.Id;
+                if (string.IsNullOrEmpty(d.Id) || !PersonalityIdFormat.IsMatch(d.Id))
+                {
+                    PersonalityIssue(issues, ContentIssueCodes.PersonalityFieldInvalid, fileName, label + ": id '" + d.Id + "' must be lowercase letters, digits, underscore.");
+                }
+                else if (!seenIds.Add(d.Id))
+                {
+                    PersonalityIssue(issues, ContentIssueCodes.PersonalityIdDuplicate, fileName, label + ": duplicate personality id '" + d.Id + "'.");
+                }
+
+                if (string.IsNullOrWhiteSpace(d.Name))
+                {
+                    PersonalityIssue(issues, ContentIssueCodes.PersonalityFieldInvalid, fileName, label + ": name must not be empty.");
+                }
+            }
+
+            if (issues.Count > before)
+            {
+                return; // katalog bozukken NPC bağları gürültü üretir
+            }
+
+            for (int i = 0; i < npcs.Count; i++)
+            {
+                NpcDefinition npc = npcs[i];
+                if (npc.PersonalityId == null)
+                {
+                    PersonalityIssue(issues, ContentIssueCodes.PersonalityMissing, fileName, npc.Id + ": personalityId is required when personalities are defined.");
+                    continue;
+                }
+
+                PersonalityDefinition definition;
+                if (!catalog.TryGet(npc.PersonalityId, out definition))
+                {
+                    PersonalityIssue(issues, ContentIssueCodes.PersonalityUnknown, fileName, npc.Id + ": personalityId '" + npc.PersonalityId + "' is not defined.");
+                    continue;
+                }
+
+                foreach (CustomerTrait trait in new[] { CustomerTrait.Patience, CustomerTrait.Urgency, CustomerTrait.Knowledge, CustomerTrait.Budget, CustomerTrait.Haggling })
+                {
+                    NegotiationLevel level = CustomerProfiler.LevelOf(trait, npc, catalog.Scales, rules);
+                    if (!definition.Accepts(trait, level))
+                    {
+                        PersonalityIssue(
+                            issues, ContentIssueCodes.PersonalityInconsistent, fileName,
+                            npc.Id + ": " + trait.ToString().ToLowerInvariant() + " is " + level.ToString().ToLowerInvariant() + ", which contradicts personality '" + definition.Id + "'.");
+                    }
+                }
+            }
+        }
+
+        private static void ValidateScale(PersonalityScale scale, string name, string fileName, ICollection<ContentIssue> issues)
+        {
+            bool ordered = scale.Direction == ScaleDirection.Up ? scale.High > scale.Medium : scale.High < scale.Medium;
+            if (!ordered)
+            {
+                PersonalityIssue(
+                    issues, ContentIssueCodes.PersonalityFieldInvalid, fileName,
+                    "personalityScale." + name + ": high must lie beyond medium in the '" + (scale.Direction == ScaleDirection.Up ? "up" : "down") + "' direction.");
+            }
+        }
+
+        private static void PersonalityIssue(ICollection<ContentIssue> issues, string code, string fileName, string message)
+        {
+            issues.Add(ContentIssue.Error(code, fileName, message));
+        }
+
         private static void ValidateSeller(NpcSellerRole s, string label, string fileName, ICollection<ContentIssue> issues)
         {
             if (s.AvailableFromDay < 1)

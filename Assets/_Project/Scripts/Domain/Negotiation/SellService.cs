@@ -71,7 +71,7 @@ namespace Esnaf.Domain.Negotiation
             var views = new List<CustomerView>();
             foreach (KeyValuePair<CustomerSlot, long> pair in _customers.Interested())
             {
-                views.Add(new CustomerView(pair.Key.CustomerId, pair.Key.NpcId, pair.Value));
+                views.Add(new CustomerView(pair.Key.CustomerId, pair.Key.NpcId, pair.Value, _customers.ProfileFor(pair.Key)));
             }
 
             return views;
@@ -274,6 +274,19 @@ namespace Esnaf.Domain.Negotiation
             throw new InvalidOperationException("The customer " + customerId + " is not in today's roster.");
         }
 
+        private CustomerProfile ProfileOfSale(ActiveSale active)
+        {
+            foreach (CustomerSlot slot in _customers.State.Slots)
+            {
+                if (slot.CustomerId == active.CustomerId)
+                {
+                    return _customers.ProfileFor(slot);
+                }
+            }
+
+            return _customers.ProfileOf(active.NpcId);
+        }
+
         private SaleView ViewOf(ActiveSale active, SaleState state, bool tooExpensive)
         {
             NegotiationRules rules = _content.Negotiation;
@@ -301,7 +314,8 @@ namespace Esnaf.Domain.Negotiation
                 patience,
                 tooExpensive,
                 state.ReportShown,
-                reports);
+                reports,
+                ProfileOfSale(active));
         }
     }
 }

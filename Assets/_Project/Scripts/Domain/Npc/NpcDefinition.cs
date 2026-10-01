@@ -17,7 +17,10 @@ namespace Esnaf.Domain.Npc
         public NpcSellerRole Seller { get; }
         public NpcCustomerRole Customer { get; }
 
-        public NpcDefinition(string id, string name, string personality, NpcSellerRole seller, NpcCustomerRole customer)
+        /// <summary>Kişilik arketipi anahtarı (npc_profiles.json "personalities"); katalogsuz içerikte null.</summary>
+        public string PersonalityId { get; }
+
+        public NpcDefinition(string id, string name, string personality, NpcSellerRole seller, NpcCustomerRole customer, string personalityId = null)
         {
             if (seller == null)
             {
@@ -34,6 +37,7 @@ namespace Esnaf.Domain.Npc
             Personality = personality;
             Seller = seller;
             Customer = customer;
+            PersonalityId = personalityId;
         }
     }
 }

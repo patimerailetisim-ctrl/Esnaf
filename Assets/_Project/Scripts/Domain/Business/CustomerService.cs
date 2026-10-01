@@ -262,10 +262,30 @@ namespace Esnaf.Domain.Business
             NpcDefinition npc = _content.GetNpc(slot.NpcId);
             NegotiationRules rules = _content.Negotiation;
             double max = MaxFor(slot, instance, false);
+            int trust = StartTrustOf(slot);
+            return new SaleSetup(OpeningFor(slot.NpcId, max), max, npc.Customer.Patience, trust, npc.Seller.Urgency, _time.Day);
+        }
+
+        /// <summary>Yuvanın başlangıç güveni: 50 ± 10 (çekime göre), 0–100'e kırpılır. Satış kurulumu ve kişilik profili aynı sayıyı kullanır.</summary>
+        private int StartTrustOf(CustomerSlot slot)
+        {
+            NegotiationRules rules = _content.Negotiation;
             int trust = rules.StartTrust
                 + (int)Math.Round(rules.StartTrustSpread * (2.0 * slot.TrustDraw - 1.0), MidpointRounding.AwayFromZero);
-            trust = Math.Max(0, Math.Min(100, trust));
-            return new SaleSetup(OpeningFor(slot.NpcId, max), max, npc.Customer.Patience, trust, npc.Seller.Urgency, _time.Day);
+            return Math.Max(0, Math.Min(100, trust));
+        }
+
+        /// <summary>NPC'nin kişilik profili (yuva bilgisi olmadan); kişilik kataloğu yoksa null. Salt okunur, rastgelelik kullanmaz.</summary>
+        public CustomerProfile ProfileOf(string npcId)
+        {
+            return CustomerProfiler.Build(_content.GetNpc(npcId), _content.Personalities, _content.Negotiation);
+        }
+
+        /// <summary>Yuvanın profili: NPC profili + bu yuvanın başlangıç güven düzeyi (mevcut çekimden, yeni çekim yok).</summary>
+        public CustomerProfile ProfileFor(CustomerSlot slot)
+        {
+            CustomerProfile profile = ProfileOf(slot.NpcId);
+            return profile == null ? null : profile.WithStartTrust(NegotiationLevels.MoodOf(_content.Negotiation, StartTrustOf(slot)));
         }
 
         internal void MarkSold(CustomerSlot slot)

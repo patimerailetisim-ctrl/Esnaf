@@ -124,6 +124,13 @@ namespace Esnaf.Domain.Content
         public const string NpcIdDuplicate = "npc.id.duplicate";
         public const string NpcFieldInvalid = "npc.field.invalid";
 
+        // Müşteri kişilikleri (npc_profiles.json "personalityScale" / "personalities" / npcs[].personalityId)
+        public const string PersonalityFieldInvalid = "personality.field.invalid";
+        public const string PersonalityIdDuplicate = "personality.id.duplicate";
+        public const string PersonalityUnknown = "personality.unknown";
+        public const string PersonalityMissing = "personality.missing";
+        public const string PersonalityInconsistent = "personality.inconsistent";
+
         // Pazar sabitleri (economy_constants.json "market" bölümü)
         public const string MarketFieldInvalid = "market.field.invalid";
         public const string MarketReferenceMissing = "market.reference.missing";

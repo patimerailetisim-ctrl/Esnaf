@@ -630,11 +630,11 @@ namespace Esnaf.Tests.Business
             }
 
             CollectionAssert.AreEquivalent(
-                new[] { "CustomerId", "NpcId", "InstanceId", "Phase", "Round", "ShownPrice", "DealPrice", "Mood", "Patience", "LastAskTooExpensive", "ReportShown", "Reports" },
+                new[] { "CustomerId", "NpcId", "InstanceId", "Phase", "Round", "ShownPrice", "DealPrice", "Mood", "Patience", "LastAskTooExpensive", "ReportShown", "Reports", "Profile" },
                 typeof(SaleView).GetProperties().Select(p => p.Name).ToArray());
             Assert.AreEqual(typeof(NegotiationLevel), typeof(SaleView).GetProperty("Mood").PropertyType);
             Assert.AreEqual(typeof(NegotiationLevel), typeof(SaleView).GetProperty("Patience").PropertyType);
-            CollectionAssert.AreEquivalent(new[] { "CustomerId", "NpcId", "InstanceId" }, typeof(CustomerView).GetProperties().Select(p => p.Name).ToArray());
+            CollectionAssert.AreEquivalent(new[] { "CustomerId", "NpcId", "InstanceId", "Profile" }, typeof(CustomerView).GetProperties().Select(p => p.Name).ToArray());
         }
 
         // ---------- durum özeti ve belirlenimcilik ----------

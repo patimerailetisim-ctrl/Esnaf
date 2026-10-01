@@ -60,6 +60,9 @@ namespace Esnaf.Domain.Content
             get { return _npcs; }
         }
 
+        /// <summary>Müşteri kişilik arketipleri ve ölçekleri (npc_profiles.json); bölümler yoksa boş katalog.</summary>
+        public PersonalityCatalog Personalities { get; }
+
         /// <summary>Durum profilleri, dosyadaki sırayla, salt okunur.</summary>
         public IReadOnlyList<ConditionProfile> ConditionProfiles
         {
@@ -77,8 +80,10 @@ namespace Esnaf.Domain.Content
             AppraisalConfig appraisal,
             NegotiationRules negotiation,
             CustomerConstants customers,
-            DemandConstants demand)
+            DemandConstants demand,
+            PersonalityCatalog personalities)
         {
+            Personalities = personalities;
             Customers = customers;
             Demand = demand;
             Appraisal = appraisal;
@@ -278,6 +283,7 @@ namespace Esnaf.Domain.Content
 
             // NPC profilleri
             IReadOnlyList<NpcDefinition> npcs = null;
+            PersonalityCatalog personalities = null;
             if (!source.TryGetText(ContentFileNames.NpcProfiles, out text))
             {
                 issues.Add(ContentIssue.Error(ContentIssueCodes.FileMissing, ContentFileNames.NpcProfiles, "Content file not found."));
@@ -288,6 +294,7 @@ namespace Esnaf.Domain.Content
                 if (npcs != null)
                 {
                     ContentValidator.ValidateNpcs(npcs, ContentFileNames.NpcProfiles, issues);
+                    personalities = ContentParser.ParsePersonalities(ContentFileNames.NpcProfiles, text, issues);
                 }
             }
 
@@ -328,6 +335,11 @@ namespace Esnaf.Domain.Content
                         ContentValidator.ValidateNegotiationLinks(negotiation, appraisal, ContentFileNames.NegotiationRules, issues);
                     }
                 }
+            }
+
+            if (personalities != null && npcs != null && negotiation != null)
+            {
+                ContentValidator.ValidatePersonalities(personalities, npcs, negotiation, ContentFileNames.NpcProfiles, issues);
             }
 
             // Pazar kuralları ürünlere, NPC'lere ve değer tablolarına başvurur; önceki dosyalar temizse çapraz denetlenir
@@ -376,14 +388,15 @@ namespace Esnaf.Domain.Content
                 || appraisal == null
                 || negotiation == null
                 || customerConstants == null
-                || demandConstants == null)
+                || demandConstants == null
+                || personalities == null)
             {
                 return new ContentLoadResult(null, issues);
             }
 
             return new ContentLoadResult(
                 new ContentDatabase(
-                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal, negotiation, customerConstants, demandConstants),
+                    products, valueTables, conditionProfiles, new TransactionTypes(transactionTypes), economyConstants, marketConstants, npcs, appraisal, negotiation, customerConstants, demandConstants, personalities),
                 issues);
         }
 

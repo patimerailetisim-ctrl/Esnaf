@@ -1,53 +1,71 @@
 {
   "schemaVersion": 1,
+  "personalityScale": {
+    "urgency":   { "direction": "up",   "medium": 0.3,  "high": 0.6  },
+    "knowledge": { "direction": "down", "medium": 0.12, "high": 0.06 },
+    "budget":    { "direction": "up",   "medium": 1.0,  "high": 1.05 },
+    "haggling":  { "direction": "down", "medium": 0.90, "high": 0.85 }
+  },
+  "personalities": [
+    { "id": "haggler",         "name": "Pazarlıkçı",          "expects": { "haggling": ["high"], "patience": ["medium", "high"] } },
+    { "id": "hurried",         "name": "Aceleci",             "expects": { "urgency": ["medium", "high"], "patience": ["low", "medium"] } },
+    { "id": "indecisive",      "name": "Kararsız",            "expects": { "patience": ["high"], "knowledge": ["low"] } },
+    { "id": "tech_enthusiast", "name": "Teknoloji meraklısı", "expects": { "knowledge": ["high"] } },
+    { "id": "price_focused",   "name": "Fiyat odaklı",        "expects": { "haggling": ["high"], "budget": ["low", "medium"] } },
+    { "id": "easygoing",       "name": "Rahat/samimi",        "expects": { "urgency": ["low", "medium"], "patience": ["medium", "high"], "haggling": ["low", "medium"] } },
+    { "id": "informed_buyer",  "name": "Bilinçli alıcı",      "expects": { "knowledge": ["high"], "budget": ["low", "medium"] } },
+    { "id": "showoff",         "name": "Gösteriş meraklısı",  "expects": { "budget": ["high"], "urgency": ["low"] } },
+    { "id": "budget_limited",  "name": "Bütçesi sınırlı",     "expects": { "budget": ["low"], "haggling": ["high"] } },
+    { "id": "trust_seeker",    "name": "Güven odaklı",        "expects": { "patience": ["high"], "budget": ["low", "medium"] } }
+  ],
   "npcs": [
     {
-      "id": "npc.kemal", "name": "Kemal Abi", "personality": "haggler",
+      "id": "npc.kemal", "name": "Kemal Abi", "personality": "haggler", "personalityId": "haggler",
       "seller": { "availableFromDay": 2, "askMultiplier": 1.20, "rejectRatio": 0.96, "patience": 5, "valueSigma": 0.08, "urgency": 0.2, "persuasion": 0.6 },
       "customer": { "availableFromDay": 1, "openingOfferRatio": 0.80, "valueRatio": 1.00, "patience": 5 }
     },
     {
-      "id": "npc.selin", "name": "Selin", "personality": "hurried",
+      "id": "npc.selin", "name": "Selin", "personality": "hurried", "personalityId": "hurried",
       "seller": { "availableFromDay": 2, "askMultiplier": 1.05, "rejectRatio": 0.82, "patience": 3, "valueSigma": 0.12, "urgency": 0.9, "persuasion": 0.9, "learningFriendly": true },
       "customer": { "availableFromDay": 1, "openingOfferRatio": 0.92, "valueRatio": 1.00, "patience": 3 }
     },
     {
-      "id": "npc.murat", "name": "Dr. Murat", "personality": "informed",
+      "id": "npc.murat", "name": "Dr. Murat", "personality": "informed", "personalityId": "informed_buyer",
       "seller": { "availableFromDay": 4, "askMultiplier": 1.08, "rejectRatio": 0.97, "patience": 4, "valueSigma": 0.03, "urgency": 0.3, "persuasion": 1.0, "wrongCardPenaltyMultiplier": 2.0 },
       "customer": { "availableFromDay": 4, "openingOfferRatio": 0.90, "valueRatio": 0.97, "patience": 4 }
     },
     {
-      "id": "npc.hatice", "name": "Hatice Teyze", "personality": "uninformed",
+      "id": "npc.hatice", "name": "Hatice Teyze", "personality": "uninformed", "personalityId": "indecisive",
       "seller": { "availableFromDay": 3, "askMultiplier": 1.10, "rejectRatio": 0.92, "patience": 4, "valueSigma": 0.30, "valueBias": -0.28, "urgency": 0.4, "persuasion": 0.8, "learningFriendly": true },
       "customer": { "availableFromDay": 3, "openingOfferRatio": 0.85, "valueRatio": 1.00, "patience": 4, "valueSigma": 0.30 }
     },
     {
-      "id": "npc.berk", "name": "Berk", "personality": "wealthy",
+      "id": "npc.berk", "name": "Berk", "personality": "wealthy", "personalityId": "showoff",
       "seller": { "availableFromDay": 6, "askMultiplier": 1.15, "rejectRatio": 0.98, "patience": 3, "valueSigma": 0.06, "urgency": 0.1, "persuasion": 0.5 },
       "customer": { "availableFromDay": 6, "openingOfferRatio": 0.90, "valueRatio": 1.10, "patience": 3 }
     },
     {
-      "id": "npc.ozan", "name": "Ozan", "personality": "impatient",
+      "id": "npc.ozan", "name": "Ozan", "personality": "impatient", "personalityId": "hurried",
       "seller": { "availableFromDay": 2, "askMultiplier": 1.05, "rejectRatio": 0.90, "patience": 2, "valueSigma": 0.10, "urgency": 0.5, "persuasion": 0.7 },
       "customer": { "availableFromDay": 3, "openingOfferRatio": 0.88, "valueRatio": 1.00, "patience": 2 }
     },
     {
-      "id": "npc.riza", "name": "Rıza Bey", "personality": "suspicious",
+      "id": "npc.riza", "name": "Rıza Bey", "personality": "suspicious", "personalityId": "trust_seeker",
       "seller": { "availableFromDay": 4, "askMultiplier": 1.10, "rejectRatio": 0.95, "patience": 4, "valueSigma": 0.08, "urgency": 0.3, "persuasion": 0.5 },
       "customer": { "availableFromDay": 4, "reportTrustGain": 15, "openingOfferRatio": 0.82, "valueRatio": 0.95, "patience": 4 }
     },
     {
-      "id": "npc.nermin", "name": "Nermin", "personality": "collector",
+      "id": "npc.nermin", "name": "Nermin", "personality": "collector", "personalityId": "tech_enthusiast",
       "seller": { "availableFromDay": 6, "askMultiplier": 1.25, "rejectRatio": 0.98, "patience": 5, "valueSigma": 0.04, "urgency": 0.1, "persuasion": 0.6 },
       "customer": { "availableFromDay": 6, "openingOfferRatio": 0.88, "valueRatio": 1.02, "patience": 5, "packageRatio": 1.12 }
     },
     {
-      "id": "npc.cengiz", "name": "Cengiz", "personality": "hurried_indebted",
+      "id": "npc.cengiz", "name": "Cengiz", "personality": "hurried_indebted", "personalityId": "budget_limited",
       "seller": { "availableFromDay": 5, "askMultiplier": 1.02, "rejectRatio": 0.78, "patience": 2, "valueSigma": 0.15, "urgency": 1.0, "persuasion": 0.9, "concealChance": 0.60, "urgentLabelFromDay": 6 },
       "customer": { "availableFromDay": 3, "segments": [ "entry", "mid" ], "openingOfferRatio": 0.85, "valueRatio": 0.95, "patience": 3 }
     },
     {
-      "id": "npc.ayse", "name": "Ayşe Hanım", "personality": "honest",
+      "id": "npc.ayse", "name": "Ayşe Hanım", "personality": "honest", "personalityId": "easygoing",
       "seller": { "availableFromDay": 1, "askMultiplier": 1.10, "rejectRatio": 0.94, "patience": 4, "valueSigma": 0.05, "urgency": 0.3, "persuasion": 0.9, "learningFriendly": true },
       "customer": { "availableFromDay": 3, "openingOfferRatio": 0.90, "valueRatio": 1.00, "patience": 4 }
     }

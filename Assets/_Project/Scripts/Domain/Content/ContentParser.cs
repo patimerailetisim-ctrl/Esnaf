@@ -962,6 +962,169 @@ namespace Esnaf.Domain.Content
             return new TransactionType(dto.Id, dto.DisplayKey, category, direction, effect);
         }
 
+        /// <returns>Bölümler yoksa <see cref="PersonalityCatalog.Empty"/>; yapısal hata varsa null.</returns>
+        public static PersonalityCatalog ParsePersonalities(string fileName, string json, ICollection<ContentIssue> issues)
+        {
+            NpcProfilesFileDto file = Deserialize<NpcProfilesFileDto>(fileName, json, issues);
+            if (file == null || !CheckSchemaVersion(fileName, file.SchemaVersion, issues))
+            {
+                return null;
+            }
+
+            if (file.PersonalityScale == null && file.Personalities == null)
+            {
+                return PersonalityCatalog.Empty;
+            }
+
+            if (!Require(fileName, "root", "personalityScale", file.PersonalityScale != null, issues)
+                | !Require(fileName, "root", "personalities", file.Personalities != null, issues))
+            {
+                return null;
+            }
+
+            PersonalityScale urgency = MapScale(fileName, "urgency", file.PersonalityScale.Urgency, issues);
+            PersonalityScale knowledge = MapScale(fileName, "knowledge", file.PersonalityScale.Knowledge, issues);
+            PersonalityScale budget = MapScale(fileName, "budget", file.PersonalityScale.Budget, issues);
+            PersonalityScale haggling = MapScale(fileName, "haggling", file.PersonalityScale.Haggling, issues);
+            bool allOk = urgency != null && knowledge != null && budget != null && haggling != null;
+
+            var definitions = new List<PersonalityDefinition>(file.Personalities.Count);
+            for (int i = 0; i < file.Personalities.Count; i++)
+            {
+                PersonalityDefinition definition = MapPersonality(fileName, i, file.Personalities[i], issues);
+                if (definition != null)
+                {
+                    definitions.Add(definition);
+                }
+                else
+                {
+                    allOk = false;
+                }
+            }
+
+            return allOk ? new PersonalityCatalog(new PersonalityScales(urgency, knowledge, budget, haggling), definitions) : null;
+        }
+
+        private static PersonalityScale MapScale(string fileName, string name, PersonalityScaleDto dto, ICollection<ContentIssue> issues)
+        {
+            string label = "personalityScale." + name;
+            if (!Require(fileName, "root", label, dto != null, issues))
+            {
+                return null;
+            }
+
+            bool ok = Require(fileName, label, "direction", dto.Direction != null, issues);
+            ok &= Require(fileName, label, "medium", dto.Medium.HasValue, issues);
+            ok &= Require(fileName, label, "high", dto.High.HasValue, issues);
+            if (!ok)
+            {
+                return null;
+            }
+
+            ScaleDirection direction;
+            if (dto.Direction == "up")
+            {
+                direction = ScaleDirection.Up;
+            }
+            else if (dto.Direction == "down")
+            {
+                direction = ScaleDirection.Down;
+            }
+            else
+            {
+                issues.Add(ContentIssue.Error(
+                    ContentIssueCodes.PersonalityFieldInvalid, fileName, label + ": direction '" + dto.Direction + "' is invalid (allowed: up, down)."));
+                return null;
+            }
+
+            return new PersonalityScale(direction, dto.Medium.Value, dto.High.Value);
+        }
+
+        private static PersonalityDefinition MapPersonality(string fileName, int index, PersonalityDto dto, ICollection<ContentIssue> issues)
+        {
+            string label = "personalities[" + index + "]";
+            if (dto == null)
+            {
+                issues.Add(FieldMissing(fileName, label));
+                return null;
+            }
+
+            bool ok = Require(fileName, label, "id", dto.Id != null, issues);
+            ok &= Require(fileName, label, "name", dto.Name != null, issues);
+            ok &= Require(fileName, label, "expects", dto.Expects != null, issues);
+            if (!ok)
+            {
+                return null;
+            }
+
+            var expects = new Dictionary<CustomerTrait, IEnumerable<NegotiationLevel>>();
+            foreach (KeyValuePair<string, List<string>> pair in dto.Expects)
+            {
+                CustomerTrait trait;
+                if (!TryParseTrait(pair.Key, out trait))
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.PersonalityFieldInvalid, fileName,
+                        label + ": expects: unknown trait '" + pair.Key + "' (allowed: patience, urgency, knowledge, budget, haggling)."));
+                    ok = false;
+                    continue;
+                }
+
+                if (pair.Value == null || pair.Value.Count == 0)
+                {
+                    issues.Add(ContentIssue.Error(
+                        ContentIssueCodes.PersonalityFieldInvalid, fileName, label + ": expects." + pair.Key + " must list at least one level."));
+                    ok = false;
+                    continue;
+                }
+
+                var levels = new List<NegotiationLevel>(pair.Value.Count);
+                foreach (string text in pair.Value)
+                {
+                    NegotiationLevel level;
+                    if (text == "low")
+                    {
+                        level = NegotiationLevel.Low;
+                    }
+                    else if (text == "medium")
+                    {
+                        level = NegotiationLevel.Medium;
+                    }
+                    else if (text == "high")
+                    {
+                        level = NegotiationLevel.High;
+                    }
+                    else
+                    {
+                        issues.Add(ContentIssue.Error(
+                            ContentIssueCodes.PersonalityFieldInvalid, fileName,
+                            label + ": expects." + pair.Key + ": level '" + text + "' is invalid (allowed: low, medium, high)."));
+                        ok = false;
+                        continue;
+                    }
+
+                    levels.Add(level);
+                }
+
+                expects[trait] = levels;
+            }
+
+            return ok ? new PersonalityDefinition(dto.Id, dto.Name, expects) : null;
+        }
+
+        private static bool TryParseTrait(string text, out CustomerTrait trait)
+        {
+            switch (text)
+            {
+                case "patience": trait = CustomerTrait.Patience; return true;
+                case "urgency": trait = CustomerTrait.Urgency; return true;
+                case "knowledge": trait = CustomerTrait.Knowledge; return true;
+                case "budget": trait = CustomerTrait.Budget; return true;
+                case "haggling": trait = CustomerTrait.Haggling; return true;
+                default: trait = CustomerTrait.Patience; return false;
+            }
+        }
+
         private static NpcDefinition MapNpc(string fileName, int index, NpcDto dto, ICollection<ContentIssue> issues)
         {
             string label = "npcs[" + index + "]";
@@ -997,7 +1160,7 @@ namespace Esnaf.Domain.Content
                 return null;
             }
 
-            return new NpcDefinition(dto.Id, dto.Name, dto.Personality, seller, customer);
+            return new NpcDefinition(dto.Id, dto.Name, dto.Personality, seller, customer, dto.PersonalityId);
         }
 
         private static NpcSellerRole MapSeller(string fileName, string label, NpcSellerDto dto, ICollection<ContentIssue> issues)

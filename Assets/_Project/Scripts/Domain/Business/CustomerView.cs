@@ -1,3 +1,5 @@
+using Esnaf.Domain.Npc;
+
 namespace Esnaf.Domain.Business
 {
     /// <summary>
@@ -10,11 +12,15 @@ namespace Esnaf.Domain.Business
         public string NpcId { get; }
         public long InstanceId { get; }
 
-        public CustomerView(long customerId, string npcId, long instanceId)
+        /// <summary>Kişilik profili (arketip + düzeyler + başlangıç ruh hali); kişilik kataloğu yoksa null. Max/güven sayısı içermez.</summary>
+        public CustomerProfile Profile { get; }
+
+        public CustomerView(long customerId, string npcId, long instanceId, CustomerProfile profile = null)
         {
             CustomerId = customerId;
             NpcId = npcId;
             InstanceId = instanceId;
+            Profile = profile;
         }
     }
 }

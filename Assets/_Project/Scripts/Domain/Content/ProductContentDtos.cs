@@ -301,7 +301,31 @@ namespace Esnaf.Domain.Content
     internal sealed class NpcProfilesFileDto
     {
         public int? SchemaVersion { get; set; }
+        public PersonalityScalesDto PersonalityScale { get; set; }
+        public List<PersonalityDto> Personalities { get; set; }
         public List<NpcDto> Npcs { get; set; }
+    }
+
+    internal sealed class PersonalityScalesDto
+    {
+        public PersonalityScaleDto Urgency { get; set; }
+        public PersonalityScaleDto Knowledge { get; set; }
+        public PersonalityScaleDto Budget { get; set; }
+        public PersonalityScaleDto Haggling { get; set; }
+    }
+
+    internal sealed class PersonalityScaleDto
+    {
+        public string Direction { get; set; }
+        public double? Medium { get; set; }
+        public double? High { get; set; }
+    }
+
+    internal sealed class PersonalityDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Dictionary<string, List<string>> Expects { get; set; }
     }
 
     internal sealed class NpcDto
@@ -309,6 +333,7 @@ namespace Esnaf.Domain.Content
         public string Id { get; set; }
         public string Name { get; set; }
         public string Personality { get; set; }
+        public string PersonalityId { get; set; }
         public NpcSellerDto Seller { get; set; }
         public NpcCustomerDto Customer { get; set; }
     }
