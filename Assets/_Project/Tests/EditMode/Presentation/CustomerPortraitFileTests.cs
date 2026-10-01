@@ -30,6 +30,32 @@ namespace Esnaf.Tests.Presentation
             return Directory.GetFiles(Dir(), "*.png");
         }
 
+        private static string Nfc(string text)
+        {
+            return text.Normalize(System.Text.NormalizationForm.FormC);
+        }
+
+        /// <summary>
+        /// Unity, ASCII olmayan metni YAML'de ÇİFT TIRNAKLI ve \uXXXX kaçışlı yazar (ör. _name: "O\u011Fuz"). Okurken tırnak ve kaçış çözülür;
+        /// aksi halde Oğuz/Yiğit/İrem "ilk bakışta aynı" görünse de eşleşmez.
+        /// </summary>
+        private static string YamlString(string value)
+        {
+            string v = value.Trim();
+            if (v.Length >= 2 && v[0] == '"' && v[v.Length - 1] == '"')
+            {
+                v = v.Substring(1, v.Length - 2);
+                v = Regex.Replace(v, @"\\u([0-9a-fA-F]{4})", m => ((char)System.Convert.ToInt32(m.Groups[1].Value, 16)).ToString());
+                v = v.Replace("\\\"", "\"").Replace("\\\\", "\\");
+            }
+            else if (v.Length >= 2 && v[0] == '\'' && v[v.Length - 1] == '\'')
+            {
+                v = v.Substring(1, v.Length - 2).Replace("''", "'");
+            }
+
+            return Nfc(v);
+        }
+
         private static string CatalogText()
         {
             string path = Path.Combine(Dir(), "CustomerPortraitCatalog.asset");
@@ -41,12 +67,21 @@ namespace Esnaf.Tests.Presentation
             return File.ReadAllText(path);
         }
 
+        [TestCase("Berk", "Berk")]
+        [TestCase("\"O\\u011Fuz\"", "O\u011Fuz")]
+        [TestCase("\"Yi\\u011Fit\"", "Yi\u011Fit")]
+        [TestCase("\"\\u0130rem\"", "\u0130rem")]
+        public void UnityYamlStrings_AreDecodedBeforeComparing(string yaml, string expected)
+        {
+            Assert.AreEqual(expected, YamlString(yaml));
+        }
+
         [Test]
         public void TheFolder_HoldsExactlyTheTwentyEightExpectedPortraits()
         {
-            string[] names = Pngs().Select(Path.GetFileNameWithoutExtension).ToArray();
+            string[] names = Pngs().Select(p => Nfc(Path.GetFileNameWithoutExtension(p))).ToArray();
 
-            CollectionAssert.AreEquivalent(CustomerPortraitNaming.ExpectedNames.ToArray(), names);
+            CollectionAssert.AreEquivalent(CustomerPortraitNaming.ExpectedNames.Select(Nfc).ToArray(), names);
         }
 
         [Test]
@@ -74,7 +109,7 @@ namespace Esnaf.Tests.Presentation
             foreach (string png in pngs)
             {
                 string guid = Regex.Match(File.ReadAllText(png + ".meta"), @"^guid: (\w+)", RegexOptions.Multiline).Groups[1].Value;
-                guidToName[guid] = Path.GetFileNameWithoutExtension(png);
+                guidToName[guid] = Nfc(Path.GetFileNameWithoutExtension(png));
             }
 
             var linked = new Dictionary<string, string>(); // ad -> guid
@@ -84,7 +119,7 @@ namespace Esnaf.Tests.Presentation
                 Match name = Regex.Match(line, @"^\s*- _name: (.+?)\s*$");
                 if (name.Success)
                 {
-                    currentName = name.Groups[1].Value;
+                    currentName = YamlString(name.Groups[1].Value);
                     continue;
                 }
 
@@ -95,7 +130,7 @@ namespace Esnaf.Tests.Presentation
                 }
             }
 
-            CollectionAssert.AreEquivalent(CustomerPortraitNaming.ExpectedNames.ToArray(), linked.Keys.ToArray(), "28 portre katalogda");
+            CollectionAssert.AreEquivalent(CustomerPortraitNaming.ExpectedNames.Select(Nfc).ToArray(), linked.Keys.ToArray(), "28 portre katalogda");
             foreach (KeyValuePair<string, string> pair in linked)
             {
                 Assert.IsTrue(guidToName.ContainsKey(pair.Value), pair.Key + ": Sprite GUID'i hiçbir PNG'ye ait değil / boş");

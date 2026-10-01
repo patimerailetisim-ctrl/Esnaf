@@ -32,7 +32,7 @@ namespace Esnaf.Presentation
                 return string.Empty;
             }
 
-            string name = nameOrFile.Trim();
+            string name = nameOrFile.Trim().Normalize(NormalizationForm.FormC); // dosya sistemi ğ'yi g+birleşik işaret olarak verebilir
             if (name.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
             {
                 name = name.Substring(0, name.Length - 4);

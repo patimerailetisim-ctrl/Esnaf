@@ -39,6 +39,14 @@ namespace Esnaf.Tests.Presentation
             Assert.AreEqual(expected, CustomerPortraitNaming.Key(input));
         }
 
+        [TestCase("Og\u0306uz", "oguz")]
+        [TestCase("Yig\u0306it.png", "yigit")]
+        [TestCase("I\u0307rem", "irem")]
+        public void TheKey_AlsoUnderstandsDecomposedUnicode(string input, string expected)
+        {
+            Assert.AreEqual(expected, CustomerPortraitNaming.Key(input));
+        }
+
         [Test]
         public void TheKeyOfAPortraitFile_EqualsTheKeyOfTheCustomersName()
         {
