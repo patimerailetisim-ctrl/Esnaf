@@ -121,11 +121,24 @@ namespace Esnaf.App.Ui
             layout.flexibleHeight = weight;
         }
 
+        /// <summary>
+        /// Çocukları kaldırır. Çocuk hemen ebeveynden ayrılır (Destroy çerçeve sonuna ertelenir; aynı çerçevede yeniden çizimde eski çocuk
+        /// görünmesin); Play Mode'da Destroy, Edit Mode'da (testler) DestroyImmediate kullanılır.
+        /// </summary>
         public static void Clear(Transform parent)
         {
             for (int i = parent.childCount - 1; i >= 0; i--)
             {
-                Object.Destroy(parent.GetChild(i).gameObject);
+                GameObject child = parent.GetChild(i).gameObject;
+                child.transform.SetParent(null, false);
+                if (Application.isPlaying)
+                {
+                    Object.Destroy(child);
+                }
+                else
+                {
+                    Object.DestroyImmediate(child);
+                }
             }
         }
 
