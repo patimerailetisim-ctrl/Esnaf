@@ -190,6 +190,107 @@ namespace Esnaf.Presentation
         public const string ReplyAcceptFinalPrefix = "Tamam abi, ";
         public const string PriceStepperHint = "Se\u00E7ti\u011Fin fiyat";
 
+        // ---- toptancı ve aksesuar stoğu (Gün 11.2.3) ----
+        public const string WholesaleTitle = "Toptanc\u0131";
+        public const string WholesaleButton = "Toptanc\u0131";
+        public const string BuyPackButton = "Sat\u0131n Al";
+        public const string AccessoryStockTitle = "Aksesuar Sto\u011Fu";
+        public const string AccessoryStockEmpty = "Aksesuar sto\u011Fun bo\u015F. Toptanc\u0131dan paket alabilirsin.";
+        public const string WholesaleNoOffers = "Toptanc\u0131n\u0131n \u015Fu an teklifi yok.";
+        public const string ToWholesale = "Toptanc\u0131ya git";
+        public const string ToAccessoryStock = "Aksesuar sto\u011Funa bak";
+
+        /// <summary>İlanlar ekranındaki düğme: "Aksesuar (12/60)". Telefon rafıyla ("Raf (n/kapasite)") karışmasın diye adı farklıdır.</summary>
+        public static string AccessoryStockButton(int units, int capacity)
+        {
+            return "Aksesuar (" + units.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture) + ")";
+        }
+
+        public static string PackLine(int packSize)
+        {
+            return "Paket: " + packSize.ToString(CultureInfo.InvariantCulture) + " adet";
+        }
+
+        public static string UnitCostLine(Money unitCost)
+        {
+            return "Birim maliyet: " + MoneyFormatter.Format(unitCost);
+        }
+
+        public static string PackPriceLine(Money packCost)
+        {
+            return "Paket fiyat\u0131: " + MoneyFormatter.Format(packCost);
+        }
+
+        /// <summary>Kilitli düğmenin yazısı: "Gün 3'te açılır".</summary>
+        public static string OpensOnButton(int day)
+        {
+            return "G\u00FCn " + day.ToString(CultureInfo.InvariantCulture) + "'te a\u00E7\u0131l\u0131r";
+        }
+
+        /// <summary>Kilitli ürünün notu: "Bu ürün Gün 3'te açılacak."</summary>
+        public static string OpensOnNote(int day)
+        {
+            return "Bu \u00FCr\u00FCn G\u00FCn " + day.ToString(CultureInfo.InvariantCulture) + "'te a\u00E7\u0131lacak.";
+        }
+
+        /// <summary>"10 adet Şarj Adaptörü stoğa eklendi."</summary>
+        public static string PackAdded(int quantity, string accessoryName)
+        {
+            return quantity.ToString(CultureInfo.InvariantCulture) + " adet " + accessoryName + " sto\u011Fa eklendi.";
+        }
+
+        /// <summary>Toptan alış hatası (Türkçe). Gün kilidi için teklifin açılış günü verilir. Bilinmeyen kod genel mesaja düşer.</summary>
+        public static string WholesaleError(string code, int opensOnDay)
+        {
+            switch (code)
+            {
+                case "cash.insufficient":
+                    return "Bu paketi almak i\u00E7in yeterli paran yok.";
+                case "stock.full":
+                    return "Aksesuar sto\u011Funda yeterli yer yok.";
+                case "wholesale.not_available_yet":
+                    return OpensOnNote(opensOnDay);
+                case "supplier.unknown":
+                case "accessory.unknown":
+                case "offer.unknown":
+                    return "Bu teklif art\u0131k yok.";
+                case "amount.invalid":
+                    return "Bu paketin tutar\u0131 ge\u00E7ersiz.";
+                default:
+                    return Error(code);
+            }
+        }
+
+        public static string StockCapacityLine(int units, int capacity)
+        {
+            return "Stok: " + units.ToString(CultureInfo.InvariantCulture) + " / " + capacity.ToString(CultureInfo.InvariantCulture) + " adet";
+        }
+
+        public static string StockTotalCostLine(Money total)
+        {
+            return "Stok maliyeti: " + MoneyFormatter.Format(total);
+        }
+
+        public static string StockQuantityLine(int quantity)
+        {
+            return "Adet: " + quantity.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string StockAverageCostLine(Money average)
+        {
+            return "Ortalama maliyet: " + MoneyFormatter.Format(average);
+        }
+
+        public static string StockLineTotalLine(Money total)
+        {
+            return "Toplam maliyet: " + MoneyFormatter.Format(total);
+        }
+
+        public static string StockShareLine(int percent)
+        {
+            return "Kapasitenin %" + percent.ToString(CultureInfo.InvariantCulture) + "'\u0131";
+        }
+
         public static string CustomersButton(int count)
         {
             return count == 0 ? CustomersTitle : CustomersTitle + " (" + count.ToString(CultureInfo.InvariantCulture) + ")";

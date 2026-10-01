@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Esnaf.Core;
+using Esnaf.Domain.Wholesale;
+using Esnaf.Domain.Accessories;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
@@ -100,6 +102,21 @@ namespace Esnaf.Domain.Game
 
         /// <summary>Dükkândaki ürünler ve maliyet tabanları.</summary>
         IReadOnlyList<StockLine> GetInventory();
+
+        /// <summary>
+        /// Toptancı teklifleri (Gün 11.2.3), dosyadaki sırayla. Kilitli teklifler de listelenir (<c>IsAvailableToday</c> = false); gizli bilgi yoktur.
+        /// Kaynak: WholesaleCatalog + bugünün günü.
+        /// </summary>
+        IReadOnlyList<WholesaleOfferView> GetWholesaleOffers();
+
+        /// <summary>
+        /// Toptancıdan bir PAKET alır (miktar teklifin packSize'ı), bugünün günüyle. Tek kaynak WholesaleService'tir; atomiktir.
+        /// Hatalar: supplier.unknown, accessory.unknown, offer.unknown, wholesale.not_available_yet, cash.insufficient, stock.full, amount.invalid.
+        /// </summary>
+        Result<WholesalePurchaseReceipt> BuyWholesalePack(string supplierId, string accessoryId);
+
+        /// <summary>Aksesuar stoğu: kalemler, toplam birim ve maliyet, kapasite. Telefon rafından (GetInventory) ayrıdır.</summary>
+        AccessoryStockView GetAccessoryStock();
 
         /// <summary>Bir ilanın ürünü için bilinen ekspertiz sonuçları (sonuç sırasıyla); ilan yoksa boş.</summary>
         IReadOnlyList<AppraisalView> GetAppraisals(long listingId);

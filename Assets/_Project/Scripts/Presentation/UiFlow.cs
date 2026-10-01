@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using Esnaf.Core;
+using Esnaf.Domain.Accessories;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
@@ -10,6 +11,7 @@ using Esnaf.Domain.Inventory;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Time;
+using Esnaf.Domain.Wholesale;
 
 namespace Esnaf.Presentation
 {
@@ -89,6 +91,15 @@ namespace Esnaf.Presentation
 
         /// <summary>İlanlar ekranındaki Müşteriler düğmesinin yazısı: "Müşteriler (n)" (IGameApi.GetCustomers).</summary>
         public string CustomersButtonText { get; private set; }
+
+        /// <summary>Toptancı ekranı (yalnızca CurrentScreen == Wholesale iken dolu; aksi halde null).</summary>
+        public WholesaleScreenViewModel WholesaleScreen { get; private set; }
+
+        /// <summary>Aksesuar Stoğu ekranı (yalnızca CurrentScreen == AccessoryStock iken dolu; aksi halde null). Telefon rafından ayrıdır.</summary>
+        public AccessoryStockScreenViewModel AccessoryStockScreen { get; private set; }
+
+        /// <summary>İlanlar ekranındaki Aksesuar düğmesinin yazısı: "Aksesuar (X/60)" (aksesuar kapasitesi; telefon rafı değil).</summary>
+        public string AccessoryButtonText { get; private set; }
 
         public TopBarViewModel TopBar { get; private set; }
 
@@ -187,6 +198,10 @@ namespace Esnaf.Presentation
                 CurrentScreen = UiScreen.Detail; // pazarlık oyunda açık kalır; geri dönülünce kaldığı yerden sürer
             }
             else if (CurrentScreen == UiScreen.Detail || CurrentScreen == UiScreen.Shelf)
+            {
+                CurrentScreen = UiScreen.Listings;
+            }
+            else if (CurrentScreen == UiScreen.Wholesale || CurrentScreen == UiScreen.AccessoryStock)
             {
                 CurrentScreen = UiScreen.Listings;
             }
@@ -437,6 +452,66 @@ namespace Esnaf.Presentation
             Rebuild();
             RaiseChanged();
             return true;
+        }
+
+        /// <summary>İlanlar (ya da Aksesuar Stoğu) ekranından Toptancı ekranını açar. Başka ekrandaysa hiçbir şey yapmaz (false).</summary>
+        public bool OpenWholesale()
+        {
+            if (CurrentScreen != UiScreen.Listings && CurrentScreen != UiScreen.AccessoryStock)
+            {
+                return false;
+            }
+
+            CurrentScreen = UiScreen.Wholesale;
+            StatusMessage = null;
+            Rebuild();
+            RaiseChanged();
+            return true;
+        }
+
+        /// <summary>İlanlar (ya da Toptancı) ekranından Aksesuar Stoğu ekranını açar. Başka ekrandaysa hiçbir şey yapmaz (false).</summary>
+        public bool OpenAccessoryStock()
+        {
+            if (CurrentScreen != UiScreen.Listings && CurrentScreen != UiScreen.Wholesale)
+            {
+                return false;
+            }
+
+            CurrentScreen = UiScreen.AccessoryStock;
+            StatusMessage = null;
+            Rebuild();
+            RaiseChanged();
+            return true;
+        }
+
+        /// <summary>
+        /// Toptancıdan bir paket alır (IGameApi.BuyWholesalePack; tek kaynak WholesaleService). Başarıda "10 adet Şarj Adaptörü stoğa eklendi." der;
+        /// hatada (nakit, kapasite, gün kilidi...) Türkçe nedeni söyler ve hiçbir şey değişmez. Yalnızca Toptancı ekranında çalışır.
+        /// </summary>
+        public Result<WholesalePurchaseReceipt> BuyWholesalePack(string supplierId, string accessoryId)
+        {
+            if (CurrentScreen != UiScreen.Wholesale)
+            {
+                return Result<WholesalePurchaseReceipt>.Fail("ui.not_on_wholesale_screen", "The wholesale screen is not open.");
+            }
+
+            string name = accessoryId;
+            int opensOn = 1;
+            foreach (WholesaleOfferView offer in _api.GetWholesaleOffers())
+            {
+                if (offer.SupplierId == supplierId && offer.AccessoryId == accessoryId)
+                {
+                    name = offer.AccessoryName;
+                    opensOn = offer.AvailableFromDay;
+                }
+            }
+
+            Result<WholesalePurchaseReceipt> result = _api.BuyWholesalePack(supplierId, accessoryId);
+            StatusMessage = result.IsSuccess
+                ? TurkishTexts.PackAdded(result.Value.Quantity, name)
+                : TurkishTexts.WholesaleError(result.ErrorCode, opensOn);
+            Refresh();
+            return result;
         }
 
         /// <summary>
@@ -891,7 +966,8 @@ namespace Esnaf.Presentation
             {
                 _selectedListingId = null;
                 _selectedLevelId = null;
-                if (CurrentScreen != UiScreen.Shelf && CurrentScreen != UiScreen.Sale)
+                if (CurrentScreen != UiScreen.Shelf && CurrentScreen != UiScreen.Sale
+                    && CurrentScreen != UiScreen.Wholesale && CurrentScreen != UiScreen.AccessoryStock)
                 {
                     CurrentScreen = UiScreen.Listings;
                 }
@@ -927,6 +1003,10 @@ namespace Esnaf.Presentation
             ShelfButtonText = TurkishTexts.ShelfButton(stock.Count, _content.ShelfCapacity);
             ShelfScreen = CurrentScreen == UiScreen.Shelf ? BuildShelf(stock) : null;
             CustomersButtonText = TurkishTexts.CustomersButton(_api.GetCustomers().Count);
+            AccessoryStockView accessories = _api.GetAccessoryStock();
+            AccessoryButtonText = TurkishTexts.AccessoryStockButton(accessories.TotalUnits, accessories.Capacity);
+            WholesaleScreen = CurrentScreen == UiScreen.Wholesale ? WholesaleScreenBuilder.BuildWholesale(_api) : null;
+            AccessoryStockScreen = CurrentScreen == UiScreen.AccessoryStock ? WholesaleScreenBuilder.BuildStock(_api) : null;
             SaleScreen = CurrentScreen == UiScreen.Sale ? SaleScreenBuilder.Build(_api, _content, _sale) : null;
         }
 

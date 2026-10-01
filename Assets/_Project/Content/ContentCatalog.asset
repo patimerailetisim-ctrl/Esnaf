@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: ContentCatalog
   m_EditorClassIdentifier: Esnaf.Content::Esnaf.Content.ContentCatalog
   _contentFiles:
+  - {fileID: 4900000, guid: 224cd09174b64ef4a253cd6fe0464444, type: 3}
   - {fileID: 4900000, guid: 42a1844fbb38f904a9b20225dc652f31, type: 3}
   - {fileID: 4900000, guid: f4cfa60937fa63b48829d4ba236a41a7, type: 3}
   - {fileID: 4900000, guid: 2d2129b59816d894db94e9511275dd03, type: 3}
@@ -22,3 +23,4 @@ MonoBehaviour:
   - {fileID: 4900000, guid: 2832dd8de692cf34594c78959cd2428c, type: 3}
   - {fileID: 4900000, guid: 93b22791db69b224e87fc8d085d45c27, type: 3}
   - {fileID: 4900000, guid: bab9a52ad8a02164a9f31fa877be1f8c, type: 3}
+  - {fileID: 4900000, guid: e89a0ae2b77f4110a79d88e75c70f264, type: 3}

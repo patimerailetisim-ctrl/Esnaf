@@ -1,6 +1,6 @@
 namespace Esnaf.Presentation
 {
-    /// <summary>Arayüz ekranları. Gün 10: İlanlar, Telefon Detayı, Ekspertiz, Pazarlık, Raf (salt okunur), Müşteri satışı.</summary>
+    /// <summary>Arayüz ekranları. Gün 10: İlanlar, Telefon Detayı, Ekspertiz, Pazarlık, Raf (salt okunur), Müşteri satışı, Toptancı, Aksesuar stoğu.</summary>
     public enum UiScreen
     {
         Listings = 0,
@@ -8,6 +8,8 @@ namespace Esnaf.Presentation
         Appraisal = 2,
         Negotiation = 3,
         Shelf = 4,
-        Sale = 5
+        Sale = 5,
+        Wholesale = 6,
+        AccessoryStock = 7
     }
 }

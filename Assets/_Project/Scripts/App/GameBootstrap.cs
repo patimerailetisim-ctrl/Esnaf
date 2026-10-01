@@ -37,6 +37,8 @@ namespace Esnaf.App
         private NegotiationPanelView _negotiation;
         private ShelfView _shelf;
         private SalePanelView _sale;
+        private WholesalePanelView _wholesale;
+        private AccessoryStockPanelView _accessoryStock;
 
         private void Awake()
         {
@@ -105,6 +107,8 @@ namespace Esnaf.App
             _negotiation = new NegotiationPanelView(canvas.transform, _flow);
             _shelf = new ShelfView(canvas.transform, _flow);
             _sale = new SalePanelView(canvas.transform, _flow);
+            _wholesale = new WholesalePanelView(canvas.transform, _flow);
+            _accessoryStock = new AccessoryStockPanelView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
             _flow.Changed += ShowScreen;
             ShowScreen();
@@ -165,6 +169,8 @@ namespace Esnaf.App
             _negotiation.Show();
             _shelf.Show();
             _sale.Show();
+            _wholesale.Show();
+            _accessoryStock.Show();
         }
     }
 }

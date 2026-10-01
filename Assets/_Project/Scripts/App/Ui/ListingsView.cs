@@ -11,7 +11,7 @@ namespace Esnaf.App.Ui
     internal sealed class ListingsView
     {
         private const float StatusHeight = 90f;
-        private const float BottomBarHeight = 170f;
+        private const float BottomBarHeight = 300f; // iki sıra düğme
         private const float TitleHeight = 110f;
 
         private static readonly Color RowColor = new Color(0.18f, 0.2f, 0.26f, 1f);
@@ -24,6 +24,7 @@ namespace Esnaf.App.Ui
         private readonly Text _status;
         private readonly Text _shelfLabel;
         private readonly Text _customersLabel;
+        private readonly Text _accessoriesLabel;
 
         public ListingsView(Transform canvas, UiFlow flow)
         {
@@ -49,16 +50,23 @@ namespace Esnaf.App.Ui
             UiBuilder.Stretch(_status.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, BottomBarHeight), new Vector2(-40f, BottomBarHeight + StatusHeight));
 
             Button endDay = UiBuilder.CreateButton(root, "EndDayButton", TurkishTexts.EndDayButton, 52, new Color(0.7f, 0.3f, 0.25f, 1f), OnEndDayClicked);
-            UiBuilder.Stretch(endDay.GetComponent<RectTransform>(), new Vector2(0.68f, 0f), new Vector2(1f, 0f), new Vector2(10f, 25f), new Vector2(-40f, BottomBarHeight - 25f));
+            UiBuilder.Stretch(endDay.GetComponent<RectTransform>(), new Vector2(0.68f, 0f), new Vector2(1f, 0f), new Vector2(10f, 25f), new Vector2(-40f, 145f));
 
             Button shelf = UiBuilder.CreateButton(root, "ShelfButton", TurkishTexts.ShelfButton(0, 0), 46, new Color(0.3f, 0.33f, 0.42f, 1f), OnShelfClicked);
-            UiBuilder.Stretch(shelf.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.34f, 0f), new Vector2(40f, 25f), new Vector2(-10f, BottomBarHeight - 25f));
+            UiBuilder.Stretch(shelf.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.5f, 0f), new Vector2(40f, 160f), new Vector2(-10f, BottomBarHeight - 20f));
             _shelfLabel = shelf.GetComponentInChildren<Text>();
             _shelfLabel.fontSize = 38;
 
             Button customers = UiBuilder.CreateButton(root, "CustomersButton", TurkishTexts.CustomersTitle, 38, new Color(0.25f, 0.5f, 0.45f, 1f), OnCustomersClicked);
-            UiBuilder.Stretch(customers.GetComponent<RectTransform>(), new Vector2(0.34f, 0f), new Vector2(0.68f, 0f), new Vector2(10f, 25f), new Vector2(-10f, BottomBarHeight - 25f));
+            UiBuilder.Stretch(customers.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(1f, 0f), new Vector2(10f, 160f), new Vector2(-40f, BottomBarHeight - 20f));
             _customersLabel = customers.GetComponentInChildren<Text>();
+
+            Button wholesale = UiBuilder.CreateButton(root, "WholesaleButton", TurkishTexts.WholesaleButton, 38, new Color(0.7f, 0.45f, 0.2f, 1f), OnWholesaleClicked);
+            UiBuilder.Stretch(wholesale.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.34f, 0f), new Vector2(40f, 25f), new Vector2(-10f, 145f));
+
+            Button accessories = UiBuilder.CreateButton(root, "AccessoryStockButton", TurkishTexts.AccessoryStockButton(0, 0), 36, new Color(0.3f, 0.33f, 0.42f, 1f), OnAccessoryStockClicked);
+            UiBuilder.Stretch(accessories.GetComponent<RectTransform>(), new Vector2(0.34f, 0f), new Vector2(0.68f, 0f), new Vector2(10f, 25f), new Vector2(-10f, 145f));
+            _accessoriesLabel = accessories.GetComponentInChildren<Text>();
         }
 
         public void Show()
@@ -84,6 +92,7 @@ namespace Esnaf.App.Ui
             _status.text = _flow.StatusMessage ?? string.Empty;
             _shelfLabel.text = _flow.ShelfButtonText;
             _customersLabel.text = _flow.CustomersButtonText;
+            _accessoriesLabel.text = _flow.AccessoryButtonText;
         }
 
         private void AddRow(ListingRowViewModel row)
@@ -106,6 +115,16 @@ namespace Esnaf.App.Ui
         private void OnShelfClicked()
         {
             _flow.OpenShelf();
+        }
+
+        private void OnWholesaleClicked()
+        {
+            _flow.OpenWholesale();
+        }
+
+        private void OnAccessoryStockClicked()
+        {
+            _flow.OpenAccessoryStock();
         }
 
         private void OnCustomersClicked()

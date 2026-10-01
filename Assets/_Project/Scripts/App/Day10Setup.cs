@@ -19,9 +19,30 @@ namespace Esnaf.App
         private const string CatalogPath = "Assets/_Project/Content/ContentCatalog.asset";
         private const string ScenePath = "Assets/_Project/Scenes/Main.unity";
 
+        /// <summary>
+        /// Kurulum yalnızca Edit Mode'da çalışır: EditorSceneManager.NewScene Play Mode'da InvalidOperationException atar ve sahne/katalog üretimi
+        /// çalışma anına ait değildir. Çalışma anı (GameBootstrap) bu sınıfı HİÇ çağırmaz; mevcut sahneyi kullanır.
+        /// </summary>
+        internal static bool CanRun
+        {
+            get { return !EditorApplication.isPlayingOrWillChangePlaymode; }
+        }
+
+        [MenuItem("Esnaf/Setup Day 10 (Catalog + Main Scene)", true)]
+        private static bool SetupAllowed()
+        {
+            return CanRun; // Play Mode'da menü pasif görünür
+        }
+
         [MenuItem("Esnaf/Setup Day 10 (Catalog + Main Scene)")]
         private static void Setup()
         {
+            if (!CanRun)
+            {
+                Debug.LogWarning("Esnaf: Setup Day 10 Play Mode'da çalışmaz. Önce Play Mode'dan çıkın, sonra menüyü çalıştırın.");
+                return;
+            }
+
             ContentCatalog catalog = CreateOrUpdateCatalog();
             PhoneImageCatalog phoneImages = PhoneSpriteImport.CreateOrUpdateCatalog();
             CustomerPortraitCatalog portraits = CustomerPortraitSetup.CreateOrUpdateCatalog();

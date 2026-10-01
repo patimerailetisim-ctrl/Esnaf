@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Esnaf.Core;
+using Esnaf.Domain.Accessories;
+using Esnaf.Domain.Wholesale;
 using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
@@ -219,6 +221,50 @@ namespace Esnaf.Domain.Game
             }
 
             return new ReadOnlyCollection<ListingView>(views);
+        }
+
+        public IReadOnlyList<WholesaleOfferView> GetWholesaleOffers()
+        {
+            int day = _session.Time.Day;
+            var views = new List<WholesaleOfferView>();
+            foreach (WholesaleOffer offer in _session.Content.Wholesale.Offers)
+            {
+                views.Add(new WholesaleOfferView(
+                    offer.SupplierId,
+                    offer.SupplierName,
+                    offer.AccessoryId,
+                    AccessoryNameOf(offer.AccessoryId),
+                    offer.UnitCost,
+                    offer.PackSize,
+                    offer.PackCost,
+                    offer.AvailableFromDay,
+                    offer.AvailableFromDay <= day));
+            }
+
+            return views;
+        }
+
+        public Result<WholesalePurchaseReceipt> BuyWholesalePack(string supplierId, string accessoryId)
+        {
+            return _session.WholesaleService.BuyPack(supplierId, accessoryId, _session.Time.Day);
+        }
+
+        public AccessoryStockView GetAccessoryStock()
+        {
+            AccessoryStock stock = _session.AccessoryStock;
+            var lines = new List<AccessoryStockLineView>();
+            foreach (string id in stock.AccessoryIds)
+            {
+                lines.Add(new AccessoryStockLineView(id, AccessoryNameOf(id), stock.Quantity(id), stock.TotalCost(id)));
+            }
+
+            return new AccessoryStockView(stock.Capacity, stock.TotalUnits, stock.StockCost, lines);
+        }
+
+        private string AccessoryNameOf(string accessoryId)
+        {
+            AccessoryDefinition definition;
+            return _session.Content.Accessories.TryGet(accessoryId, out definition) ? definition.Name : accessoryId;
         }
 
         public IReadOnlyList<StockLine> GetInventory()
