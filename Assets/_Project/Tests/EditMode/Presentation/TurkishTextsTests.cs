@@ -127,5 +127,25 @@ namespace Esnaf.Tests.Presentation
             Assert.AreEqual("Bug\u00FCn ilan yok.", TurkishTexts.NoListings);
             Assert.AreEqual("G\u00FCn\u00FC Bitir", TurkishTexts.EndDayButton);
         }
+
+        [Test]
+        public void DetailLines_AreLabelled()
+        {
+            Assert.AreEqual("Depolama: 256 GB", TurkishTexts.DetailStorage(256));
+            Assert.AreEqual("Ya\u015F: 26 ay", TurkishTexts.DetailAge(26));
+            Assert.AreEqual("\u0130stenen fiyat: 12.750 \u20BA", TurkishTexts.DetailPrice(Money.FromTl(12750)));
+            Assert.AreEqual("S\u00FCre: 4 g\u00FCn kald\u0131", TurkishTexts.DetailRemaining(4));
+            Assert.AreEqual("S\u00FCre: Son g\u00FCn", TurkishTexts.DetailRemaining(1));
+        }
+
+        [Test]
+        public void DetailButtonTexts_AreFixed()
+        {
+            Assert.AreEqual("Geri", TurkishTexts.BackButton);
+            Assert.AreEqual("Ekspertiz", TurkishTexts.AppraisalButton);
+            Assert.AreEqual("Pazarl\u0131k", TurkishTexts.NegotiationButton);
+            Assert.AreEqual("Ekspertiz bir sonraki ad\u0131mda eklenecek.", TurkishTexts.AppraisalComingSoon);
+            Assert.AreEqual("Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.", TurkishTexts.NegotiationComingSoon);
+        }
     }
 }

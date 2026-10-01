@@ -23,6 +23,7 @@ namespace Esnaf.App
         private UiFlow _flow;
         private TopBarView _topBar;
         private ListingsView _listings;
+        private DetailView _detail;
 
         private void Awake()
         {
@@ -57,6 +58,7 @@ namespace Esnaf.App
             Canvas canvas = UiBuilder.CreateCanvas("Canvas");
             UiBuilder.EnsureEventSystem();
             _listings = new ListingsView(canvas.transform, _flow);
+            _detail = new DetailView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
             _flow.Changed += ShowScreen;
             ShowScreen();
@@ -75,6 +77,7 @@ namespace Esnaf.App
         {
             _topBar.Show(_flow.TopBar);
             _listings.Show();
+            _detail.Show();
         }
     }
 }

@@ -6,7 +6,7 @@ namespace Esnaf.App.Ui
 {
     /// <summary>
     /// İlanlar ekranı: başlık, kaydırmalı ilan listesi, durum mesajı ve "Günü Bitir" düğmesi. Yalnızca <see cref="UiFlow"/> ile konuşur
-    /// (satırlar ListingRowViewModel, tıklama SelectListing, düğme EndDay); oyun kuralı yoktur. Liste her değişimde yeniden kurulur.
+    /// (satırlar ListingRowViewModel, tıklama OpenListing: seçer ve detaya geçer, düğme EndDay); oyun kuralı yoktur. Liste her değişimde yeniden kurulur.
     /// </summary>
     internal sealed class ListingsView
     {
@@ -18,6 +18,7 @@ namespace Esnaf.App.Ui
         private static readonly Color SelectedRowColor = new Color(0.2f, 0.4f, 0.65f, 1f);
 
         private readonly UiFlow _flow;
+        private readonly GameObject _root;
         private readonly RectTransform _content;
         private readonly Text _empty;
         private readonly Text _status;
@@ -27,6 +28,7 @@ namespace Esnaf.App.Ui
             _flow = flow;
 
             RectTransform root = UiBuilder.CreatePanel(canvas, "ListingsScreen", new Color(0.09f, 0.1f, 0.13f, 1f));
+            _root = root.gameObject;
             UiBuilder.Stretch(root, Vector2.zero, Vector2.one, new Vector2(0f, 0f), new Vector2(0f, -TopBarView.Height));
 
             Text title = UiBuilder.CreateText(root, "Title", 56, TextAnchor.MiddleLeft, Color.white);
@@ -50,6 +52,13 @@ namespace Esnaf.App.Ui
 
         public void Show()
         {
+            bool visible = _flow.CurrentScreen == UiScreen.Listings;
+            _root.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
             for (int i = _content.childCount - 1; i >= 0; i--)
             {
                 Object.Destroy(_content.GetChild(i).gameObject);
@@ -67,7 +76,7 @@ namespace Esnaf.App.Ui
         private void AddRow(ListingRowViewModel row)
         {
             long listingId = row.ListingId;
-            Button button = UiBuilder.CreateButton(_content, "Listing_" + listingId, string.Empty, 40, row.IsSelected ? SelectedRowColor : RowColor, () => _flow.SelectListing(listingId));
+            Button button = UiBuilder.CreateButton(_content, "Listing_" + listingId, string.Empty, 40, row.IsSelected ? SelectedRowColor : RowColor, () => _flow.OpenListing(listingId));
             var layout = button.gameObject.AddComponent<LayoutElement>();
             layout.minHeight = 230f;
             layout.preferredHeight = 230f;

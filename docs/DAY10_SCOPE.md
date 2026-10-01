@@ -21,3 +21,8 @@ Hedef dilim: Yeni Oyun → İlanlar → Telefon Detayı → Ekspertiz → Alım 
 - `UiFlow`: `Listings` (ListingRowViewModel: model adı, depolama, yaş, istenen fiyat, kalan gün, kutu, fatura, satıcı), `SelectListing` / `ClearSelection` / `SelectedListingId` / `SelectedListing` (seçim, ilan pazardan kalkana kadar korunur; Telefon Detayı bunu kullanacak), `EndDay()` (IGameApi.EndDay + yenileme), `StatusMessage` (Türkçe hata; başarılı komut temizler). Olaylar: nakit, gün, ilan üretildi/kalktı/satın alındı.
 - Unity: `ListingsView` (ScrollRect liste, satır = Button, "Günü Bitir" düğmesi, durum mesajı); `GameBootstrap` ekranı UiFlow.Changed'e bağlar. `IGameApi` ve Domain değişmedi.
 - "Kalan gün": 1 ve altı "Son gün" (ilan gün sonunda kalkar), aksi halde "N gün kaldı".
+
+## Adım 3: Telefon Detayı (tamamlandı)
+- `UiFlow`: `Detail` (ListingDetailViewModel: etiketli satırlar), `OpenListing(id)` (seçer + detaya geçer, tek olay), `OpenSelectedListing()`, `Back()` (seçim korunur), `RequestAppraisal()` / `RequestNegotiation()` (düğmeler hazır; şimdilik yalnızca "bir sonraki adımda eklenecek" der, oyun durumunu DEĞİŞTİRMEZ). Seçili ilan pazardan kalkarsa (ör. satın alınırsa) akış kendiliğinden İlanlar'a döner. `UiScreen.Detail` eklendi.
+- Unity: `DetailView` (Geri, başlık, 7 satır, durum mesajı, "Ekspertiz" ve "Pazarlık" düğmeleri); `ListingsView` satır tıklaması detaya geçer, ekranlar `CurrentScreen`'e göre görünür.
+- Ekspertiz ve pazarlık Adım 4 ve 5'te `UiFlow` içinde uygulanacak.

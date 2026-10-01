@@ -400,6 +400,208 @@ namespace Esnaf.Tests.Presentation
             }
         }
 
+        // ---------- telefon detay\u0131 ----------
+
+        [Test]
+        public void TheFlowStartsOnTheListings_WithoutADetail()
+        {
+            using (UiFlow flow = Flow(NewSession()))
+            {
+                Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
+                Assert.IsNull(flow.Detail);
+            }
+        }
+
+        [Test]
+        public void OpenListing_SelectsIt_ShowsTheDetail_AndNotifiesOnce()
+        {
+            GameSession session = NewSession();
+            using (UiFlow flow = Flow(session))
+            {
+                ListingView expected = session.Api.GetListings()[1];
+                int raised = 0;
+                flow.Changed += () => raised++;
+
+                Assert.IsTrue(flow.OpenListing(expected.ListingId));
+
+                Assert.AreEqual(UiScreen.Detail, flow.CurrentScreen);
+                Assert.AreEqual(expected.ListingId, flow.SelectedListingId);
+                Assert.AreEqual(expected.ListingId, flow.Detail.ListingId);
+                Assert.AreEqual(session.Content.GetProduct(expected.DefinitionId).Name, flow.Detail.Title);
+                Assert.AreEqual("Depolama: " + expected.StorageGb + " GB", flow.Detail.StorageLine);
+                Assert.AreEqual("Ya\u015F: " + expected.AgeMonths + " ay", flow.Detail.AgeLine);
+                Assert.AreEqual("\u0130stenen fiyat: " + MoneyFormatter.Format(expected.AskingPrice), flow.Detail.PriceLine);
+                Assert.AreEqual(expected.HasBox ? "Kutu: var" : "Kutu: yok", flow.Detail.BoxLine);
+                Assert.AreEqual(expected.HasInvoice ? "Fatura: var" : "Fatura: yok", flow.Detail.InvoiceLine);
+                Assert.AreEqual("Sat\u0131c\u0131: " + session.Content.GetNpc(expected.SellerNpcId).Name, flow.Detail.SellerLine);
+                Assert.AreEqual(1, raised);
+            }
+        }
+
+        [Test]
+        public void OpenListing_AnUnknownListing_StaysOnTheListings_AndSaysWhy()
+        {
+            using (UiFlow flow = Flow(NewSession()))
+            {
+                Assert.IsFalse(flow.OpenListing(-5));
+
+                Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
+                Assert.IsNull(flow.Detail);
+                Assert.AreEqual("Bu ilan art\u0131k yok.", flow.StatusMessage);
+            }
+        }
+
+        [Test]
+        public void OpenSelectedListing_OpensTheSelection_AndDoesNothingWithoutOne()
+        {
+            using (UiFlow flow = Flow(NewSession()))
+            {
+                int raised = 0;
+                flow.Changed += () => raised++;
+                Assert.IsFalse(flow.OpenSelectedListing());
+                Assert.AreEqual(0, raised);
+                Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
+
+                long id = flow.Listings[2].ListingId;
+                flow.SelectListing(id);
+                raised = 0;
+
+                Assert.IsTrue(flow.OpenSelectedListing());
+
+                Assert.AreEqual(UiScreen.Detail, flow.CurrentScreen);
+                Assert.AreEqual(id, flow.Detail.ListingId);
+                Assert.AreEqual(1, raised);
+            }
+        }
+
+        [Test]
+        public void OpenSelectedListing_ClearsAnEarlierMessage()
+        {
+            using (UiFlow flow = Flow(NewSession()))
+            {
+                flow.SelectListing(flow.Listings[0].ListingId);
+                flow.SelectListing(-5);
+                Assert.IsNotNull(flow.StatusMessage);
+
+                Assert.IsTrue(flow.OpenSelectedListing());
+
+                Assert.IsNull(flow.StatusMessage);
+            }
+        }
+
+        [Test]
+        public void Back_ReturnsToTheListings_KeepingTheSelection_AndClearingTheMessage()
+        {
+            using (UiFlow flow = Flow(NewSession()))
+            {
+                long id = flow.Listings[0].ListingId;
+                flow.OpenListing(id);
+                flow.RequestAppraisal();
+                Assert.IsNotNull(flow.StatusMessage);
+                int raised = 0;
+                flow.Changed += () => raised++;
+
+                flow.Back();
+
+                Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
+                Assert.AreEqual(id, flow.SelectedListingId);
+                Assert.IsTrue(flow.Listings.Single(r => r.ListingId == id).IsSelected);
+                Assert.IsNull(flow.StatusMessage);
+                Assert.AreEqual(1, raised);
+            }
+        }
+
+        [Test]
+        public void Back_OnTheListings_DoesNothing()
+        {
+            using (UiFlow flow = Flow(NewSession()))
+            {
+                int raised = 0;
+                flow.Changed += () => raised++;
+
+                flow.Back();
+
+                Assert.AreEqual(0, raised);
+                Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
+            }
+        }
+
+        [Test]
+        public void TheDetailButtons_ArePreparedButNotImplementedYet_AndOnlyWorkOnTheDetailScreen()
+        {
+            GameSession session = NewSession();
+            using (UiFlow flow = Flow(session))
+            {
+                string digest = session.Api.GetStateDigest();
+                flow.RequestAppraisal();
+                Assert.IsNull(flow.StatusMessage, "detay ekran\u0131nda de\u011Filken bir \u015Fey yapmaz");
+                flow.RequestNegotiation();
+                Assert.IsNull(flow.StatusMessage);
+
+                flow.OpenListing(flow.Listings[0].ListingId);
+                int raised = 0;
+                flow.Changed += () => raised++;
+                flow.RequestAppraisal();
+                Assert.AreEqual("Ekspertiz bir sonraki ad\u0131mda eklenecek.", flow.StatusMessage);
+                flow.RequestNegotiation();
+                Assert.AreEqual("Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.", flow.StatusMessage);
+
+                Assert.AreEqual(2, raised);
+                Assert.AreEqual(UiScreen.Detail, flow.CurrentScreen);
+                Assert.AreEqual(digest, session.Api.GetStateDigest(), "oyun durumu de\u011Fi\u015Fmez (hen\u00FCz uygulanmad\u0131)");
+            }
+        }
+
+        [Test]
+        public void ClearSelection_LeavesTheDetailScreen()
+        {
+            using (UiFlow flow = Flow(NewSession()))
+            {
+                flow.OpenListing(flow.Listings[0].ListingId);
+
+                flow.ClearSelection();
+
+                Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
+                Assert.IsNull(flow.Detail);
+                Assert.IsNull(flow.SelectedListingId);
+            }
+        }
+
+        [Test]
+        public void IfTheOpenedListingLeavesTheMarket_TheFlowFallsBackToTheListings()
+        {
+            GameSession session = NewSession();
+            using (UiFlow flow = Flow(session))
+            {
+                long listingId = flow.Listings[0].ListingId;
+                flow.OpenListing(listingId);
+                session.Api.StartNegotiation(listingId);
+                var view = session.Api.GetNegotiation();
+
+                Assert.IsTrue(session.Api.MakeOffer(view.ShownPrice).IsSuccess);
+
+                Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
+                Assert.IsNull(flow.Detail);
+                Assert.IsNull(flow.SelectedListingId);
+            }
+        }
+
+        [Test]
+        public void TheDetail_FollowsTheListing_WhileItIsOpen()
+        {
+            GameSession session = NewSession();
+            using (UiFlow flow = Flow(session))
+            {
+                flow.OpenListing(flow.Listings[0].ListingId);
+                string before = flow.Detail.RemainingLine;
+
+                flow.Refresh();
+
+                Assert.AreEqual(before, flow.Detail.RemainingLine);
+                Assert.AreEqual(UiScreen.Detail, flow.CurrentScreen);
+            }
+        }
+
         [Test]
         public void AFailedEndDay_StillNotifiesTheScreen_SoTheMessageIsShown()
         {

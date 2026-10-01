@@ -83,6 +83,32 @@ namespace Esnaf.Presentation
             return "Sat\u0131c\u0131: " + name;
         }
 
+        public const string BackButton = "Geri";
+        public const string AppraisalButton = "Ekspertiz";
+        public const string NegotiationButton = "Pazarl\u0131k";
+        public const string AppraisalComingSoon = "Ekspertiz bir sonraki ad\u0131mda eklenecek.";
+        public const string NegotiationComingSoon = "Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.";
+
+        public static string DetailStorage(int gigabytes)
+        {
+            return "Depolama: " + Storage(gigabytes);
+        }
+
+        public static string DetailAge(int months)
+        {
+            return "Ya\u015F: " + Age(months);
+        }
+
+        public static string DetailPrice(Money price)
+        {
+            return "\u0130stenen fiyat: " + MoneyFormatter.Format(price);
+        }
+
+        public static string DetailRemaining(int days)
+        {
+            return "S\u00FCre: " + Remaining(days);
+        }
+
         public static string Error(string code)
         {
             if (string.IsNullOrEmpty(code))
