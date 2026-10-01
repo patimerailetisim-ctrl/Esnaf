@@ -96,7 +96,7 @@ Snapshot/Persistence/AutoSaver/AutoSaveStep aralıklarında gerçek survivor yok
 - `FileSaveStorage` `Flush(true)`→`Flush(false)`: OS düzeyinde diske yazma zorlaması, test ortamında gözlemlenemez (davranışsal olarak eşdeğer).
 Manuel mutasyon: `AutoSaveStep` farklı EventBus'a bağlandı → 6 test düştü; `AutoSaveRequested(day+1)` → 2 test düştü.
 
-## Düzeltme: çalışma zamanından bağımsız kanonik JSON (Windows/Unity doğrulaması sonrası)
+## Düzeltme 1 (YERİNE GEÇİLDİ → Düzeltme 2): çalışma zamanından bağımsız kanonik JSON, en kısa metin
 
 **Sorun:** Unity'de `save_v1.json` fikstürü `save.checksum` ile reddedildi. Sağlama, yükün yeniden üretilen kanonik metnine bağlıdır ve Newtonsoft double'ı çalışma zamanının `ToString("R")`'ı ile yazar: eski Mono "R" 15 hane dener, olmazsa 17 hane yazar (`0.51208716694934375`); modern .NET en kısa gidiş-dönüş metni yazar (`0.5120871669493438`). Fikstürdeki 35 farklı ondalıklı sayının 18'i farklı metne dönüyordu → farklı SHA-256. Diğer kayıt testleri aynı çalışma zamanında yazıp okuduğu için geçiyordu.
 
@@ -108,3 +108,20 @@ Manuel mutasyon: `AutoSaveStep` farklı EventBus'a bağlandı → 6 test düşt�
 **Geriye uyumluluk:** Kayıt sürümü v1 olarak KALDI; migrasyon/sürüm değişmedi. Fikstür (`save_v1.json`) DEĞİŞMEDİ: yeni kanonik yazıcı .NET ile yazılmış dosyanın sağlamasını aynen üretir. Bir sayının başka yazımı (örn. 17 haneli) aynı kanonik metni verdiği için Mono ile yazılmış bir v1 dosyası da okunur.
 
 **Mutation (CanonicalJson, SaveSerializer):** gerçek survivor yok. Eşdeğer mutantlar: `shift >= 0`→`> 0` ve `p >= 0`→`> 0`, `candNum/candDen` için `p <= 0`/`p >= 0` (p=0'da 10^0=1, sonuç aynı); `diff.Sign >= 0`→`> 0` (diff=0'da mutlak fark 0, sınır kullanılmaz); `exp10 < 0`→`<= 0` (bilimsel gösterim yalnızca üs ≥17 veya ≤-5'te, üs 0 ulaşılamaz); `expField > 1`→`>= 1` (yalnızca DBL_MIN etkilenir, çıktı aynı: altın test); `Math.Floor/Ceiling` ve `CompareToPowerOfTen` sınır mutantları (tahmin sonrası iki düzeltme döngüsü ve taşma yolu aynı k/basamakları üretir). Gereksiz `|| diff.IsZero` koşulu (cmp<0 zaten kapsar) koddan kaldırıldı.
+
+
+## Düzeltme 2: kanonik double = 17 anlamlı hane; -0.0 → +0.0 (Unity Mono ölçümleri)
+
+**Ölçümler (Unity Mono 6.13, sabit değerler, bit deseniyle doğrulandı):**
+- Düzeltme 1'in en kısa metni Unity'de 1 ULP yanlış parse edilebiliyor (`-7.756553093017971E-171`). Newtonsoft aynı runtime `double.Parse`'ını kullandığı için aynı sonucu veriyor. 73 sabit değerde en kısa metin 71/73 tam gidiş-dönüş, 17 haneli metin 72/73.
+- Tek 17 haneli başarısızlık `-0.0`: Unity Mono `-0.0`, `-0`, `-0e0`, `-0.0e0`, `-0.0000000000000000e0` metinlerinin HEPSİNİ +0.0 (bit 0) parse ediyor (`double.Parse` ve Newtonsoft). İşaretli sıfır JSON sayısı olarak korunamıyor.
+
+**Karar (canonical JSON):**
+1. Sonlu sıfırdan farklı her double tam değerinden (BigInteger) hesaplanan, yarıya-çift yuvarlanmış 17 anlamlı haneli bilimsel metinle yazılır: `d.dddddddddddddddde<üs>` (örn. `0.1` → `1.0000000000000001e-1`, `1.0` → `1.0000000000000000e0`). Sayılar JSON'da sayı olarak kalır. Newtonsoft parse yolu değişmedi; özel parser yazılmadı.
+2. Sıfır her zaman `0.0` yazılır: `-0.0` bilinçli olarak `+0.0`'a normalize edilir; canonical çıktı negatif sıfır ÜRETMEZ. Oyun durumunda -0.0 ile +0.0 arasında anlamlı fark yoktur ve bu varsayım testle korunur (`TheSnapshot_NeverHoldsANegativeZero…`: 6 tohumlu oynanmış oturumun snapshot'ında -0.0 yok). `GameStateDigest` double'ları bit deseniyle yazar; durum -0.0 taşısaydı kayıt/yükleme digest'i değiştirirdi, bu yüzden test bu varsayımı sabitler.
+3. NaN/Infinity JSON.NET sabitleriyle yazılır (oyun durumu sonlu sayı üretir).
+4. Kayıt biçimi sürümü v1 olarak KALDI; migrasyon/sürüm değişmedi.
+
+**Geriye uyumluluk (bilinçli kırılma):** Düzeltme 1'in en kısa kanonik metniyle hesaplanmış sağlamaya sahip v1 dosyaları (ör. önceki `save_v1.json` fikstürü) artık sağlama (checksum) nedeniyle `save.checksum` ile REDDEDİLİR. Save v1 hiçbir zaman yayınlanmadı (yalnızca geliştirme ve test dosyaları vardı), bu yüzden gerçek kullanıcı kaydı etkilenmez. Fikstür yeniden üretilir: state'teki tüm double bit desenleri ve `GameStateDigest` (`de4eb924fea4491c`) aynı kalır; yalnızca sayı yazımı ve buna bağlı sağlama değişir.
+
+**Test tarafı notu:** `SaveSerializerTests` içinde sağlamayı `payload.ToString(Formatting.None)` (Newtonsoft'un çalışma zamanına bağlı sayı yazımı) ile hesaplayan üç satır, canonical yazıcıya (`CanonicalJson.Write`) çevrildi; Unity'deki 4 testin (iki Parse yük hatası testi ve iki migrasyon testi) başarısızlığının nedeni buydu.

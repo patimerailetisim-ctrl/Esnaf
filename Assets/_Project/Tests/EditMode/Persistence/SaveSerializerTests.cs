@@ -151,6 +151,28 @@ namespace Esnaf.Tests.Persistence
             Assert.IsNull(DeepCompare.FirstDifference(original.Capture(), back));
         }
 
+        [TestCase(1UL)]
+        [TestCase(2UL)]
+        [TestCase(3UL)]
+        [TestCase(4UL)]
+        [TestCase(5UL)]
+        [TestCase(6UL)]
+        public void TheSnapshot_NeverHoldsANegativeZero_SoTheCanonicalZeroNormalizationLosesNothing(ulong seed)
+        {
+            // Canonical JSON -0.0'ı +0.0 yazar (Unity Mono işaretli sıfırı okuyamaz). Bu normalizasyon yalnızca oyun durumu -0.0 taşımıyorsa kayıpsızdır.
+            GameSession s = Rich(seed);
+
+            var tokens = Newtonsoft.Json.Linq.JObject.FromObject(s.Capture()).DescendantsAndSelf();
+            foreach (Newtonsoft.Json.Linq.JToken token in tokens)
+            {
+                var value = token as Newtonsoft.Json.Linq.JValue;
+                if (value != null && value.Value is double)
+                {
+                    Assert.AreNotEqual(long.MinValue, BitConverter.DoubleToInt64Bits((double)value.Value), "negatif sıfır: " + token.Path);
+                }
+            }
+        }
+
         [Test]
         public void UlongValues_SurviveAtTheTopOfTheRange()
         {
@@ -295,7 +317,7 @@ namespace Esnaf.Tests.Persistence
             string text = Ser(Rich(), serializer);
             var root = Newtonsoft.Json.Linq.JObject.Parse(text);
             root["payload"]["time"] = "not an object";
-            root["header"]["checksum"] = SaveSerializer.ComputeChecksum(root["payload"].ToString(Newtonsoft.Json.Formatting.None));
+            root["header"]["checksum"] = SaveSerializer.ComputeChecksum(CanonicalJson.Write(root["payload"], false));
 
             Result<ParsedSave> r = serializer.Parse(root.ToString());
 
@@ -328,7 +350,7 @@ namespace Esnaf.Tests.Persistence
             var serializer = new SaveSerializer();
             var root = Newtonsoft.Json.Linq.JObject.Parse(Ser(Rich(), serializer));
             root["payload"]["time"]["day"] = 99999999999L;
-            root["header"]["checksum"] = SaveSerializer.ComputeChecksum(root["payload"].ToString(Newtonsoft.Json.Formatting.None));
+            root["header"]["checksum"] = SaveSerializer.ComputeChecksum(CanonicalJson.Write(root["payload"], false));
 
             Assert.AreEqual("save.payload", serializer.Parse(root.ToString()).ErrorCode);
         }
@@ -391,7 +413,7 @@ namespace Esnaf.Tests.Persistence
             payload["shop"] = payload["business"];
             payload.Remove("business");
             root["header"]["saveVersion"] = 0;
-            root["header"]["checksum"] = SaveSerializer.ComputeChecksum(payload.ToString(Newtonsoft.Json.Formatting.None));
+            root["header"]["checksum"] = SaveSerializer.ComputeChecksum(CanonicalJson.Write(payload, false));
             return root.ToString();
         }
 

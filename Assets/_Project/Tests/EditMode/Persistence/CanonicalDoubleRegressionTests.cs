@@ -12,13 +12,13 @@ using NUnit.Framework;
 namespace Esnaf.Tests.Persistence
 {
     /// <summary>
-    /// TEŞHİS ÖLÇÜMÜ 2 (Gün 9 düzeltmesi, geçici): "mevcut en kısa metin (A)" ile "tam değerden hesaplanan 17 anlamlı haneli metin (B)"
-    /// çalışma zamanında hangi bit desenine parse ediliyor? Sabit 73 değer (rastgele yok); orijinaller bit desenlerinden kurulur.
-    /// B, bu dosyadaki bağımsız BigInteger yardımcısıyla üretilir (çalışma zamanının ToString/G17'sine güvenmez) ve üretim koduna BAĞLI DEĞİL.
-    /// Test parse sonuçlarını doğrulamaz, raporlar; yalnızca B metninin matematiksel geçerliliğini (tam aralık testi) doğrular.
-    /// Çıktı: Console, TestContext, %TEMP%/esnaf_double_diag2.txt.
+    /// KALICI REGRESYON (Gün 9 düzeltmesi): sabit 73 değer (rastgele yok, bit desenlerinden kurulur) için CanonicalJson.FormatDouble
+    /// (1) bağımsız BigInteger yardımcısının (bu dosyada, üretim koduna bağlı değil) 17 haneli metniyle AYNI olmalı ve
+    /// (2) çalışma zamanında (modern .NET ve Unity Mono) double.Parse ve Newtonsoft ile AYNI bit desenine dönmelidir.
+    /// Negatif sıfır bilinçli olarak +0.0'a normalize edilir (Mono "-0.0" metnini +0 okur; DAY9_SCOPE.md). Tolerans yok.
+    /// Ölçüm çıktısı: Console, TestContext, %TEMP%/esnaf_double_diag2.txt.
     /// </summary>
-    public class DoubleSeventeenDigitDiagnosticsTests
+    public class CanonicalDoubleRegressionTests
     {
         private sealed class Item
         {
@@ -220,7 +220,7 @@ namespace Esnaf.Tests.Persistence
         }
 
         [Test]
-        public void Diagnostic_ComparesCurrentShortestAgainstSeventeenSignificantDigits()
+        public void CanonicalText_MatchesTheIndependentReference_AndRoundTripsBitExactly()
         {
             var log = new StringBuilder();
             log.AppendLine("=== ESNAF 17-digit diagnostic ===");
@@ -232,6 +232,8 @@ namespace Esnaf.Tests.Persistence
             var aFail = new List<string>();
             var bFail = new List<string>();
             var invalidB = new List<string>();
+            var textMismatch = new List<string>();
+            var newtonsoftFail = new List<string>();
 
             foreach (Item item in Items)
             {
@@ -241,29 +243,46 @@ namespace Esnaf.Tests.Persistence
                 int x17;
                 string b = SeventeenDigits(original, out d17, out x17);
 
+                long expectedBits = item.Bits == long.MinValue ? 0L : item.Bits; // -0.0 → +0.0 (bilinçli normalizasyon)
                 long aBits = ParseBits(a);
                 long bBits = ParseBits(b);
                 long aNs = NewtonsoftBits(a);
                 long bNs = NewtonsoftBits(b);
-                bool aOk = aBits == item.Bits;
-                bool bOk = bBits == item.Bits;
+                bool aOk = aBits == expectedBits;
+                bool bOk = bBits == expectedBits;
                 aExact += aOk ? 1 : 0;
                 bExact += bOk ? 1 : 0;
-                aNsExact += aNs == item.Bits ? 1 : 0;
-                bNsExact += bNs == item.Bits ? 1 : 0;
+                aNsExact += aNs == expectedBits ? 1 : 0;
+                bNsExact += bNs == expectedBits ? 1 : 0;
 
                 log.AppendLine(item.Label + " | original bits " + item.Bits);
-                log.AppendLine("   A text " + a + " -> parsed " + aBits + " equal=" + aOk + " delta=" + (aBits - item.Bits) + " | Newtonsoft " + aNs + " equal=" + (aNs == item.Bits));
-                log.AppendLine("   B text " + b + " -> parsed " + bBits + " equal=" + bOk + " delta=" + (bBits - item.Bits) + " | Newtonsoft " + bNs + " equal=" + (bNs == item.Bits));
+                log.AppendLine("   A text " + a + " -> parsed " + aBits + " equal=" + aOk + " delta=" + (aBits - expectedBits) + " | Newtonsoft " + aNs + " equal=" + (aNs == item.Bits));
+                log.AppendLine("   B text " + b + " -> parsed " + bBits + " equal=" + bOk + " delta=" + (bBits - expectedBits) + " | Newtonsoft " + bNs + " equal=" + (bNs == item.Bits));
+
+                bool isZero = (item.Bits & long.MaxValue) == 0;
+                if (!isZero && !string.Equals(a, b, StringComparison.Ordinal))
+                {
+                    textMismatch.Add(item.Label + ": FormatDouble '" + a + "' != oracle '" + b + "'");
+                }
+
+                if (isZero && a != "0.0")
+                {
+                    textMismatch.Add(item.Label + ": zero must be '0.0' but was '" + a + "'");
+                }
+
+                if (aNs != expectedBits)
+                {
+                    newtonsoftFail.Add(item.Label + " | original bits " + item.Bits + " | text " + a + " | Newtonsoft bits " + aNs);
+                }
 
                 if (!aOk)
                 {
-                    aFail.Add(item.Label + " | original bits " + item.Bits + " | A text " + a + " | parsed bits " + aBits + " | ULP delta " + (aBits - item.Bits));
+                    aFail.Add(item.Label + " | original bits " + item.Bits + " | A text " + a + " | parsed bits " + aBits + " | ULP delta " + (aBits - expectedBits));
                 }
 
                 if (!bOk)
                 {
-                    bFail.Add(item.Label + " | original bits " + item.Bits + " | B 17-digit text " + b + " | parsed bits " + bBits + " | ULP delta " + (bBits - item.Bits));
+                    bFail.Add(item.Label + " | original bits " + item.Bits + " | B 17-digit text " + b + " | parsed bits " + bBits + " | ULP delta " + (bBits - expectedBits));
                 }
 
                 if (item.Bits != 0 && item.Bits != long.MinValue && !WithinRoundingInterval(original, d17, x17))
@@ -305,6 +324,9 @@ namespace Esnaf.Tests.Persistence
             }
 
             Assert.IsEmpty(invalidB, "B metni matematiksel olarak orijinalin yarım aralığında olmalı (ölçüm yardımcısı doğrulaması):\n" + string.Join("\n", invalidB));
+            Assert.IsEmpty(textMismatch, "FormatDouble bağımsız 17 haneli referansla aynı olmalı:\n" + string.Join("\n", textMismatch));
+            Assert.IsEmpty(aFail, "FormatDouble metni bu çalışma zamanında double.Parse ile bit-exact dönmeli:\n" + string.Join("\n", aFail));
+            Assert.IsEmpty(newtonsoftFail, "FormatDouble metni bu çalışma zamanında Newtonsoft ile bit-exact dönmeli:\n" + string.Join("\n", newtonsoftFail));
         }
     }
 }
