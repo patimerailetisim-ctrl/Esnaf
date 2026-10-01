@@ -140,8 +140,21 @@ namespace Esnaf.App.Ui
         /// <summary>Provider yoksa veya bu model/açı için görsel yoksa null (çağıran mock'a düşer).</summary>
         public static Sprite Get(string definitionId, PhoneAngle angle)
         {
-            return Provider == null || definitionId == null ? null : Provider(definitionId, angle);
+            if (Provider == null)
+            {
+                if (!_reportedNoProvider)
+                {
+                    _reportedNoProvider = true;
+                    Debug.LogWarning("[PhoneImages] Provider yok -> mock. GameBootstrap'te 'Phone Images' atanmam\u0131\u015F ve PhoneImageCatalog.asset bulunamad\u0131 (Esnaf > Setup Day 10 \u00E7al\u0131\u015Ft\u0131r\u0131n).");
+                }
+
+                return null;
+            }
+
+            return definitionId == null ? null : Provider(definitionId, angle);
         }
+
+        private static bool _reportedNoProvider;
 
         /// <summary>Modelin en az bir gerçek görseli var mı. Varsa ekran yalnızca görseli olan açıları sunar; yoksa mock'un tüm açıları.</summary>
         public static bool HasAny(string definitionId, PhoneAngle[] angles)

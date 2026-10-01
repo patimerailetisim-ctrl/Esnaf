@@ -63,7 +63,20 @@ namespace Esnaf.App
             _session = GameSession.NewGame(result.Database, (ulong)_seed);
             _flow = new UiFlow(_session.Api, new ContentPresentation(result.Database), _session.Bus);
 
-            PhoneImages.Provider = _phoneImages == null ? null : (Func<string, PhoneAngle, Sprite>)_phoneImages.GetSprite;
+            PhoneImageCatalog phoneImages = _phoneImages;
+#if UNITY_EDITOR
+            if (phoneImages == null)
+            {
+                // Sahne eski kurulumdan kalmış olabilir (alan atanmamış): Editor'da kataloğu yoldan yükle.
+                phoneImages = UnityEditor.AssetDatabase.LoadAssetAtPath<PhoneImageCatalog>("Assets/_Project/Art/Phones/PhoneImageCatalog.asset");
+                if (phoneImages != null)
+                {
+                    Debug.LogWarning("[PhoneImages] GameBootstrap'te 'Phone Images' atanmamıştı; katalog Assets/_Project/Art/Phones/PhoneImageCatalog.asset yolundan yüklendi. Kalıcı çözüm: Esnaf > Setup Day 10.");
+                }
+            }
+#endif
+            Debug.Log("[PhoneImages] katalog: " + (phoneImages == null ? "YOK (mock kullanılacak)" : phoneImages.Describe()));
+            PhoneImages.Provider = phoneImages == null ? null : (Func<string, PhoneAngle, Sprite>)phoneImages.GetSprite;
 
             Canvas canvas = UiBuilder.CreateCanvas("Canvas");
             UiBuilder.EnsureEventSystem();
