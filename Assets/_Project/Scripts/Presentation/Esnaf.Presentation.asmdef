@@ -1,15 +1,9 @@
 {
-    "name": "Esnaf.App",
-    "rootNamespace": "Esnaf.App",
+    "name": "Esnaf.Presentation",
+    "rootNamespace": "Esnaf.Presentation",
     "references": [
         "Esnaf.Core",
-        "Esnaf.Domain",
-        "Esnaf.Persistence",
-        "Esnaf.Content",
-        "Esnaf.Presentation",
-        "Unity.InputSystem",
-        "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "Esnaf.Domain"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -21,5 +15,5 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
-    "noEngineReferences": false
+    "noEngineReferences": true
 }

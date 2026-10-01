@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "Esnaf.Core",
         "Esnaf.Domain",
-        "Esnaf.Persistence"
+        "Esnaf.Persistence",
+        "Esnaf.Presentation"
     ],
     "includePlatforms": [
         "Editor"

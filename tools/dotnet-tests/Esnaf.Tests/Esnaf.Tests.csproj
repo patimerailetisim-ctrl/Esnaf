@@ -30,6 +30,7 @@
     <ProjectReference Include="../Esnaf.Core/Esnaf.Core.csproj" />
     <ProjectReference Include="../Esnaf.Domain/Esnaf.Domain.csproj" />
     <ProjectReference Include="../Esnaf.Persistence/Esnaf.Persistence.csproj" />
+    <ProjectReference Include="../Esnaf.Presentation/Esnaf.Presentation.csproj" />
   </ItemGroup>
 
 </Project>
