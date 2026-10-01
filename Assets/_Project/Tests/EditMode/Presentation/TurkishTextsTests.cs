@@ -71,5 +71,61 @@ namespace Esnaf.Tests.Presentation
         {
             Assert.AreEqual("Bir sorun oluştu.", TurkishTexts.Error(code));
         }
+
+        [TestCase(64, "64 GB")]
+        [TestCase(128, "128 GB")]
+        [TestCase(1024, "1024 GB")]
+        public void Storage_IsWrittenInGigabytes(int gb, string expected)
+        {
+            Assert.AreEqual(expected, TurkishTexts.Storage(gb));
+        }
+
+        [TestCase(0, "0 ay")]
+        [TestCase(1, "1 ay")]
+        [TestCase(14, "14 ay")]
+        [TestCase(48, "48 ay")]
+        public void Age_IsWrittenInMonths(int months, string expected)
+        {
+            Assert.AreEqual(expected, TurkishTexts.Age(months));
+        }
+
+        [Test]
+        public void Asking_ShowsTheRequestedPrice()
+        {
+            Assert.AreEqual("\u0130stenen: 9.500 \u20BA", TurkishTexts.Asking(Money.FromTl(9500)));
+        }
+
+        [TestCase(-1, "Son g\u00FCn")]
+        [TestCase(0, "Son g\u00FCn")]
+        [TestCase(1, "Son g\u00FCn")]
+        [TestCase(2, "2 g\u00FCn kald\u0131")]
+        [TestCase(4, "4 g\u00FCn kald\u0131")]
+        public void Remaining_SaysLastDayOrTheDaysLeft(int days, string expected)
+        {
+            Assert.AreEqual(expected, TurkishTexts.Remaining(days));
+        }
+
+        [Test]
+        public void BoxAndInvoice_SayPresentOrAbsent()
+        {
+            Assert.AreEqual("Kutu: var", TurkishTexts.Box(true));
+            Assert.AreEqual("Kutu: yok", TurkishTexts.Box(false));
+            Assert.AreEqual("Fatura: var", TurkishTexts.Invoice(true));
+            Assert.AreEqual("Fatura: yok", TurkishTexts.Invoice(false));
+        }
+
+        [Test]
+        public void Seller_ShowsTheName()
+        {
+            Assert.AreEqual("Sat\u0131c\u0131: Kemal Abi", TurkishTexts.Seller("Kemal Abi"));
+        }
+
+        [Test]
+        public void ScreenTexts_AreFixed()
+        {
+            Assert.AreEqual("\u0130lanlar", TurkishTexts.ListingsTitle);
+            Assert.AreEqual("Bug\u00FCn ilan yok.", TurkishTexts.NoListings);
+            Assert.AreEqual("G\u00FCn\u00FC Bitir", TurkishTexts.EndDayButton);
+        }
     }
 }

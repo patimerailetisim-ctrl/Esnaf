@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
@@ -81,6 +82,58 @@ namespace Esnaf.App.Ui
             text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
             return text;
+        }
+
+        /// <summary>Etiketli düğme (Image + Button + Text). Tıklama <paramref name="onClick"/>'i çağırır.</summary>
+        public static Button CreateButton(Transform parent, string name, string label, int fontSize, Color color, UnityAction onClick)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(parent, false);
+            var image = go.GetComponent<Image>();
+            image.color = color;
+            var button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.onClick.AddListener(onClick);
+
+            Text text = CreateText(go.transform, "Label", fontSize, TextAnchor.MiddleCenter, Color.white);
+            text.text = label;
+            Stretch(text.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            return button;
+        }
+
+        /// <summary>Dikey kaydırmalı liste: ScrollRect + içerik (VerticalLayoutGroup + ContentSizeFitter). İçerik nesnesini döndürür.</summary>
+        public static RectTransform CreateVerticalList(Transform parent, string name, Color background, float spacing, float padding)
+        {
+            var scrollGo = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(ScrollRect), typeof(RectMask2D));
+            scrollGo.transform.SetParent(parent, false);
+            scrollGo.GetComponent<Image>().color = background;
+
+            var contentGo = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            contentGo.transform.SetParent(scrollGo.transform, false);
+            var content = contentGo.GetComponent<RectTransform>();
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0.5f, 1f);
+            content.offsetMin = Vector2.zero;
+            content.offsetMax = Vector2.zero;
+
+            var layout = contentGo.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = spacing;
+            layout.padding = new RectOffset((int)padding, (int)padding, (int)padding, (int)padding);
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            contentGo.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var scroll = scrollGo.GetComponent<ScrollRect>();
+            scroll.content = content;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.viewport = scrollGo.GetComponent<RectTransform>();
+            return content;
         }
 
         public static void Stretch(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)

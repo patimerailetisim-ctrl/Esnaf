@@ -22,6 +22,7 @@ namespace Esnaf.App
         private GameSession _session;
         private UiFlow _flow;
         private TopBarView _topBar;
+        private ListingsView _listings;
 
         private void Awake()
         {
@@ -55,23 +56,25 @@ namespace Esnaf.App
 
             Canvas canvas = UiBuilder.CreateCanvas("Canvas");
             UiBuilder.EnsureEventSystem();
+            _listings = new ListingsView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
-            _flow.Changed += ShowTopBar;
-            ShowTopBar();
+            _flow.Changed += ShowScreen;
+            ShowScreen();
         }
 
         private void OnDestroy()
         {
             if (_flow != null)
             {
-                _flow.Changed -= ShowTopBar;
+                _flow.Changed -= ShowScreen;
                 _flow.Dispose();
             }
         }
 
-        private void ShowTopBar()
+        private void ShowScreen()
         {
             _topBar.Show(_flow.TopBar);
+            _listings.Show();
         }
     }
 }

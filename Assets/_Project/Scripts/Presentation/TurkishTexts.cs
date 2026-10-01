@@ -43,6 +43,46 @@ namespace Esnaf.Presentation
             return "Nakit: " + MoneyFormatter.Format(cash);
         }
 
+        public const string ListingsTitle = "\u0130lanlar";
+        public const string NoListings = "Bug\u00FCn ilan yok.";
+        public const string EndDayButton = "G\u00FCn\u00FC Bitir";
+
+        public static string Storage(int gigabytes)
+        {
+            return gigabytes.ToString(CultureInfo.InvariantCulture) + " GB";
+        }
+
+        public static string Age(int months)
+        {
+            return months.ToString(CultureInfo.InvariantCulture) + " ay";
+        }
+
+        public static string Asking(Money price)
+        {
+            return "\u0130stenen: " + MoneyFormatter.Format(price);
+        }
+
+        /// <summary>1 ve altı: ilan bugün kalkar ("Son gün"); aksi halde kalan gün sayısı.</summary>
+        public static string Remaining(int days)
+        {
+            return days <= 1 ? "Son g\u00FCn" : days.ToString(CultureInfo.InvariantCulture) + " g\u00FCn kald\u0131";
+        }
+
+        public static string Box(bool present)
+        {
+            return present ? "Kutu: var" : "Kutu: yok";
+        }
+
+        public static string Invoice(bool present)
+        {
+            return present ? "Fatura: var" : "Fatura: yok";
+        }
+
+        public static string Seller(string name)
+        {
+            return "Sat\u0131c\u0131: " + name;
+        }
+
         public static string Error(string code)
         {
             if (string.IsNullOrEmpty(code))

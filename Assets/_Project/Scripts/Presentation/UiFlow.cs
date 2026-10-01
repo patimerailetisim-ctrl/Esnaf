@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Esnaf.Core;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
+using Esnaf.Domain.Market;
+using Esnaf.Domain.Negotiation;
 using Esnaf.Domain.Time;
 
 namespace Esnaf.Presentation
@@ -15,8 +19,8 @@ namespace Esnaf.Presentation
     {
         private readonly IGameApi _api;
         private readonly ContentPresentation _content;
-        private readonly IDisposable _cashSubscription;
-        private readonly IDisposable _daySubscription;
+        private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
+        private long? _selectedListingId;
         private bool _disposed;
 
         public UiFlow(IGameApi api, ContentPresentation content, IEventBus events = null)
@@ -34,11 +38,14 @@ namespace Esnaf.Presentation
             _api = api;
             _content = content;
             CurrentScreen = UiScreen.Listings;
-            TopBar = BuildTopBar();
+            Rebuild();
             if (events != null)
             {
-                _cashSubscription = events.Subscribe<CashChanged>(e => Refresh());
-                _daySubscription = events.Subscribe<DayStarted>(e => Refresh());
+                _subscriptions.Add(events.Subscribe<CashChanged>(e => Refresh()));
+                _subscriptions.Add(events.Subscribe<DayStarted>(e => Refresh()));
+                _subscriptions.Add(events.Subscribe<ListingsGenerated>(e => Refresh()));
+                _subscriptions.Add(events.Subscribe<ListingExpired>(e => Refresh()));
+                _subscriptions.Add(events.Subscribe<ListingPurchased>(e => Refresh()));
             }
         }
 
@@ -48,6 +55,34 @@ namespace Esnaf.Presentation
         public UiScreen CurrentScreen { get; private set; }
 
         public TopBarViewModel TopBar { get; private set; }
+
+        /// <summary>Pazardaki ilanlar (pazardaki sırayla), seçili olan işaretli.</summary>
+        public IReadOnlyList<ListingRowViewModel> Listings { get; private set; }
+
+        /// <summary>Seçili ilan (sonraki ekran, Telefon Detayı, bunu kullanır); yoksa null. İlan pazardan kalkınca seçim kalkar.</summary>
+        public long? SelectedListingId
+        {
+            get { return _selectedListingId; }
+        }
+
+        public ListingRowViewModel SelectedListing
+        {
+            get
+            {
+                foreach (ListingRowViewModel row in Listings)
+                {
+                    if (row.IsSelected)
+                    {
+                        return row;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>Son komutun kullanıcıya gösterilecek hata mesajı (Türkçe); başarılı komut bunu temizler. Yoksa null.</summary>
+        public string StatusMessage { get; private set; }
 
         public ContentPresentation Content
         {
@@ -62,12 +97,57 @@ namespace Esnaf.Presentation
                 return;
             }
 
-            TopBar = BuildTopBar();
-            Action handler = Changed;
-            if (handler != null)
+            Rebuild();
+            RaiseChanged();
+        }
+
+        /// <summary>İlanı seçer ve seçimi korur. İlan artık yoksa seçim değişmez, StatusMessage nedenini söyler. Olay bir kez yayılır.</summary>
+        public bool SelectListing(long listingId)
+        {
+            bool exists = false;
+            foreach (ListingView listing in _api.GetListings())
             {
-                handler();
+                if (listing.ListingId == listingId)
+                {
+                    exists = true;
+                    break;
+                }
             }
+
+            if (exists)
+            {
+                _selectedListingId = listingId;
+                StatusMessage = null;
+            }
+            else
+            {
+                StatusMessage = TurkishTexts.Error("listing.unknown");
+            }
+
+            Rebuild();
+            RaiseChanged();
+            return exists;
+        }
+
+        public void ClearSelection()
+        {
+            if (_selectedListingId == null)
+            {
+                return;
+            }
+
+            _selectedListingId = null;
+            Rebuild();
+            RaiseChanged();
+        }
+
+        /// <summary>Günü bitirir (IGameApi.EndDay) ve ilanları/üst barı yeniler. Hata olursa StatusMessage Türkçe nedeni söyler.</summary>
+        public Result<DayEndReport> EndDay()
+        {
+            Result<DayEndReport> result = _api.EndDay();
+            StatusMessage = result.IsSuccess ? null : TurkishTexts.Error(result.ErrorCode);
+            Refresh();
+            return result;
         }
 
         public void Dispose()
@@ -78,15 +158,40 @@ namespace Esnaf.Presentation
             }
 
             _disposed = true;
-            if (_cashSubscription != null)
+            foreach (IDisposable subscription in _subscriptions)
             {
-                _cashSubscription.Dispose();
+                subscription.Dispose();
+            }
+        }
+
+        private void RaiseChanged()
+        {
+            Action handler = Changed;
+            if (handler != null)
+            {
+                handler();
+            }
+        }
+
+        // Üst barı ve ilan satırlarını oyundan yeniden okur; seçili ilan artık pazarda değilse seçimi bırakır.
+        private void Rebuild()
+        {
+            TopBar = BuildTopBar();
+            var rows = new List<ListingRowViewModel>();
+            bool selectionFound = false;
+            foreach (ListingView listing in _api.GetListings())
+            {
+                bool selected = _selectedListingId.HasValue && listing.ListingId == _selectedListingId.Value;
+                selectionFound |= selected;
+                rows.Add(ListingRowViewModel.From(listing, _content, selected));
             }
 
-            if (_daySubscription != null)
+            if (!selectionFound)
             {
-                _daySubscription.Dispose();
+                _selectedListingId = null;
             }
+
+            Listings = new ReadOnlyCollection<ListingRowViewModel>(rows);
         }
 
         private TopBarViewModel BuildTopBar()

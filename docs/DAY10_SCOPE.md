@@ -16,3 +16,8 @@ Hedef dilim: Yeni Oyun → İlanlar → Telefon Detayı → Ekspertiz → Alım 
 ## Bilinen sınırlar (Adım 1)
 - Unity tarafı (`GameBootstrap`, `UiBuilder`, `TopBarView`, `Day10Setup`) Linux'ta Unity yokken yalnızca Unity API taklitleriyle (stub) derleme denetiminden geçti; gerçek derleme ve görünüm Windows/Unity'de doğrulanmalıdır.
 - Güvenli alan (notch) ve yatay yerleşim sonraki adımlarda.
+
+## Adım 2: İlanlar ekranı (tamamlandı)
+- `UiFlow`: `Listings` (ListingRowViewModel: model adı, depolama, yaş, istenen fiyat, kalan gün, kutu, fatura, satıcı), `SelectListing` / `ClearSelection` / `SelectedListingId` / `SelectedListing` (seçim, ilan pazardan kalkana kadar korunur; Telefon Detayı bunu kullanacak), `EndDay()` (IGameApi.EndDay + yenileme), `StatusMessage` (Türkçe hata; başarılı komut temizler). Olaylar: nakit, gün, ilan üretildi/kalktı/satın alındı.
+- Unity: `ListingsView` (ScrollRect liste, satır = Button, "Günü Bitir" düğmesi, durum mesajı); `GameBootstrap` ekranı UiFlow.Changed'e bağlar. `IGameApi` ve Domain değişmedi.
+- "Kalan gün": 1 ve altı "Son gün" (ilan gün sonunda kalkar), aksi halde "N gün kaldı".
