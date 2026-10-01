@@ -26,3 +26,10 @@ Hedef dilim: Yeni Oyun → İlanlar → Telefon Detayı → Ekspertiz → Alım 
 - `UiFlow`: `Detail` (ListingDetailViewModel: etiketli satırlar), `OpenListing(id)` (seçer + detaya geçer, tek olay), `OpenSelectedListing()`, `Back()` (seçim korunur), `RequestAppraisal()` / `RequestNegotiation()` (düğmeler hazır; şimdilik yalnızca "bir sonraki adımda eklenecek" der, oyun durumunu DEĞİŞTİRMEZ). Seçili ilan pazardan kalkarsa (ör. satın alınırsa) akış kendiliğinden İlanlar'a döner. `UiScreen.Detail` eklendi.
 - Unity: `DetailView` (Geri, başlık, 7 satır, durum mesajı, "Ekspertiz" ve "Pazarlık" düğmeleri); `ListingsView` satır tıklaması detaya geçer, ekranlar `CurrentScreen`'e göre görünür.
 - Ekspertiz ve pazarlık Adım 4 ve 5'te `UiFlow` içinde uygulanacak.
+
+## Adım 4: Ekspertiz ekranı (tamamlandı)
+- Akış: Telefon Detayı → Ekspertiz → seviye seç → "Ekspertiz Yaptır" → sonuç → Geri (Ekspertiz → Detay → İlanlar). `UiScreen.Appraisal` eklendi.
+- `UiFlow`: `OpenAppraisal()`, `SelectLevel(id)`, `PerformAppraisal()` (IGameApi.StartAppraisal), `AppraisalScreen` (AppraisalScreenViewModel: seviyeler, seçili seviye, sonuç, ana düğme yazısı). Sonuç, `GetAppraisals(listingId)` ve `GetRiskCard(resultId, istenen fiyat)` çıktılarının Türkçe satırlarıdır. Ekspertiz kuralı Presentation/Unity'de YOK.
+- Ücret: oyundan düşer (nakit üst barda olaylarla güncellenir); aynı ilan + aynı seviye ikinci kez ücret almaz (I5), "Sonucu Göster" yazar. Kilit/cihaz hataları API'den gelir ve Türkçe mesajla gösterilir; durum değişmez.
+- Gösterim kararları: kilit durumu ("Kilitli (Gün N'de açılır)") ve ücret yazısı içerikteki veriden gösterilir (karar API'dedir); "Cihaz gerekir" yalnızca bilgidir (cihaz sahipliği için API sorgusu yok). Risk kartı pazarlık olmadığı için İSTENEN FİYATLA hesaplanır ("istenen fiyatla alırsan"); değer aralığı vermeyen seviyede (s0) kart yoktur ve neden yazılır. Bulgu yoksa asla "sorun yok" denmez, "sorun görünmüyor" denir.
+- Pazarlık düğmesi hâlâ hazır-ama-uygulanmadı (Adım 5).

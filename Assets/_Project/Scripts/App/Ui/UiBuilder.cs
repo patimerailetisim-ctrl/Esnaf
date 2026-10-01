@@ -84,6 +84,15 @@ namespace Esnaf.App.Ui
             return text;
         }
 
+        /// <summary>Satır kaydıran metin (uzun satırlar için). Yüksekliği içeriğine göre liste yerleşimi belirler.</summary>
+        public static Text CreateWrappedText(Transform parent, string name, int fontSize, TextAnchor alignment, Color color)
+        {
+            Text text = CreateText(parent, name, fontSize, alignment, color);
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            return text;
+        }
+
         /// <summary>Etiketli düğme (Image + Button + Text). Tıklama <paramref name="onClick"/>'i çağırır.</summary>
         public static Button CreateButton(Transform parent, string name, string label, int fontSize, Color color, UnityAction onClick)
         {

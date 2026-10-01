@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
 using Esnaf.Domain.Market;
@@ -21,6 +22,7 @@ namespace Esnaf.Presentation
         private readonly ContentPresentation _content;
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private long? _selectedListingId;
+        private string _selectedLevelId;
         private bool _disposed;
 
         public UiFlow(IGameApi api, ContentPresentation content, IEventBus events = null)
@@ -56,6 +58,9 @@ namespace Esnaf.Presentation
 
         /// <summary>Seçili ilanın telefon detayı satırları; seçili ilan yoksa null.</summary>
         public ListingDetailViewModel Detail { get; private set; }
+
+        /// <summary>Ekspertiz ekranı (yalnızca CurrentScreen == Appraisal iken dolu; aksi halde null).</summary>
+        public AppraisalScreenViewModel AppraisalScreen { get; private set; }
 
         public TopBarViewModel TopBar { get; private set; }
 
@@ -142,24 +147,98 @@ namespace Esnaf.Presentation
             return true;
         }
 
-        /// <summary>Detaydan ilanlara döner (seçim korunur, mesaj temizlenir). İlanlar ekranındaysa hiçbir şey yapmaz.</summary>
+        /// <summary>Bir adım geri: Ekspertiz → Detay, Detay → İlanlar (seçim korunur, mesaj temizlenir). İlanlar ekranındaysa hiçbir şey yapmaz.</summary>
         public void Back()
         {
-            if (CurrentScreen != UiScreen.Detail)
+            if (CurrentScreen == UiScreen.Appraisal)
+            {
+                CurrentScreen = UiScreen.Detail;
+            }
+            else if (CurrentScreen == UiScreen.Detail)
+            {
+                CurrentScreen = UiScreen.Listings;
+            }
+            else
             {
                 return;
             }
 
-            CurrentScreen = UiScreen.Listings;
             StatusMessage = null;
             Rebuild();
             RaiseChanged();
         }
 
-        /// <summary>"Ekspertiz" düğmesi: sonraki adımda uygulanacak; şimdilik yalnızca nedenini söyler, oyunu değiştirmez.</summary>
-        public void RequestAppraisal()
+        /// <summary>Detaydan Ekspertiz ekranına geçer. Detay ekranında değilse hiçbir şey yapmaz (false).</summary>
+        public bool OpenAppraisal()
         {
-            Announce(TurkishTexts.AppraisalComingSoon);
+            if (CurrentScreen != UiScreen.Detail)
+            {
+                return false;
+            }
+
+            CurrentScreen = UiScreen.Appraisal;
+            _selectedLevelId = null;
+            StatusMessage = null;
+            Rebuild();
+            RaiseChanged();
+            return true;
+        }
+
+        /// <summary>Ekspertiz seviyesini seçer. Bilinmeyen seviye reddedilir (StatusMessage söyler). Ekspertiz ekranında değilse hiçbir şey yapmaz.</summary>
+        public bool SelectLevel(string levelId)
+        {
+            if (CurrentScreen != UiScreen.Appraisal)
+            {
+                return false;
+            }
+
+            bool known = false;
+            foreach (AppraisalLevelInfo level in _content.AppraisalLevels)
+            {
+                if (level.Id == levelId)
+                {
+                    known = true;
+                }
+            }
+
+            if (known)
+            {
+                _selectedLevelId = levelId;
+                StatusMessage = null;
+            }
+            else
+            {
+                StatusMessage = TurkishTexts.Error("appraisal.level_unknown");
+            }
+
+            Rebuild();
+            RaiseChanged();
+            return known;
+        }
+
+        /// <summary>
+        /// Seçili seviyede, seçili ilan için ekspertiz yaptırır (IGameApi.StartAppraisal): ücret oyundan düşer, sonuç ilana bağlı ve kilitlidir
+        /// (aynı seviye tekrar ücret almaz). Hata olursa StatusMessage Türkçe nedeni söyler; durum değişmez.
+        /// </summary>
+        public Result<AppraisalView> PerformAppraisal()
+        {
+            if (CurrentScreen != UiScreen.Appraisal) // bu ekranda seçili ilan her zaman vardır (Rebuild ekranı aksi halde kapatır)
+            {
+                return Result<AppraisalView>.Fail("ui.not_on_appraisal_screen", "The appraisal screen is not open.");
+            }
+
+            if (_selectedLevelId == null)
+            {
+                StatusMessage = TurkishTexts.NoLevelSelected;
+                Rebuild();
+                RaiseChanged();
+                return Result<AppraisalView>.Fail("ui.no_level_selected", "No appraisal level is selected.");
+            }
+
+            Result<AppraisalView> result = _api.StartAppraisal(_selectedListingId.Value, _selectedLevelId);
+            StatusMessage = result.IsSuccess ? null : TurkishTexts.Error(result.ErrorCode);
+            Refresh();
+            return result;
         }
 
         /// <summary>"Pazarlık" düğmesi: sonraki adımda uygulanacak; şimdilik yalnızca nedenini söyler, oyunu değiştirmez.</summary>
@@ -268,12 +347,17 @@ namespace Esnaf.Presentation
             if (selectedListing == null)
             {
                 _selectedListingId = null;
+                _selectedLevelId = null;
                 CurrentScreen = UiScreen.Listings;
                 Detail = null;
+                AppraisalScreen = null;
             }
             else
             {
                 Detail = ListingDetailViewModel.From(selectedListing, _content);
+                AppraisalScreen = CurrentScreen == UiScreen.Appraisal
+                    ? AppraisalScreenBuilder.Build(selectedListing, _api.GetAppraisals(selectedListing.ListingId), _api.GetDay(), _selectedLevelId, _content, _api)
+                    : null;
             }
 
             Listings = new ReadOnlyCollection<ListingRowViewModel>(rows);

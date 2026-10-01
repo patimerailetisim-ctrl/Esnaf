@@ -496,7 +496,7 @@ namespace Esnaf.Tests.Presentation
             {
                 long id = flow.Listings[0].ListingId;
                 flow.OpenListing(id);
-                flow.RequestAppraisal();
+                flow.RequestNegotiation();
                 Assert.IsNotNull(flow.StatusMessage);
                 int raised = 0;
                 flow.Changed += () => raised++;
@@ -527,26 +527,22 @@ namespace Esnaf.Tests.Presentation
         }
 
         [Test]
-        public void TheDetailButtons_ArePreparedButNotImplementedYet_AndOnlyWorkOnTheDetailScreen()
+        public void TheNegotiationButton_IsPreparedButNotImplementedYet_AndOnlyWorksOnTheDetailScreen()
         {
             GameSession session = NewSession();
             using (UiFlow flow = Flow(session))
             {
                 string digest = session.Api.GetStateDigest();
-                flow.RequestAppraisal();
-                Assert.IsNull(flow.StatusMessage, "detay ekran\u0131nda de\u011Filken bir \u015Fey yapmaz");
                 flow.RequestNegotiation();
-                Assert.IsNull(flow.StatusMessage);
+                Assert.IsNull(flow.StatusMessage, "detay ekran\u0131nda de\u011Filken bir \u015Fey yapmaz");
 
                 flow.OpenListing(flow.Listings[0].ListingId);
                 int raised = 0;
                 flow.Changed += () => raised++;
-                flow.RequestAppraisal();
-                Assert.AreEqual("Ekspertiz bir sonraki ad\u0131mda eklenecek.", flow.StatusMessage);
                 flow.RequestNegotiation();
-                Assert.AreEqual("Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.", flow.StatusMessage);
 
-                Assert.AreEqual(2, raised);
+                Assert.AreEqual("Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.", flow.StatusMessage);
+                Assert.AreEqual(1, raised);
                 Assert.AreEqual(UiScreen.Detail, flow.CurrentScreen);
                 Assert.AreEqual(digest, session.Api.GetStateDigest(), "oyun durumu de\u011Fi\u015Fmez (hen\u00FCz uygulanmad\u0131)");
             }

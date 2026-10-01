@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Esnaf.Core;
+using Esnaf.Domain.Appraisal;
 using Esnaf.Presentation;
 using NUnit.Framework;
 
@@ -38,7 +39,9 @@ namespace Esnaf.Tests.Presentation
             { "negotiation.no_final_offer", "Satıcı henüz son fiyat vermedi." },
             { "offer.invalid", "Geçersiz teklif." },
             { "card.unknown", "Bilinmeyen koz kartı." },
-            { "card.already_used", "Bu koz kartı zaten kullanıldı." }
+            { "card.already_used", "Bu koz kartı zaten kullanıldı." },
+            { "appraisal.no_value_range", "Bu seviye değer aralığı vermediği için risk kartı yok." },
+            { "appraisal.unknown", "Bilinmeyen ekspertiz sonucu." }
         };
 
         [TestCaseSource(nameof(ExpectedCodes))]
@@ -144,8 +147,84 @@ namespace Esnaf.Tests.Presentation
             Assert.AreEqual("Geri", TurkishTexts.BackButton);
             Assert.AreEqual("Ekspertiz", TurkishTexts.AppraisalButton);
             Assert.AreEqual("Pazarl\u0131k", TurkishTexts.NegotiationButton);
-            Assert.AreEqual("Ekspertiz bir sonraki ad\u0131mda eklenecek.", TurkishTexts.AppraisalComingSoon);
             Assert.AreEqual("Pazarl\u0131k bir sonraki ad\u0131mda eklenecek.", TurkishTexts.NegotiationComingSoon);
+        }
+
+        // ---------- ekspertiz ----------
+
+        [Test]
+        public void AppraisalScreenTexts_AreFixed()
+        {
+            Assert.AreEqual("Ekspertiz", TurkishTexts.AppraisalTitle);
+            Assert.AreEqual("Seviyeler", TurkishTexts.LevelsHeader);
+            Assert.AreEqual("Sonu\u00E7", TurkishTexts.ResultHeader);
+            Assert.AreEqual("Ekspertiz Yapt\u0131r", TurkishTexts.ActionPerformAppraisal);
+            Assert.AreEqual("Sonucu G\u00F6ster", TurkishTexts.ActionShowAppraisal);
+            Assert.AreEqual("\u00D6nce bir ekspertiz seviyesi se\u00E7.", TurkishTexts.NoLevelSelected);
+            Assert.AreEqual("Bu seviye hen\u00FCz yap\u0131lmad\u0131.", TurkishTexts.LevelNotDone);
+        }
+
+        [Test]
+        public void LevelTexts_SayFeeAndState()
+        {
+            Assert.AreEqual("\u00DCcretsiz", TurkishTexts.LevelFee(Money.Zero));
+            Assert.AreEqual("\u00DCcret: 350 \u20BA", TurkishTexts.LevelFee(Money.FromTl(350)));
+            Assert.AreEqual("Yap\u0131ld\u0131", TurkishTexts.LevelDone);
+            Assert.AreEqual("Haz\u0131r", TurkishTexts.LevelReady);
+            Assert.AreEqual("Cihaz gerekir", TurkishTexts.LevelNeedsEquipment);
+            Assert.AreEqual("Kilitli (G\u00FCn 3'te a\u00E7\u0131l\u0131r)", TurkishTexts.LevelLocked(3));
+            Assert.AreEqual("Kilitli (G\u00FCn 6'te a\u00E7\u0131l\u0131r)", TurkishTexts.LevelLocked(6));
+        }
+
+        [TestCase("appraisal.finding.screen_replaced", "screen", true, AppraisalConfidence.Medium, "\u2022 Ekran de\u011Fi\u015Ftirilmi\u015F olabilir \u2014 orta g\u00FCven")]
+        [TestCase("appraisal.finding.camera_problem", "camera", true, AppraisalConfidence.Certain, "\u2022 Kamerada sorun olabilir \u2014 kesin")]
+        [TestCase("appraisal.finding.screen_replaced", "screen", false, AppraisalConfidence.Low, "\u2022 Ekran: sorun g\u00F6r\u00FCnm\u00FCyor \u2014 d\u00FC\u015F\u00FCk g\u00FCven")]
+        [TestCase("appraisal.finding.camera_problem", "camera", false, AppraisalConfidence.Hint, "\u2022 Kamera: sorun g\u00F6r\u00FCnm\u00FCyor \u2014 ipucu")]
+        [TestCase("appraisal.finding.other", "battery", true, AppraisalConfidence.Hint, "\u2022 appraisal.finding.other \u2014 ipucu")]
+        [TestCase("appraisal.finding.other", "battery", false, AppraisalConfidence.Hint, "\u2022 battery: sorun g\u00F6r\u00FCnm\u00FCyor \u2014 ipucu")]
+        public void Finding_NeverSaysThereIsNoProblem_OnlyThatNoneIsVisible(string key, string attribute, bool found, AppraisalConfidence confidence, string expected)
+        {
+            Assert.AreEqual(expected, TurkishTexts.Finding(found, key, attribute, confidence));
+        }
+
+        [Test]
+        public void RangeLines_ShowTheRangeOrSayTheLevelDoesNotGiveIt()
+        {
+            Assert.AreEqual("Pil: %80\u2013%90", TurkishTexts.Battery(new NumericRange(80, 90)));
+            Assert.AreEqual("Pil: bu seviyede \u00F6l\u00E7\u00FClmez", TurkishTexts.Battery(null));
+            Assert.AreEqual("G\u00F6vde: %70\u2013%85", TurkishTexts.Body(new NumericRange(70, 85)));
+            Assert.AreEqual("G\u00F6vde: bu seviyede \u00F6l\u00E7\u00FClmez", TurkishTexts.Body(null));
+            Assert.AreEqual("Tahmini de\u011Fer: 8.000 \u20BA \u2013 9.500 \u20BA", TurkishTexts.ValueRange(new MoneyRange(Money.FromTl(8000), Money.FromTl(9500))));
+            Assert.AreEqual("Tahmini de\u011Fer: bu seviyede verilmez", TurkishTexts.ValueRange(null));
+            Assert.AreEqual("\u00D6denen \u00FCcret: 350 \u20BA", TurkishTexts.PaidFee(Money.FromTl(350)));
+        }
+
+        [Test]
+        public void RiskLines_AreWrittenInTurkish()
+        {
+            Assert.AreEqual("Risk kart\u0131 (istenen fiyatla al\u0131rsan: 9.500 \u20BA)", TurkishTexts.RiskTitle(Money.FromTl(9500)));
+            var scenario = new RiskScenario("bad", Money.FromTl(8000), Money.FromTl(8160), Money.FromTl(-1340));
+            Assert.AreEqual("K\u00F6t\u00FC: de\u011Fer 8.000 \u20BA, beklenen sat\u0131\u015F 8.160 \u20BA, k\u00E2r/zarar -1.340 \u20BA", TurkishTexts.RiskScenarioLine(scenario));
+            Assert.AreEqual("Orta: de\u011Fer 1 \u20BA, beklenen sat\u0131\u015F 2 \u20BA, k\u00E2r/zarar 3 \u20BA", TurkishTexts.RiskScenarioLine(new RiskScenario("mid", Money.FromTl(1), Money.FromTl(2), Money.FromTl(3))));
+            Assert.AreEqual("\u0130yi: de\u011Fer 1 \u20BA, beklenen sat\u0131\u015F 2 \u20BA, k\u00E2r/zarar 3 \u20BA", TurkishTexts.RiskScenarioLine(new RiskScenario("good", Money.FromTl(1), Money.FromTl(2), Money.FromTl(3))));
+            Assert.AreEqual("x: de\u011Fer 1 \u20BA, beklenen sat\u0131\u015F 2 \u20BA, k\u00E2r/zarar 3 \u20BA", TurkishTexts.RiskScenarioLine(new RiskScenario("x", Money.FromTl(1), Money.FromTl(2), Money.FromTl(3))));
+        }
+
+        [TestCase(0.0, "Aral\u0131k d\u0131\u015F\u0131 kalma olas\u0131l\u0131\u011F\u0131: %0")]
+        [TestCase(0.05, "Aral\u0131k d\u0131\u015F\u0131 kalma olas\u0131l\u0131\u011F\u0131: %5")]
+        [TestCase(0.125, "Aral\u0131k d\u0131\u015F\u0131 kalma olas\u0131l\u0131\u011F\u0131: %13")]
+        [TestCase(0.124, "Aral\u0131k d\u0131\u015F\u0131 kalma olas\u0131l\u0131\u011F\u0131: %12")]
+        [TestCase(1.0, "Aral\u0131k d\u0131\u015F\u0131 kalma olas\u0131l\u0131\u011F\u0131: %100")]
+        public void MissProbability_IsShownAsAWholePercent(double probability, string expected)
+        {
+            Assert.AreEqual(expected, TurkishTexts.MissProbability(probability));
+        }
+
+        [Test]
+        public void AppraisalErrors_HaveTurkishMessages()
+        {
+            Assert.AreEqual("Bu seviye de\u011Fer aral\u0131\u011F\u0131 vermedi\u011Fi i\u00E7in risk kart\u0131 yok.", TurkishTexts.Error("appraisal.no_value_range"));
+            Assert.AreEqual("Bilinmeyen ekspertiz sonucu.", TurkishTexts.Error("appraisal.unknown"));
         }
     }
 }
