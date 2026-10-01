@@ -111,11 +111,7 @@ namespace Esnaf.App.Ui
                 portrait.GetComponent<Image>().raycastTarget = false;
                 UiBuilder.Stretch(portrait, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(28f, -72f), new Vector2(172f, 72f));
                 portrait.gameObject.AddComponent<RectMask2D>();
-                var host = new GameObject("Host", typeof(RectTransform)).GetComponent<RectTransform>();
-                host.SetParent(portrait, false);
-                UiBuilder.Stretch(host, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                host.localScale = new Vector3(0.22f, 0.22f, 1f);
-                CustomerPortraitView.Draw(host, customer.NpcId);
+                CustomerPortraitView.Draw(portrait, customer.Name, customer.NpcId);
 
                 Text name = UiKit.Label(rect, "Name", customer.Name, 46, UiTheme.Ink, true);
                 UiBuilder.Stretch(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(204f, 8f), new Vector2(-28f, 84f));
@@ -136,13 +132,10 @@ namespace Esnaf.App.Ui
             portraitPanel.GetComponent<Image>().raycastTarget = false;
             UiBuilder.Stretch(portraitPanel, new Vector2(0f, 0f), new Vector2(0.5f, 1f), new Vector2(24f, 24f), new Vector2(-10f, -24f));
             portraitPanel.gameObject.AddComponent<RectMask2D>();
-            var portrait = new GameObject("Portrait", typeof(RectTransform)).GetComponent<RectTransform>();
-            portrait.SetParent(portraitPanel, false);
-            portrait.anchorMin = new Vector2(0.5f, 0.5f);
-            portrait.anchorMax = new Vector2(0.5f, 0.5f);
-            portrait.sizeDelta = new Vector2(620f, 620f);
-            portrait.anchoredPosition = new Vector2(0f, -20f);
-            CustomerPortraitView.Draw(portrait, screen.NpcId);
+            var frame = new GameObject("PortraitFrame", typeof(RectTransform)).GetComponent<RectTransform>();
+            frame.SetParent(portraitPanel, false);
+            UiBuilder.Stretch(frame, Vector2.zero, Vector2.one, new Vector2(8f, 8f), new Vector2(-8f, -8f));
+            CustomerPortraitView.Draw(frame, screen.CustomerName, screen.NpcId);
 
             if (screen.Mode == SaleMode.Talking)
             {

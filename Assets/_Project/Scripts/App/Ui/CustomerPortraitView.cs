@@ -5,9 +5,9 @@ using UnityEngine.UI;
 namespace Esnaf.App.Ui
 {
     /// <summary>
-    /// Müşteri portresi. Gerçek portre asset'i yokken temiz bir silüet çizilir (UI parçalarıyla; dış asset yok). İleride
-    /// <see cref="CustomerPortraits.Provider"/> bir NPC için Sprite döndürürse silüet yerine o görsel gösterilir (ekran kodu değişmez).
-    /// Yalnızca görünüm; müşteri verisi taşımaz.
+    /// Müşteri portresi. Müşterinin ADINA göre <see cref="CustomerPortraits.Provider"/> (CustomerPortraitCatalog) gerçek portreyi verirse yalnızca o
+    /// gösterilir (en-boy oranı korunur, yüz ezilmez); bulunamazsa temiz bir silüet çizilir (UI parçalarıyla; dış asset yok).
+    /// Büyük satış ekranı ile müşteri kartı aynı yolu kullanır. Yalnızca görünüm; müşteri verisi taşımaz.
     /// </summary>
     internal static class CustomerPortraitView
     {
@@ -19,12 +19,12 @@ namespace Esnaf.App.Ui
             new Color(0.22f, 0.34f, 0.4f, 1f)
         };
 
-        /// <summary>Verilen kutuyu (anchor tam esnek) portreyle doldurur.</summary>
-        public static void Draw(RectTransform host, string npcId)
+        /// <summary>Verilen kutuyu portreyle doldurur: gerçek portre (müşteri adından) ya da silüet (<paramref name="npcId"/> yalnızca silüet rengini seçer).</summary>
+        public static void Draw(RectTransform host, string customerName, string npcId)
         {
             UiKit.Clear(host);
 
-            Sprite sprite = CustomerPortraits.Get(npcId);
+            Sprite sprite = CustomerPortraits.Get(customerName);
             if (sprite != null)
             {
                 var go = new GameObject("Portrait", typeof(RectTransform), typeof(Image));
@@ -37,24 +37,33 @@ namespace Esnaf.App.Ui
                 return;
             }
 
-            Color tone = Tones[Math.Abs(HashOf(npcId)) % Tones.Length];
+            Color tone = Tones[Math.Abs(HashOf(npcId) % Tones.Length)];
 
-            // Omuzlar (alt, taşan kısım RectMask2D ile kırpılır) + baş + ince altın halka.
-            RectTransform shoulders = Part(host, "Shoulders", tone, 0f, -300f, 620f, 520f);
-            Part(shoulders, "Collar", new Color(1f, 1f, 1f, 0.08f), 0f, 170f, 150f, 150f);
-            Part(host, "HeadRing", UiTheme.Gold, 0f, 70f, 296f, 296f);
-            Part(host, "Head", new Color(0.82f, 0.86f, 0.93f, 1f), 0f, 70f, 280f, 280f);
-            Part(host, "Hair", tone, 0f, 150f, 280f, 130f);
+            // Silüet: çerçevenin içine sığan KARE bir alanda, kesirli konumlarla çizilir (çerçeve ne olursa olsun daireler yuvarlak kalır).
+            // Taşan omuzlar çerçevenin RectMask2D'si ile kırpılır.
+            var squareGo = new GameObject("Silhouette", typeof(RectTransform), typeof(AspectRatioFitter));
+            squareGo.transform.SetParent(host, false);
+            var square = squareGo.GetComponent<RectTransform>();
+            UiBuilder.Stretch(square, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var fitter = squareGo.GetComponent<AspectRatioFitter>();
+            fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            fitter.aspectRatio = 1f;
+
+            RectTransform shoulders = Part(square, "Shoulders", tone, 500f, 16f, 1000f, 839f);
+            Part(shoulders, "Collar", new Color(1f, 1f, 1f, 0.08f), 500f, 800f, 220f, 260f);
+            Part(square, "HeadRing", UiTheme.Gold, 500f, 613f, 477f, 477f);
+            Part(square, "Head", new Color(0.82f, 0.86f, 0.93f, 1f), 500f, 613f, 452f, 452f);
+            Part(square, "Hair", tone, 500f, 742f, 452f, 210f);
         }
 
+        // Parça: (merkez x, merkez y, genişlik, yükseklik) 1000x1000 birimlik karede; anchor kesirleriyle yerleşir.
         private static RectTransform Part(Transform parent, string name, Color color, float cx, float cy, float w, float h)
         {
             RectTransform rect = UiKit.Rounded(parent, name, color);
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = new Vector2(cx, cy);
-            rect.sizeDelta = new Vector2(w, h);
+            rect.anchorMin = new Vector2((cx - w / 2f) / 1000f, (cy - h / 2f) / 1000f);
+            rect.anchorMax = new Vector2((cx + w / 2f) / 1000f, (cy + h / 2f) / 1000f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
             rect.GetComponent<Image>().raycastTarget = false;
             return rect;
         }
@@ -71,14 +80,14 @@ namespace Esnaf.App.Ui
         }
     }
 
-    /// <summary>Gerçek müşteri portrelerinin bağlanacağı nokta: npcKimliği → Sprite. null döndürürse silüet çizilir.</summary>
+    /// <summary>Gerçek müşteri portrelerinin bağlanacağı nokta: müşteri adı → Sprite. null döndürürse silüet çizilir.</summary>
     internal static class CustomerPortraits
     {
         public static Func<string, Sprite> Provider;
 
-        public static Sprite Get(string npcId)
+        public static Sprite Get(string customerName)
         {
-            return Provider == null || npcId == null ? null : Provider(npcId);
+            return Provider == null || customerName == null ? null : Provider(customerName);
         }
     }
 }

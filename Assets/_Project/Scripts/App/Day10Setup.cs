@@ -24,7 +24,8 @@ namespace Esnaf.App
         {
             ContentCatalog catalog = CreateOrUpdateCatalog();
             PhoneImageCatalog phoneImages = PhoneSpriteImport.CreateOrUpdateCatalog();
-            CreateMainScene(catalog, phoneImages);
+            CustomerPortraitCatalog portraits = CustomerPortraitSetup.CreateOrUpdateCatalog();
+            CreateMainScene(catalog, phoneImages, portraits);
             Debug.Log("Esnaf: ContentCatalog ve Main sahnesi hazır. Main sahnesini açıp Play'e basın.");
         }
 
@@ -63,7 +64,7 @@ namespace Esnaf.App
             return catalog;
         }
 
-        private static void CreateMainScene(ContentCatalog catalog, PhoneImageCatalog phoneImages)
+        private static void CreateMainScene(ContentCatalog catalog, PhoneImageCatalog phoneImages, CustomerPortraitCatalog portraits)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -79,6 +80,7 @@ namespace Esnaf.App
             var serialized = new SerializedObject(bootstrap);
             serialized.FindProperty("_catalog").objectReferenceValue = catalog;
             serialized.FindProperty("_phoneImages").objectReferenceValue = phoneImages;
+            serialized.FindProperty("_customerPortraits").objectReferenceValue = portraits;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             EditorSceneManager.SaveScene(scene, ScenePath);

@@ -477,6 +477,11 @@ namespace Esnaf.Domain.Content
                     NpcField(issues, fileName, label, "personality", "must not be empty.");
                 }
 
+                if (npc.Gender != null && npc.Gender != "male" && npc.Gender != "female")
+                {
+                    NpcField(issues, fileName, label, "gender", "must be 'male' or 'female'.");
+                }
+
                 ValidateSeller(npc.Seller, label, fileName, issues);
                 ValidateCustomer(npc.Customer, label, fileName, issues);
             }

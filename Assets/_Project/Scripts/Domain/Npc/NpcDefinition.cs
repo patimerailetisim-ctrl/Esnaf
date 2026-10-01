@@ -20,7 +20,10 @@ namespace Esnaf.Domain.Npc
         /// <summary>Kişilik arketipi anahtarı (npc_profiles.json "personalities"); katalogsuz içerikte null.</summary>
         public string PersonalityId { get; }
 
-        public NpcDefinition(string id, string name, string personality, NpcSellerRole seller, NpcCustomerRole customer, string personalityId = null)
+        /// <summary>"male" / "female" (görünen kimlik havuzunu seçer); belirtilmemişse null. Oyun kuralı değildir.</summary>
+        public string Gender { get; }
+
+        public NpcDefinition(string id, string name, string personality, NpcSellerRole seller, NpcCustomerRole customer, string personalityId = null, string gender = null)
         {
             if (seller == null)
             {
@@ -38,6 +41,7 @@ namespace Esnaf.Domain.Npc
             Seller = seller;
             Customer = customer;
             PersonalityId = personalityId;
+            Gender = gender;
         }
     }
 }

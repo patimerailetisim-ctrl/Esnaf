@@ -84,6 +84,25 @@ namespace Esnaf.Presentation
             return _content.TryGetNpc(npcId, out npc) ? npc.Name : npcId;
         }
 
+        /// <summary>
+        /// Müşterinin GÖRÜNEN adı: NPC'nin cinsiyeti içerikte varsa 28'lik havuzdan müşteri numarasına göre bir ad (<see cref="CustomerPersonas"/>),
+        /// yoksa NPC'nin kendi adı. Kişilik/davranış değişmez.
+        /// </summary>
+        public string CustomerName(long customerId, string npcId)
+        {
+            NpcDefinition npc;
+            if (npcId != null && _content.TryGetNpc(npcId, out npc))
+            {
+                CustomerPersona persona = CustomerPersonas.For(customerId, npc.Gender);
+                if (persona != null)
+                {
+                    return persona.Name;
+                }
+            }
+
+            return NpcName(npcId);
+        }
+
         /// <summary>Seviye ve ürün segmentine göre ekspertiz ücreti (gösterim için; ödemeyi oyun alır). Bilinmeyen seviye/ürün için false.</summary>
         public bool TryGetFee(string levelId, string definitionId, out Money fee)
         {

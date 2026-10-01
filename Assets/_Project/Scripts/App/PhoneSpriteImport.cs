@@ -21,13 +21,13 @@ namespace Esnaf.App
 
         private void OnPreprocessTexture()
         {
-            if (assetPath.StartsWith(ArtFolder + "/"))
+            if (assetPath.StartsWith(ArtFolder + "/") || assetPath.StartsWith(CustomerPortraitSetup.Folder + "/"))
             {
                 Apply((TextureImporter)assetImporter);
             }
         }
 
-        private static void Apply(TextureImporter importer)
+        internal static void Apply(TextureImporter importer)
         {
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;

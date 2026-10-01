@@ -73,7 +73,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual(SaleMode.Lobby, screen.Mode);
                 Assert.AreEqual(s.Api.GetCustomers().Count, screen.Customers.Count);
                 SaleCustomerCardViewModel card = screen.Customers.Single(c => c.CustomerId == customer.CustomerId);
-                Assert.AreEqual(flow.Content.NpcName(customer.NpcId), card.Name);
+                Assert.AreEqual(flow.Content.CustomerName(customer.CustomerId, customer.NpcId), card.Name);
                 Assert.AreEqual(customer.Profile.PersonalityName, card.PersonalityName);
                 StringAssert.Contains(flow.Content.ModelName("phone.yildiz_y5"), card.InterestLine);
                 Assert.IsNull(screen.EmptyNote);
@@ -123,7 +123,7 @@ namespace Esnaf.Tests.Presentation
                 SaleScreenViewModel screen = flow.SaleScreen;
 
                 Assert.AreEqual(SaleMode.Talking, screen.Mode);
-                Assert.AreEqual(flow.Content.NpcName(customer.NpcId), screen.CustomerName);
+                Assert.AreEqual(flow.Content.CustomerName(customer.CustomerId, customer.NpcId), screen.CustomerName);
                 Assert.AreEqual(customer.NpcId, screen.NpcId);
                 StringAssert.StartsWith(customer.Profile.PersonalityName, screen.InfoLine);
                 StringAssert.Contains("Bütçe", screen.InfoLine);
@@ -339,7 +339,7 @@ namespace Esnaf.Tests.Presentation
             using (UiFlow flow = OpenSale(s))
             {
                 Assert.AreEqual(SaleMode.Talking, flow.SaleScreen.Mode);
-                Assert.AreEqual(flow.Content.NpcName(customer.NpcId), flow.SaleScreen.CustomerName);
+                Assert.AreEqual(flow.Content.CustomerName(customer.CustomerId, customer.NpcId), flow.SaleScreen.CustomerName);
                 Assert.AreEqual("phone.yildiz_y5", flow.SaleScreen.DefinitionId);
             }
         }

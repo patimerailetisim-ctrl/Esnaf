@@ -334,6 +334,7 @@ namespace Esnaf.Domain.Content
         public string Name { get; set; }
         public string Personality { get; set; }
         public string PersonalityId { get; set; }
+        public string Gender { get; set; }
         public NpcSellerDto Seller { get; set; }
         public NpcCustomerDto Customer { get; set; }
     }

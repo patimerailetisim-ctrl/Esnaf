@@ -21,6 +21,10 @@ namespace Esnaf.App
         [SerializeField]
         private PhoneImageCatalog _phoneImages;
 
+        /// <summary>Gerçek müşteri portreleri (isteğe bağlı). Atanmazsa müşteri ekranı silüet çizer.</summary>
+        [SerializeField]
+        private CustomerPortraitCatalog _customerPortraits;
+
         [SerializeField]
         private int _seed = 20260101;
 
@@ -77,6 +81,20 @@ namespace Esnaf.App
             }
 #endif
             Debug.Log("[PhoneImages] katalog: " + (phoneImages == null ? "YOK (mock kullanılacak)" : phoneImages.Describe()));
+            CustomerPortraitCatalog portraits = _customerPortraits;
+#if UNITY_EDITOR
+            if (portraits == null)
+            {
+                // Sahne eski kurulumdan kalmış olabilir (alan atanmamış): Editor'da kataloğu yoldan yükle.
+                portraits = UnityEditor.AssetDatabase.LoadAssetAtPath<CustomerPortraitCatalog>("Assets/_Project/Art/Customers/CustomerPortraitCatalog.asset");
+                if (portraits != null)
+                {
+                    Debug.LogWarning("[CustomerPortraits] GameBootstrap'te 'Customer Portraits' atanmamıştı; katalog yoldan yüklendi. Kalıcı çözüm: Esnaf > Setup Customer Portraits.");
+                }
+            }
+#endif
+            Debug.Log("[CustomerPortraits] katalog: " + (portraits == null ? "YOK (silüet kullanılacak)" : portraits.Describe()));
+            CustomerPortraits.Provider = portraits == null ? null : (Func<string, Sprite>)portraits.GetSprite;
             PhoneImages.Provider = phoneImages == null ? null : (Func<string, PhoneAngle, Sprite>)phoneImages.GetSprite;
 
             Canvas canvas = UiBuilder.CreateCanvas("Canvas");
@@ -130,6 +148,7 @@ namespace Esnaf.App
         private void OnDestroy()
         {
             PhoneImages.Provider = null;
+            CustomerPortraits.Provider = null;
             if (_flow != null)
             {
                 _flow.Changed -= ShowScreen;

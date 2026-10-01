@@ -1160,7 +1160,7 @@ namespace Esnaf.Domain.Content
                 return null;
             }
 
-            return new NpcDefinition(dto.Id, dto.Name, dto.Personality, seller, customer, dto.PersonalityId);
+            return new NpcDefinition(dto.Id, dto.Name, dto.Personality, seller, customer, dto.PersonalityId, dto.Gender);
         }
 
         private static NpcSellerRole MapSeller(string fileName, string label, NpcSellerDto dto, ICollection<ContentIssue> issues)

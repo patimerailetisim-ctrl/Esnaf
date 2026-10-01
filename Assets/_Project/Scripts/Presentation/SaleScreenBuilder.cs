@@ -59,7 +59,7 @@ namespace Esnaf.Presentation
                 cards.Add(new SaleCustomerCardViewModel(
                     customer.CustomerId,
                     customer.NpcId,
-                    content.NpcName(customer.NpcId),
+                    content.CustomerName(customer.CustomerId, customer.NpcId),
                     customer.Profile == null ? string.Empty : customer.Profile.PersonalityName,
                     TurkishTexts.CustomerInterest(model)));
             }
@@ -109,7 +109,7 @@ namespace Esnaf.Presentation
         {
             CustomerProfile profile = sale.Profile;
             string info = profile == null ? string.Empty : profile.PersonalityName + " • " + TurkishTexts.BudgetOf(profile.Budget);
-            string title = mode == SaleMode.Done && sale.Phase == NegotiationPhase.Deal ? TurkishTexts.SaleDeal(sale.DealPrice) : content.NpcName(sale.NpcId);
+            string title = mode == SaleMode.Done && sale.Phase == NegotiationPhase.Deal ? TurkishTexts.SaleDeal(sale.DealPrice) : content.CustomerName(sale.CustomerId, sale.NpcId);
 
             return new SaleScreenViewModel(
                 mode,
@@ -117,7 +117,7 @@ namespace Esnaf.Presentation
                 new SaleCustomerCardViewModel[0],
                 null,
                 sale.NpcId,
-                content.NpcName(sale.NpcId),
+                content.CustomerName(sale.CustomerId, sale.NpcId),
                 info,
                 TurkishTexts.CustomerMood(sale.Mood),
                 TurkishTexts.CustomerPatience(sale.Patience),
