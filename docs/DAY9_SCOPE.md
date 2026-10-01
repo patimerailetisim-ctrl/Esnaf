@@ -125,3 +125,17 @@ Manuel mutasyon: `AutoSaveStep` farklı EventBus'a bağlandı → 6 test düşt�
 **Geriye uyumluluk (bilinçli kırılma):** Düzeltme 1'in en kısa kanonik metniyle hesaplanmış sağlamaya sahip v1 dosyaları (ör. önceki `save_v1.json` fikstürü) artık sağlama (checksum) nedeniyle `save.checksum` ile REDDEDİLİR. Save v1 hiçbir zaman yayınlanmadı (yalnızca geliştirme ve test dosyaları vardı), bu yüzden gerçek kullanıcı kaydı etkilenmez. Fikstür yeniden üretilir: state'teki tüm double bit desenleri ve `GameStateDigest` (`de4eb924fea4491c`) aynı kalır; yalnızca sayı yazımı ve buna bağlı sağlama değişir.
 
 **Test tarafı notu:** `SaveSerializerTests` içinde sağlamayı `payload.ToString(Formatting.None)` (Newtonsoft'un çalışma zamanına bağlı sayı yazımı) ile hesaplayan üç satır, canonical yazıcıya (`CanonicalJson.Write`) çevrildi; Unity'deki 4 testin (iki Parse yük hatası testi ve iki migrasyon testi) başarısızlığının nedeni buydu.
+
+**Fikstür yeniden üretimi (Düzeltme 2):** `Tests/Fixtures/save_v1.json` yeni 17 haneli kanonik yazıcıyla yeniden üretildi. Eski dosya, reddedilmeyi gösteren regresyon testleri için `Tests/Fixtures/save_v1_legacy_shortest.json` olarak korunur. Doğrulama:
+- 49 double'ın tamamı eski ve yeni dosyada IEEE-754 bit deseni olarak AYNI (testte ve bağımsız bir Python karşılaştırmasıyla); yapı, alan sırası, tamsayılar ve metinler aynı; başlıkta yalnızca `checksum` değişti (`sha256:226470…` → `sha256:b78d14…`).
+- `GameStateDigest` `de4eb924fea4491c` olarak KALDI (`TheV1Fixture_ParsesWithItsChecksum_AndRestoresToTheRecordedState`).
+- `TheFixture_SavedAgainWithTheSameMeta_IsByteIdentical`: yeni fikstür, canlı durumdan yeniden serileştirilince bayt bayt aynı (yazıcının deterministik olduğunun kanıtı).
+- `TheLegacyShortestSpellingFixture_IsNowRejectedByItsChecksum_ByDesign`: eski fikstür `save.checksum` ile reddedilir (bilinçli kırılma, yukarıda belgelendi).
+- `TheLegacyPayload_CanonicalizedByTheCurrentWriter_GivesTheCurrentFixtureChecksum`: eski yükün yeni yazıcıyla kanonikleştirilmesi yeni fikstürün sağlamasını verir.
+
+**Mutation (Düzeltme 2; `CanonicalJson`, `SaveSerializer`):** gerçek survivor yok. Bulunan gerçek açık (yarıya-çift: `half > 0` → `half >= 0`) için iki tam-yarı altın test eklendi (`1234567890123456.25` → `…562e15`, `…456.75` → `…568e15`). Belgelenmiş eşdeğer mutantlar:
+- `bits < 0` → `bits <= 0`: `bits == 0` (+0) sıfır dalından önce döner, `negative` kullanılmaz.
+- `exponent >= 0` → `> 0` (vNum, vDen) ve `p >= 0` → `> 0` (numr, denr): sınır değerde (0) kaydırma/10^0 = 1 olduğundan sonuç aynıdır.
+- `Math.Log10` tahmininin işareti/`Floor`→`Ceiling`: tahmini iki tam karşılaştırma döngüsü düzeltir (yalnızca yineleme sayısı değişir).
+- `CompareToPowerOfTen(...) < 0` → `<= 0`: v tam 10^k ise k bir azalır, ikinci döngü geri artırır. `... >= 0` → `> 0` (ikinci döngü): v tam 10^(k+1) ise k bir düşük kalır ama c tam 10^17 olur ve taşma dalı (`c == 10^17`) k'yı düzeltir; çıktı aynı.
+- `CompareToPowerOfTen` içinde `k <= 0` / `k >= 0`: k = 0'da 10^0 = 1.

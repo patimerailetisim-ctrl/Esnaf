@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Esnaf.Core;
 using Esnaf.Persistence;
 using Esnaf.Tests.Support;
 using Newtonsoft.Json;
@@ -69,6 +70,8 @@ namespace Esnaf.Tests.Persistence
             new object[] { 4.35, "4.3499999999999996e0" },
             new object[] { 0.85, "8.4999999999999998e-1" },
             new object[] { 1.05, "1.0500000000000000e0" },
+            new object[] { 1234567890123456.25, "1.2345678901234562e15" },
+            new object[] { 1234567890123456.75, "1.2345678901234568e15" },
             new object[] { 906851161693619.25, "9.0685116169361925e14" },
             new object[] { 906851161693619.375, "9.0685116169361938e14" },
             new object[] { 1.5e18, "1.5000000000000000e18" },
@@ -272,46 +275,118 @@ namespace Esnaf.Tests.Persistence
         }
 
         [Test]
-        public void TheFixture_StillLoadsWhenItsDoublesAreSpelledWithSeventeenDigits_ButNotWhenAValueChanges()
+        public void TheFixture_StillLoadsWhenADoubleIsSpelledDifferently_ButNotWhenAValueChanges()
         {
             string text = File.ReadAllText(Path.Combine(TestPaths.FixturesDirectory(), "save_v1.json"));
-            Assert.IsTrue(text.Contains("0.5120871669493438"), "fikstür bu sorunlu değeri içermeli");
+            Assert.IsTrue(text.Contains("5.1208716694934375e-1"), "fikstür bu sorunlu değeri 17 haneli yazmalı");
 
-            string respelled = text.Replace("0.5120871669493438", "0.51208716694934375");
-            string changed = text.Replace("0.5120871669493438", "0.5120871669493439");
+            string respelled = text.Replace("5.1208716694934375e-1", "0.5120871669493438");
+            string changed = text.Replace("5.1208716694934375e-1", "5.1208716694934385e-1");
 
             Assert.IsTrue(new SaveSerializer().Parse(respelled).IsSuccess, "aynı sayının başka yazımı aynı kanonik metni verir");
             Assert.AreEqual("save.checksum", new SaveSerializer().Parse(changed).ErrorCode);
         }
 
-        // Eski Mono "R" davranışının taklidi: 15 hane dener, geri dönmüyorsa 17 hane yazar.
-        private static string LegacyRoundTripText(double v)
+        private const string LegacyFixtureName = "save_v1_legacy_shortest.json";
+
+        private static JObject LoadRoot(string name)
         {
-            string s = v.ToString("G15", CultureInfo.InvariantCulture);
-            return double.Parse(s, CultureInfo.InvariantCulture) == v ? s : v.ToString("G17", CultureInfo.InvariantCulture);
+            string text = File.ReadAllText(Path.Combine(TestPaths.FixturesDirectory(), name));
+            using (var reader = new JsonTextReader(new StringReader(text)) { DateParseHandling = DateParseHandling.None })
+            {
+                return JObject.Load(reader);
+            }
         }
 
         [Test]
-        public void WhyTheOldFixtureDiffered_AnOldMonoStyleSpellingOfTheSamePayloadHasAnotherChecksum()
+        public void TheLegacyShortestSpellingFixture_IsNowRejectedByItsChecksum_ByDesign()
         {
-            string text = File.ReadAllText(Path.Combine(TestPaths.FixturesDirectory(), "save_v1.json"));
-            JObject root;
-            using (var reader = new JsonTextReader(new StringReader(text)) { DateParseHandling = DateParseHandling.None })
+            // Düzeltme 2 (DAY9_SCOPE.md): kanonik sayı yazımı değişti → en kısa metinle hesaplanmış sağlama artık tutmaz. v1 yayınlanmadı; bilinçli kırılma.
+            string legacy = File.ReadAllText(Path.Combine(TestPaths.FixturesDirectory(), LegacyFixtureName));
+
+            Result<ParsedSave> parsed = new SaveSerializer().Parse(legacy);
+
+            Assert.IsTrue(parsed.IsFailure);
+            Assert.AreEqual("save.checksum", parsed.ErrorCode);
+        }
+
+        [Test]
+        public void TheLegacyAndTheCurrentFixtures_HoldTheSameState_BitForBit_AndDifferOnlyInTheChecksum()
+        {
+            JObject legacy = LoadRoot(LegacyFixtureName);
+            JObject current = LoadRoot("save_v1.json");
+
+            int floats = CompareBitExact(legacy, current, "");
+
+            Assert.AreEqual(49, floats, "fikstürdeki double sayısı");
+            Assert.AreNotEqual((string)legacy["header"]["checksum"], (string)current["header"]["checksum"]);
+            current["header"]["checksum"] = legacy["header"]["checksum"];
+            Assert.IsTrue(JToken.DeepEquals(legacy["header"], current["header"]), "başlıkta yalnızca sağlama değişir");
+        }
+
+        // Yapı, tamsayılar, metinler ve alan sırası aynı; her double IEEE-754 bit deseni olarak aynı. Karşılaştırılan double sayısını döndürür.
+        private static int CompareBitExact(JToken a, JToken b, string path)
+        {
+            Assert.AreEqual(a.Type, b.Type, path);
+            int floats = 0;
+            JObject oa = a as JObject;
+            if (oa != null)
             {
-                root = JObject.Load(reader);
+                var ob = (JObject)b;
+                CollectionAssert.AreEqual(System.Linq.Enumerable.ToList(System.Linq.Enumerable.Select(oa.Properties(), x => x.Name)), System.Linq.Enumerable.ToList(System.Linq.Enumerable.Select(ob.Properties(), x => x.Name)), path);
+                foreach (JProperty property in oa.Properties())
+                {
+                    if (path == "" && property.Name == "header")
+                    {
+                        // başlık ayrıca doğrulanır (yalnızca sağlama farklı olabilir)
+                        floats += CompareBitExact(property.Value, ob[property.Name], path + "/header");
+                        continue;
+                    }
+
+                    floats += CompareBitExact(property.Value, ob[property.Name], path + "/" + property.Name);
+                }
+
+                return floats;
             }
 
-            string canonical = CanonicalJson.Write((JObject)root["payload"], false);
-            string legacy = Regex.Replace(canonical, "(?<![\\w.\"-])-?[0-9]+\\.[0-9]+(?![\\w.\"])", m =>
+            JArray aa = a as JArray;
+            if (aa != null)
             {
-                double v = double.Parse(m.Value, CultureInfo.InvariantCulture);
-                string t = LegacyRoundTripText(v);
-                return t.Contains(".") || t.Contains("E") ? t : t + ".0";
-            });
+                var ab = (JArray)b;
+                Assert.AreEqual(aa.Count, ab.Count, path);
+                for (int i = 0; i < aa.Count; i++)
+                {
+                    floats += CompareBitExact(aa[i], ab[i], path + "[" + i + "]");
+                }
 
-            Assert.AreNotEqual(canonical, legacy, "eski biçim en az bir sayıyı 17 hane yazar");
-            Assert.AreNotEqual((string)root["header"]["checksum"], SaveSerializer.ComputeChecksum(legacy), "eski metin → farklı SHA-256 (Unity hatasının nedeni)");
-            Assert.AreEqual((string)root["header"]["checksum"], SaveSerializer.ComputeChecksum(canonical), "kanonik metin → dosyadaki sağlama");
+                return floats;
+            }
+
+            var va = (JValue)a;
+            var vb = (JValue)b;
+            if (va.Type == JTokenType.Float)
+            {
+                Assert.AreEqual(BitConverter.DoubleToInt64Bits((double)va.Value), BitConverter.DoubleToInt64Bits((double)vb.Value), path);
+                return 1;
+            }
+
+            if (path != "/header/checksum")
+            {
+                Assert.AreEqual(va.Value, vb.Value, path);
+            }
+
+            return 0;
+        }
+
+        [Test]
+        public void TheLegacyPayload_CanonicalizedByTheCurrentWriter_GivesTheCurrentFixtureChecksum()
+        {
+            JObject legacy = LoadRoot(LegacyFixtureName);
+            JObject current = LoadRoot("save_v1.json");
+
+            string checksum = SaveSerializer.ComputeChecksum(CanonicalJson.Write((JObject)legacy["payload"], false));
+
+            Assert.AreEqual((string)current["header"]["checksum"], checksum);
         }
 
         [Test]

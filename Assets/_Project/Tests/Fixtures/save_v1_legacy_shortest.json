@@ -7,7 +7,7 @@
     "createdAtUtc": "2026-01-01T10:00:00Z",
     "savedAtUtc": "2026-01-01T11:30:00Z",
     "playTimeSeconds": 5230,
-    "checksum": "sha256:b78d14590cc9f3556a844d428cec14db19b576d38e4a82ed7fd759f0e0d7c959",
+    "checksum": "sha256:226470e063c490cdd3885cec31bbb4ce0843960952561046d9ed36a532760649",
     "preview": {
       "day": 17,
       "cash": 161660,
@@ -924,43 +924,43 @@
         "indexes": [
           {
             "modelId": "phone.elma_e11",
-            "index": 1.0121075477673915e0
+            "index": 1.0121075477673915
           },
           {
             "modelId": "phone.elma_e13_pro",
-            "index": 1.0244821929157057e0
+            "index": 1.0244821929157057
           },
           {
             "modelId": "phone.elma_e14_pro_max",
-            "index": 9.8172455665267366e-1
+            "index": 0.9817245566526737
           },
           {
             "modelId": "phone.nova_n1_lite",
-            "index": 1.0168599242194878e0
+            "index": 1.0168599242194878
           },
           {
             "modelId": "phone.nova_n3_pro",
-            "index": 9.8021380460245433e-1
+            "index": 0.9802138046024543
           },
           {
             "modelId": "phone.samsun_vega_a3",
-            "index": 1.0034320409078015e0
+            "index": 1.0034320409078015
           },
           {
             "modelId": "phone.samsun_vega_s21",
-            "index": 1.0093720395296768e0
+            "index": 1.0093720395296768
           },
           {
             "modelId": "phone.yildiz_y5",
-            "index": 1.0022020530629043e0
+            "index": 1.0022020530629043
           },
           {
             "modelId": "phone.yildiz_y8_plus",
-            "index": 1.0141535708177047e0
+            "index": 1.0141535708177047
           },
           {
             "modelId": "phone.zirve_z5",
-            "index": 9.8618643427883657e-1
+            "index": 0.9861864342788366
           }
         ],
         "sales": [
@@ -2605,7 +2605,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Low",
-            "evidencePower": 4.0000000000000002e-1,
+            "evidencePower": 0.4,
             "isFalseAlarm": false
           },
           {
@@ -2613,7 +2613,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": false,
             "confidence": "Low",
-            "evidencePower": 4.0000000000000002e-1,
+            "evidencePower": 0.4,
             "isFalseAlarm": false
           }
         ],
@@ -2645,7 +2645,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           },
           {
@@ -2653,7 +2653,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           }
         ],
@@ -2685,7 +2685,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Low",
-            "evidencePower": 4.0000000000000002e-1,
+            "evidencePower": 0.4,
             "isFalseAlarm": false
           },
           {
@@ -2693,7 +2693,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": true,
             "confidence": "Low",
-            "evidencePower": 4.0000000000000002e-1,
+            "evidencePower": 0.4,
             "isFalseAlarm": false
           }
         ],
@@ -2714,7 +2714,7 @@
             "attribute": "camera",
             "wordingKey": "appraisal.finding.camera_problem",
             "confidence": "Low",
-            "evidencePower": 4.0000000000000002e-1,
+            "evidencePower": 0.4,
             "problemValue": 820,
             "isFalseAlarm": false
           }
@@ -2734,7 +2734,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           },
           {
@@ -2742,7 +2742,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           }
         ],
@@ -2774,7 +2774,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Hint",
-            "evidencePower": 2.0000000000000001e-1,
+            "evidencePower": 0.2,
             "isFalseAlarm": false
           },
           {
@@ -2782,7 +2782,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": false,
             "confidence": "Hint",
-            "evidencePower": 2.0000000000000001e-1,
+            "evidencePower": 0.2,
             "isFalseAlarm": false
           }
         ],
@@ -2808,7 +2808,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Hint",
-            "evidencePower": 2.0000000000000001e-1,
+            "evidencePower": 0.2,
             "isFalseAlarm": false
           },
           {
@@ -2816,7 +2816,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": false,
             "confidence": "Hint",
-            "evidencePower": 2.0000000000000001e-1,
+            "evidencePower": 0.2,
             "isFalseAlarm": false
           }
         ],
@@ -2842,7 +2842,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           },
           {
@@ -2850,7 +2850,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           }
         ],
@@ -2882,7 +2882,7 @@
             "wordingKey": "appraisal.finding.screen_replaced",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           },
           {
@@ -2890,7 +2890,7 @@
             "wordingKey": "appraisal.finding.camera_problem",
             "found": false,
             "confidence": "Medium",
-            "evidencePower": 6.9999999999999996e-1,
+            "evidencePower": 0.7,
             "isFalseAlarm": false
           }
         ],
@@ -2916,41 +2916,41 @@
         {
           "customerId": 81,
           "npcId": "npc.cengiz",
-          "valueDraw": 5.4241230719769784e-1,
-          "trustDraw": 7.0915211288398128e-1,
-          "pickDraw": 7.9548178668447989e-2,
+          "valueDraw": 0.5424123071976978,
+          "trustDraw": 0.7091521128839813,
+          "pickDraw": 0.07954817866844799,
           "status": "Waiting"
         },
         {
           "customerId": 82,
           "npcId": "npc.hatice",
-          "valueDraw": 7.7151882535143601e-3,
-          "trustDraw": 5.3531610434042887e-1,
-          "pickDraw": 5.7136586914646126e-1,
+          "valueDraw": 0.00771518825351436,
+          "trustDraw": 0.5353161043404289,
+          "pickDraw": 0.5713658691464613,
           "status": "Waiting"
         },
         {
           "customerId": 83,
           "npcId": "npc.berk",
-          "valueDraw": 2.5360171208703175e-1,
-          "trustDraw": 5.2441766496389142e-1,
-          "pickDraw": 8.0547935080255184e-1,
+          "valueDraw": 0.25360171208703175,
+          "trustDraw": 0.5244176649638914,
+          "pickDraw": 0.8054793508025518,
           "status": "Waiting"
         },
         {
           "customerId": 84,
           "npcId": "npc.ozan",
-          "valueDraw": 7.6661801472821522e-1,
-          "trustDraw": 2.5775205409333601e-1,
-          "pickDraw": 4.2260008921047887e-1,
+          "valueDraw": 0.7666180147282152,
+          "trustDraw": 0.257752054093336,
+          "pickDraw": 0.42260008921047887,
           "status": "Waiting"
         },
         {
           "customerId": 85,
           "npcId": "npc.hatice",
-          "valueDraw": 3.7300056516609648e-1,
-          "trustDraw": 3.6698684007417992e-1,
-          "pickDraw": 5.1208716694934375e-1,
+          "valueDraw": 0.3730005651660965,
+          "trustDraw": 0.3669868400741799,
+          "pickDraw": 0.5120871669493438,
           "status": "Waiting"
         }
       ]
@@ -2962,21 +2962,21 @@
       "lastOfferInsulted": false,
       "setup": {
         "ask": 5250,
-        "reject": 4.5898540162498857e3,
-        "floor": 3.0810000000000000e3,
+        "reject": 4589.854016249886,
+        "floor": 3081.0,
         "patience": 4,
         "trust": 59,
-        "urgency": 2.9999999999999999e-1,
-        "persuasion": 9.0000000000000002e-1,
-        "wrongCardMultiplier": 1.0000000000000000e0,
+        "urgency": 0.3,
+        "persuasion": 0.9,
+        "wrongCardMultiplier": 1.0,
         "day": 17
       },
       "phase": "Active",
       "round": 1,
       "patience": 3,
       "trust": 59,
-      "reject": 4.5898540162498857e3,
-      "price": 4.9714183948574519e3,
+      "reject": 4589.854016249886,
+      "price": 4971.418394857452,
       "shownPrice": 4970,
       "dealPrice": 0,
       "usedCards": []
