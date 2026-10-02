@@ -35,6 +35,12 @@ namespace Esnaf.App.Tests
             Assert.IsTrue(loaded.IsSuccess, loaded.FormatIssues());
             _content = loaded.Database;
 
+            // NUnit tüm testler için TEK fixture örneği kullanır: alanlar önceki testten kalmamalı (kalırsa döngü hiç çalışmaz ve silinmiş nesneler kullanılır).
+            _session = null;
+            _flow = null;
+            _sale = null;
+            _canvasObject = null;
+
             for (ulong seed = 1; seed <= 40 && _flow == null; seed++)
             {
                 GameSession s = GameSession.NewGame(_content, seed);
@@ -94,6 +100,11 @@ namespace Esnaf.App.Tests
             {
                 UnityEngine.Object.DestroyImmediate(_canvasObject);
             }
+
+            _session = null;
+            _flow = null;
+            _sale = null;
+            _canvasObject = null;
         }
 
         private Transform Find(string name)
