@@ -58,6 +58,34 @@ namespace Esnaf.Domain.Game
                 context.MissedCustomers));
         }
 
+        public CustomerQueueView GetCustomerQueue()
+        {
+            return _session.CustomerQueue.GetView(_session.Clock.View);
+        }
+
+        public Result<CustomerQueueView> CompleteCurrentCustomer()
+        {
+            if (_session.TradeState.CurrentSale != null)
+            {
+                return Result<CustomerQueueView>.Fail("queue.sale_in_progress", "Finish or leave the sale before completing the customer.");
+            }
+
+            return _session.CustomerQueue.CompleteCurrent(_session.Clock.View);
+        }
+
+        public ClockView GetClock()
+        {
+            return _session.Clock.View;
+        }
+
+        public Result<ClockView> AdvanceTime(int minutes)
+        {
+            Result<int> advanced = _session.Clock.Advance(minutes);
+            return advanced.IsFailure
+                ? Result<ClockView>.Fail(advanced.ErrorCode, advanced.Message)
+                : Result<ClockView>.Ok(_session.Clock.View);
+        }
+
         public Result<NegotiationView> StartNegotiation(long listingId)
         {
             return _session.Trade.Start(listingId);

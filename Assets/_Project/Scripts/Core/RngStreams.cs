@@ -36,6 +36,20 @@ namespace Esnaf.Core
             return stream;
         }
 
+        /// <summary>
+        /// Ana tohumdan ve ada göre türetilen TAZE, KAYITSIZ bir akış verir: her çağrıda aynı diziyle baştan başlar, <see cref="Capture"/>'a girmez ve kayıtlı akışların
+        /// durumunu değiştirmez. Girdi (ana tohum + ad) aynıysa çıktı aynıdır; "tohum + gün" gibi durumdan bağımsız, yeniden türetilebilir planlar için kullanılır.
+        /// </summary>
+        public IRandom Derive(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException("Stream name is required.", nameof(name));
+            }
+
+            return new PcgRandom(MasterSeed, Fnv1a64(name));
+        }
+
         /// <summary>Şu ana kadar oluşturulan tüm akışların durumu (kayıt için).</summary>
         public Dictionary<string, RngState> Capture()
         {

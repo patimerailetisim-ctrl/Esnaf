@@ -23,6 +23,12 @@ namespace Esnaf.Domain.Business
         /// <summary>Bugün dükkâna gelen müşteri sayısı (rafın en yüksek doluluğuna göre; gün içinde azalmaz).</summary>
         public int Arrived { get; internal set; }
 
+        /// <summary>
+        /// Günlük müşteri kuyruğunda (Gün 12.2) bugün tamamlanan / gönderilen müşteri sayısı. Kuyruğun kendisi (kimler, ne zaman) tohum + günden yeniden türetilir ve
+        /// SAKLANMAZ; saklanan tek sayı budur. Yeni gün sıfırlar.
+        /// </summary>
+        public int QueueCursor { get; internal set; }
+
         /// <summary>Şimdiye kadar kaçan (satın almadan giden) müşteri toplamı.</summary>
         public int MissedTotal { get; internal set; }
 

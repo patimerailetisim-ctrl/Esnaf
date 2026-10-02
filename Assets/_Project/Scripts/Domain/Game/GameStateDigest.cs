@@ -52,6 +52,12 @@ namespace Esnaf.Domain.Game
             sb.Append(Version).Append('\n');
             sb.Append("seed=").Append(session.Time.MasterSeed.ToString(CultureInfo.InvariantCulture)).Append('\n');
             sb.Append("day=").Append(N(session.Time.Day)).Append('\n');
+            if (session.Time.MinuteOfDay != Esnaf.Domain.Time.StoreHours.OpenMinute)
+            {
+                // yalnızca saat ilerlemişse (açılıştaki oyunların sağlaması eskisiyle aynı kalır)
+                sb.Append("minute=").Append(N(session.Time.MinuteOfDay)).Append('\n');
+            }
+
             sb.Append("ids.instance=").Append(N(session.InstanceIds.LastIssued)).Append('\n');
             sb.Append("ids.listing=").Append(N(session.ListingIds.LastIssued)).Append('\n');
             sb.Append("ids.appraisal=").Append(N(session.AppraisalIds.LastIssued)).Append('\n');
@@ -125,6 +131,12 @@ namespace Esnaf.Domain.Game
             CustomerState customers = session.Customers.State;
             sb.Append("customers.arrived=").Append(N(customers.Arrived)).Append('\n');
             sb.Append("customers.missedTotal=").Append(N(customers.MissedTotal)).Append('\n');
+            if (customers.QueueCursor > 0)
+            {
+                // yalnızca kuyruk ilerlemişse (dokunulmamış oyunların sağlaması eskisiyle aynı kalır)
+                sb.Append("customers.queueCursor=").Append(N(customers.QueueCursor)).Append('\n');
+            }
+
             foreach (CustomerSlot slot in customers.Slots)
             {
                 sb.Append("K|").Append(N(slot.CustomerId))

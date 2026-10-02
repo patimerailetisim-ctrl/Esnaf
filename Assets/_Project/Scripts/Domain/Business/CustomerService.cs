@@ -111,6 +111,7 @@ namespace Esnaf.Domain.Business
 
             _state.Replace(slots);
             _state.Arrived = constants.ArrivalCount(_inventory.Count);
+            _state.QueueCursor = 0; // günlük müşteri kuyruğu yeni günle baştan başlar (Gün 12.2)
         }
 
         /// <summary>Raf arttıysa gelen müşteri sayısını yükseltir (alıştan sonra çağrılır); asla düşürmez.</summary>

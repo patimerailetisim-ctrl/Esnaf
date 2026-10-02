@@ -52,6 +52,13 @@ namespace Esnaf.Domain.Game
     {
         public int Day { get; set; }
 
+        /// <summary>
+        /// Günün saati (gece yarısından beri dakika). İSTEĞE BAĞLI ve yalnızca açılış saatinden (09:00) farklıysa yazılır; yoksa gün açılışta başlar.
+        /// Böylece saati ilerlememiş kayıtların metni ve sağlaması eskisiyle aynı kalır (Save v1 bozulmaz).
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? Minute { get; set; }
+
         /// <summary>Ana tohum (ulong, onluk metin).</summary>
         public string Seed { get; set; }
     }
@@ -266,6 +273,14 @@ namespace Esnaf.Domain.Game
     {
         public int Arrived { get; set; }
         public int MissedTotal { get; set; }
+
+        /// <summary>
+        /// Günlük müşteri kuyruğunda tamamlanan müşteri sayısı (Gün 12.2). İSTEĞE BAĞLI ve yalnızca 0'dan büyükse yazılır; yoksa 0. Kuyruğun kendisi saklanmaz,
+        /// tohum + günden yeniden türetilir. Böylece kuyruğa dokunulmamış kayıtların metni ve sağlaması eskisiyle aynı kalır (Save v1 bozulmaz).
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? QueueCursor { get; set; }
+
         public List<CustomerSlotSnapshot> Slots { get; set; }
     }
 

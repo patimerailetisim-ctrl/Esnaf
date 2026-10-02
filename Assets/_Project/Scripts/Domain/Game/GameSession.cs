@@ -25,6 +25,9 @@ namespace Esnaf.Domain.Game
         public ContentDatabase Content { get; }
         public IEventBus Bus { get; }
         public TimeState Time { get; }
+
+        /// <summary>Günün saati (09:00–21:00; yalnızca oyun aksiyonlarıyla ilerler).</summary>
+        public StoreClock Clock { get; }
         public RngStreams Rng { get; }
         public IdGenerator InstanceIds { get; }
         public IdGenerator ListingIds { get; }
@@ -55,6 +58,9 @@ namespace Esnaf.Domain.Game
         /// <summary>Telefon satışına aksesuar ek satışı (Gün 11.3.1); henüz IGameApi'de görünmez.</summary>
         public Esnaf.Domain.Accessories.AccessoryAddOnService AccessoryAddOns { get; }
 
+        /// <summary>Günlük müşteri kuyruğu (8–12 müşteri, sırayla, aynı anda 1 aktif); mağaza saatine bağlıdır.</summary>
+        public CustomerQueueService CustomerQueue { get; private set; }
+
         public WealthCalculator Wealth { get; }
         public DaySummaryBuilder Summaries { get; }
         public LedgerView LedgerView { get; }
@@ -80,6 +86,7 @@ namespace Esnaf.Domain.Game
             Content = content;
             Bus = bus;
             Time = new TimeState(1, seed);
+            Clock = new StoreClock(Time, bus);
             Rng = new RngStreams(seed);
             InstanceIds = new IdGenerator();
             ListingIds = new IdGenerator();
@@ -118,6 +125,7 @@ namespace Esnaf.Domain.Game
             Demand = new DemandModel(content.Demand, DemandState);
             CustomerIds = new IdGenerator();
             Customers = new CustomerService(content, new CustomerState(), CustomerIds, Store, InventoryState, Npcs, Demand, Time, Rng);
+            CustomerQueue = new CustomerQueueService(content, Customers.State, Customers, Time, Rng);
             TradeState = new TradeState();
             Trade = new TradeService(
                 content, Market, Store, InventoryState, InventoryService, EconomyService, Knowledge, Npcs, Rng, Time, TradeState, bus, Customers);

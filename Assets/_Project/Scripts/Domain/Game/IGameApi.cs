@@ -7,6 +7,7 @@ using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Market;
 using Esnaf.Domain.Negotiation;
+using Esnaf.Domain.Time;
 
 namespace Esnaf.Domain.Game
 {
@@ -100,6 +101,27 @@ namespace Esnaf.Domain.Game
         NegotiationView GetNegotiation();
 
         int GetDay();
+
+        /// <summary>
+        /// Günlük müşteri kuyruğu (Gün 12.2): bugünün 8–12 müşterisi, geliş saatleri ve durumları; aynı anda en çok 1 aktif müşteri (<c>Current</c>). Mağaza saatine bağlıdır
+        /// (<see cref="GetClock"/>); kapalıyken yeni müşteri çağrılmaz. Durumu değiştirmez.
+        /// </summary>
+        CustomerQueueView GetCustomerQueue();
+
+        /// <summary>
+        /// Aktif müşteriyi tamamlar ve sıradakine geçer (mağaza kapalıysa kalanlar gönderilir). Süren bir satış/pazarlık varken tamamlanamaz.
+        /// Hatalar: queue.no_active_customer, queue.sale_in_progress. Zaman maliyeti bu adımda yoktur.
+        /// </summary>
+        Result<CustomerQueueView> CompleteCurrentCustomer();
+
+        /// <summary>Günün saati (Gün 12.1): 09:00 açılış, 21:00 kapanış; gerçek zamanlı değil, oyun aksiyonlarıyla ilerler. Durumu değiştirmez.</summary>
+        ClockView GetClock();
+
+        /// <summary>
+        /// Saati <paramref name="minutes"/> dakika ilerletir (oyun aksiyonu karşılığı); kapanışı aşacak kadarsa 21:00'de durur. Gün BİTMEZ ("Günü Bitir" ayrıdır).
+        /// Hatalar: time.invalid (dakika ≤ 0), time.store_closed (saat zaten 21:00).
+        /// </summary>
+        Result<ClockView> AdvanceTime(int minutes);
 
         Money GetCash();
 

@@ -20,7 +20,12 @@ namespace Esnaf.Domain.Game
         {
             return new GameSnapshot
             {
-                Time = new TimeSnapshot { Day = s.Time.Day, Seed = U(s.Time.MasterSeed) },
+                Time = new TimeSnapshot
+                {
+                    Day = s.Time.Day,
+                    Seed = U(s.Time.MasterSeed),
+                    Minute = s.Time.MinuteOfDay == Esnaf.Domain.Time.StoreHours.OpenMinute ? (int?)null : s.Time.MinuteOfDay
+                },
                 Rng = CaptureRng(s),
                 Ids = new IdsSnapshot
                 {
@@ -229,6 +234,7 @@ namespace Esnaf.Domain.Game
             {
                 Arrived = c.Arrived,
                 MissedTotal = c.MissedTotal,
+                QueueCursor = c.QueueCursor > 0 ? c.QueueCursor : (int?)null,
                 Slots = c.Slots.Select(x => new CustomerSlotSnapshot
                 {
                     CustomerId = x.CustomerId,

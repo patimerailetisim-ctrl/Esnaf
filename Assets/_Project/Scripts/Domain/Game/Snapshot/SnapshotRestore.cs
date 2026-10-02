@@ -91,7 +91,12 @@ namespace Esnaf.Domain.Game
                 throw new InvalidSnapshotException("time.day must be at least 1.");
             }
 
-            s.Time.Restore(snap.Time.Day);
+            if (snap.Time.Minute.HasValue && !Esnaf.Domain.Time.StoreHours.IsValidMinute(snap.Time.Minute.Value))
+            {
+                throw new InvalidSnapshotException("time.minute must be between 540 and 1260.");
+            }
+
+            s.Time.Restore(snap.Time.Day, snap.Time.Minute ?? Esnaf.Domain.Time.StoreHours.OpenMinute);
 
             RestoreRng(s, snap);
             RestoreLedger(s, snap);
@@ -476,6 +481,7 @@ namespace Esnaf.Domain.Game
             Bad(c.Arrived < 0, "customers.arrived");
             Bad(c.Arrived > c.Slots.Count, "customers.arrived (more than the roster)");
             Bad(c.MissedTotal < 0, "customers.missedTotal");
+            Bad(c.QueueCursor.HasValue && (c.QueueCursor.Value < 0 || c.QueueCursor.Value > QueuePolicy.MaxCustomersPerDay), "customers.queueCursor");
 
             var ids = new HashSet<long>();
             var slots = new List<CustomerSlot>(c.Slots.Count);
@@ -496,6 +502,7 @@ namespace Esnaf.Domain.Game
             s.Customers.State.Replace(slots);
             s.Customers.State.Arrived = c.Arrived;
             s.Customers.State.MissedTotal = c.MissedTotal;
+            s.Customers.State.QueueCursor = c.QueueCursor ?? 0;
         }
 
         private static void RestoreCounters(GameSession s, GameSnapshot snap)
