@@ -11,7 +11,8 @@ namespace Esnaf.Tests.Accessories
 {
     /// <summary>
     /// Telefon satışına aksesuar ek satışı (Gün 11.3.1), gerçek içerik ve gerçek oturum üstünde: stoktan 1 birim, sabit retailPrice, gerçek maliyet, kâr,
-    /// aynı güne bağlı telefon satışı, atomiklik, günlük özet, servet, RNG ve telefon tarafının değişmemesi.
+    /// aynı güne bağlı telefon satışı, atomiklik, günlük özet, servet, RNG ve telefon tarafının değişmemesi. Gün 11.3.4'ten beri YALNIZCA müşterinin istediği aksesuar
+    /// satılır: bu yüzden testler, talebi gereken aksesuarları içeren bir telefon satışı bulur (satış tutarı değiştirilerek; talep tutardan da türer).
     /// </summary>
     public class AccessoryAddOnTests
     {
@@ -24,14 +25,46 @@ namespace Esnaf.Tests.Accessories
             return GameSession.NewGame(MarketHarness.RealContent(), 1UL);
         }
 
-        // Bir telefon alır ve Gün 1'de 20.000 ₺'ye satar; satışın defter satırını döndürür.
-        private static SaleReceipt PhoneSale(GameSession s, string buyerNpcId = "npc.kemal")
+        // Bir telefon alır ve Gün 1'de 'price'a satar; satışın defter satırını döndürür.
+        private static SaleReceipt PhoneSale(GameSession s, Money price, string buyerNpcId = "npc.kemal")
         {
             Assert.IsTrue(s.Api.BuyListing(s.Api.GetListings()[0].ListingId).IsSuccess);
             long instanceId = s.Api.GetInventory()[0].InstanceId;
-            Result<SaleReceipt> sold = s.InventoryService.Sell(instanceId, Money.FromTl(20000), s.Time.Day, buyerNpcId);
+            Result<SaleReceipt> sold = s.InventoryService.Sell(instanceId, price, s.Time.Day, buyerNpcId);
             Assert.IsTrue(sold.IsSuccess, sold.ErrorCode);
             return sold.Value;
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<string, long> PriceCache = new System.Collections.Generic.Dictionary<string, long>();
+
+        // Müşterinin İSTEDİĞİ aksesuarlar 'needed' kümesini kapsayan bir telefon satışı yapar (tutar 10 ₺ adımlarıyla aranır; talep tutardan da türer).
+        private static SaleReceipt RequestedSale(out GameSession s, out Money price, params string[] needed)
+        {
+            string key = string.Join(",", needed);
+            long cachedTl;
+            if (PriceCache.TryGetValue(key, out cachedTl))
+            {
+                s = New();
+                price = Money.FromTl(cachedTl);
+                return PhoneSale(s, price);
+            }
+
+            for (long tl = 20000; tl < 120000; tl += 10)
+            {
+                GameSession candidate = New();
+                Money tryPrice = Money.FromTl(tl);
+                SaleReceipt sale = PhoneSale(candidate, tryPrice);
+                System.Collections.Generic.IReadOnlyList<string> request = candidate.AccessoryAddOns.RequestedAccessories(sale.RecordId);
+                if (needed.All(request.Contains))
+                {
+                    PriceCache[key] = tl;
+                    s = candidate;
+                    price = tryPrice;
+                    return sale;
+                }
+            }
+
+            throw new System.InvalidOperationException("No sale price gives a request containing " + key);
         }
 
         private sealed class Snap
@@ -70,8 +103,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void WithOneUnitInStock_TheAddOnSucceeds_AndTheStockDropsByOne()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             Assert.IsTrue(s.AccessoryStock.Add(Case, 1, Money.FromTl(70)).IsSuccess);
 
             Result<AccessorySaleReceipt> r = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, s.Time.Day);
@@ -85,8 +119,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheCash_RisesByTheFixedRetailPrice()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.AccessoryStock.Add(Case, 1, Money.FromTl(70));
             Money cash = s.EconomyService.Cash;
 
@@ -100,8 +135,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheCostBasis_IsTheRealProportionalCostFromTheStock()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             Assert.IsTrue(s.WholesaleService.BuyPack(Supplier, Case, 1).IsSuccess); // 20 × 70 = 1.400
 
             Result<AccessorySaleReceipt> r = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1);
@@ -114,23 +150,25 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void ANonRoundCost_IsKeptExactly_AndTheProfitUsesIt()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
-            s.AccessoryStock.Add(Case, 3, Money.FromTl(100)); // 33,33 ₺/adet: son birimde kalan alınır
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
+            s.AccessoryStock.Add(Case, 3, Money.FromTl(100)); // 33,33 ₺/adet
 
-            Money cost1 = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).Value.CostBasis;
-            Money cost2 = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).Value.CostBasis;
-            Result<AccessorySaleReceipt> third = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1);
+            AccessorySaleReceipt first = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).Value;
 
-            Assert.AreEqual(100, cost1.Tl + cost2.Tl + third.Value.CostBasis.Tl, "maliyet kaybolmaz");
-            Assert.AreEqual(Money.Zero, s.AccessoryStock.TotalCost(Case));
+            Assert.AreEqual(Money.FromTl(33), first.CostBasis, "100 / 3, aşağı yuvarlı");
+            Assert.AreEqual(Money.FromTl(127), first.Profit, "160 − 33");
+            Assert.AreEqual(2, s.AccessoryStock.Quantity(Case));
+            Assert.AreEqual(Money.FromTl(67), s.AccessoryStock.TotalCost(Case), "maliyet kaybolmaz: kalan 100 − 33");
         }
 
         [Test]
         public void TheAccessoryProfit_IsRetailMinusTheRealCost()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Adapter);
             s.WholesaleService.BuyPack(Supplier, Adapter, 1); // 10 × 150
 
             Result<AccessorySaleReceipt> r = s.AccessoryAddOns.SellAddOn(phone.RecordId, Adapter, 1);
@@ -143,8 +181,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheCombinedResult_IsPhoneProfitPlusAccessoryProfit()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Adapter, Case);
             s.WholesaleService.BuyPack(Supplier, Adapter, 1);
             s.WholesaleService.BuyPack(Supplier, Case, 1);
 
@@ -161,8 +200,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void ThePhoneSalesIncomeAndProfit_StayOnThePhoneSystem_AndTheAddOnGetsItsOwnLedgerRow()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.AccessoryStock.Add(Case, 1, Money.FromTl(70));
             int rows = s.EconomyState.Ledger.Count;
 
@@ -180,7 +220,7 @@ namespace Esnaf.Tests.Accessories
             Assert.IsNull(row.InstanceId);
             TransactionRecord phoneRow;
             s.EconomyState.Ledger.TryGetById(phone.RecordId, out phoneRow);
-            Assert.AreEqual(Money.FromTl(20000), phoneRow.Amount, "telefon satışı değişmedi");
+            Assert.AreEqual(price, phoneRow.Amount, "telefon satışı değişmedi");
         }
 
         // ---------- stok yok / bağlı satış yok ----------
@@ -188,8 +228,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void WithNoStock_TheAddOnFails_AndNothingChanges()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             Snap before = Snap.Of(s);
 
             Result<AccessorySaleReceipt> r = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1);
@@ -200,17 +241,17 @@ namespace Esnaf.Tests.Accessories
         }
 
         [Test]
-        public void TheStock_NeverGoesNegative_WhenSellingMoreThanItHolds()
+        public void TheStock_NeverGoesNegative_WhenTheRequestedItemIsOutOfStock()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
-            s.AccessoryStock.Add(Case, 2, Money.FromTl(140));
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Adapter, Case);
+            s.AccessoryStock.Add(Case, 1, Money.FromTl(70));
 
-            Assert.IsTrue(s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).IsSuccess);
             Assert.IsTrue(s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).IsSuccess);
             Snap before = Snap.Of(s);
 
-            Assert.AreEqual("stock.insufficient", s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).ErrorCode);
+            Assert.AreEqual("stock.insufficient", s.AccessoryAddOns.SellAddOn(phone.RecordId, Adapter, 1).ErrorCode);
             AssertUnchanged(before, s);
             Assert.AreEqual(0, s.AccessoryStock.Quantity(Case));
             Assert.AreEqual(0, s.AccessoryStock.TotalUnits);
@@ -232,8 +273,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void AnAddOnRowItself_IsNotAPhoneSale()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.AccessoryStock.Add(Case, 2, Money.FromTl(140));
             long addOnRow = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).Value.LedgerRecordId;
             Snap before = Snap.Of(s);
@@ -245,8 +287,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheAddOn_MustHappenOnTheDayOfThePhoneSale()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.AccessoryStock.Add(Case, 1, Money.FromTl(70));
             Snap before = Snap.Of(s);
 
@@ -260,7 +303,7 @@ namespace Esnaf.Tests.Accessories
         public void AnUnknownAccessory_IsRefused_AndNothingChanges()
         {
             GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            SaleReceipt phone = PhoneSale(s, Money.FromTl(20000));
             Snap before = Snap.Of(s);
 
             Assert.AreEqual("accessory.unknown", s.AccessoryAddOns.SellAddOn(phone.RecordId, "accessory.ghost", 1).ErrorCode);
@@ -271,8 +314,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void IfTheLedgerRefuses_TheStockIsPutBackExactly()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.WholesaleService.BuyPack(Supplier, Case, 3); // defterin son günü 3
             Snap before = Snap.Of(s);
 
@@ -290,16 +334,17 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheDaySummary_ShowsTheAddOnIncomeAndProfit_AndTheTotalsAgree()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Adapter);
             s.WholesaleService.BuyPack(Supplier, Adapter, 1);
             AccessorySaleReceipt a = s.AccessoryAddOns.SellAddOn(phone.RecordId, Adapter, 1).Value;
 
             DaySummary sum = s.Api.GetTodaySummary();
 
-            Assert.AreEqual(Money.FromTl(20000), sum.SalesIncome, "telefon satış geliri ayrı");
+            Assert.AreEqual(price, sum.SalesIncome, "telefon satış geliri ayrı");
             Assert.AreEqual(Money.FromTl(250), sum.AccessorySalesIncome);
-            Assert.AreEqual(Money.FromTl(20250), sum.TotalIncome);
+            Assert.AreEqual(price + Money.FromTl(250), sum.TotalIncome);
             Assert.AreEqual(a.Profit, sum.AccessoryProfit);
             Assert.AreEqual(phone.Profit + a.Profit, sum.GrossProfit, "brüt kâr = telefon + aksesuar");
             Assert.AreEqual(1, sum.Sales.Count, "aksesuar satış listesine girmez");
@@ -309,8 +354,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheWealthChange_OfTheAddOn_EqualsItsProfit()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Adapter);
             s.WholesaleService.BuyPack(Supplier, Adapter, 1);
             Money wealthBefore = s.Wealth.Calculate().Total;
 
@@ -324,8 +370,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheLedgerExplanation_ShowsCostBasisAndProfit()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.AccessoryStock.Add(Case, 1, Money.FromTl(70));
             AccessorySaleReceipt a = s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).Value;
 
@@ -341,8 +388,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheAddOn_SurvivesSaveAndLoad_AndTheDigestRoundTrips()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.WholesaleService.BuyPack(Supplier, Case, 1);
             s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1);
 
@@ -362,8 +410,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheAddOn_DoesNotUseRandomness_TheRngStaysUntouched()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.AccessoryStock.Add(Case, 2, Money.FromTl(140));
             var rng = s.Capture().Rng;
 
@@ -377,8 +426,9 @@ namespace Esnaf.Tests.Accessories
         [Test]
         public void TheAccessoryCapacity_StaysSixty_AndTheSoldUnitFreesItsPlace()
         {
-            GameSession s = New();
-            SaleReceipt phone = PhoneSale(s);
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
             s.WholesaleService.BuyPack(Supplier, Case, 1);
             s.WholesaleService.BuyPack(Supplier, Case, 1);
             s.WholesaleService.BuyPack(Supplier, Case, 1); // 60/60
@@ -392,33 +442,115 @@ namespace Esnaf.Tests.Accessories
         }
 
         [Test]
-        public void ThePhoneCustomerSaleFlow_IsUnchanged_AndAnAddOnCanFollowARealCustomerDeal()
+        public void ThePhoneCustomerSaleFlow_IsUnchanged_AndARequestedAddOnCanFollowARealCustomerDeal()
         {
-            // Gerçek müşteri akışı: StartSale / AskPrice (anlaşma) sonrası telefon satışının defter satırına ek satış.
-            GameSession s = null;
-            Esnaf.Domain.Business.CustomerView customer = null;
-            for (ulong seed = 1; seed < 200 && customer == null; seed++)
-            {
-                s = GameSession.NewGame(MarketHarness.RealContent(), seed);
-                var guided = s.Market.Listings.Single(l => l.IsGuided);
-                s.Api.StartNegotiation(guided.ListingId);
-                s.Api.MakeOffer(Money.FromTl(5800));
-                s.Api.SetPrice(guided.InstanceId, Money.FromTl(5900));
-                customer = s.Api.GetCustomers().FirstOrDefault();
-            }
-
-            Assert.IsNotNull(customer);
-            Assert.IsTrue(s.Api.StartSale(customer.CustomerId).IsSuccess);
-            var deal = s.Api.AskPrice(Money.FromTl(10));
-            Assert.IsTrue(deal.IsSuccess, deal.ErrorCode);
-            Assert.AreEqual(Esnaf.Domain.Negotiation.NegotiationPhase.Deal, deal.Value.Phase);
-            long saleRow = s.EconomyState.Ledger.Records.Last(r => r.TypeId == TransactionTypeIds.Sale).Id;
+            // Gerçek müşteri akışı: StartSale / AskPrice (anlaşma); müşteri kılıf istedi → telefon satışının defter satırına ek satış.
+            AddOnDeal deal = AddOnDeals.Requesting(Case);
+            GameSession s = deal.Session;
             s.WholesaleService.BuyPack(Supplier, Case, 1);
 
-            Result<AccessorySaleReceipt> r = s.AccessoryAddOns.SellAddOn(saleRow, Case, 1);
+            Result<AccessorySaleReceipt> r = s.AccessoryAddOns.SellAddOn(deal.SaleRecordId, Case, 1);
 
             Assert.IsTrue(r.IsSuccess, r.ErrorCode);
-            Assert.AreEqual(customer.NpcId, s.EconomyState.Ledger.Records.Single(x => x.TypeId == TransactionTypeIds.AccessorySale).NpcId);
+            Assert.AreEqual(deal.Customer.NpcId, s.EconomyState.Ledger.Records.Single(x => x.TypeId == TransactionTypeIds.AccessorySale).NpcId);
+        }
+
+        // ---------- müşteri talebi (Gün 11.3.4) ----------
+
+        [Test]
+        public void IfTheCustomerAskedForNothing_NoAccessoryCanBeSold_EvenWithStock()
+        {
+            AddOnDeal deal = AddOnDeals.NoRequest();
+            GameSession s = deal.Session;
+            foreach (AccessoryDefinition d in s.Content.Accessories.Definitions)
+            {
+                Assert.IsTrue(s.AccessoryStock.Add(d.Id, 2, Money.FromTl(100)).IsSuccess);
+            }
+
+            Snap before = Snap.Of(s);
+
+            foreach (AccessoryDefinition d in s.Content.Accessories.Definitions)
+            {
+                Assert.AreEqual("addon.not_requested", s.AccessoryAddOns.SellAddOn(deal.SaleRecordId, d.Id, 1).ErrorCode, d.Id);
+            }
+
+            AssertUnchanged(before, s);
+        }
+
+        [Test]
+        public void AnAccessoryTheCustomerDidNotAskFor_IsRefused_AndOnlyTheRequestedOnesAreSold()
+        {
+            AddOnDeal deal = AddOnDeals.WithCount(2);
+            GameSession s = deal.Session;
+            foreach (AccessoryDefinition d in s.Content.Accessories.Definitions)
+            {
+                s.AccessoryStock.Add(d.Id, 1, Money.FromTl(50));
+            }
+
+            Snap before = Snap.Of(s);
+            foreach (AccessoryDefinition d in s.Content.Accessories.Definitions.Where(d => !deal.Requested.Contains(d.Id)))
+            {
+                Assert.AreEqual("addon.not_in_request", s.AccessoryAddOns.SellAddOn(deal.SaleRecordId, d.Id, 1).ErrorCode, d.Id);
+            }
+
+            AssertUnchanged(before, s);
+            foreach (string id in deal.Requested)
+            {
+                Assert.IsTrue(s.AccessoryAddOns.SellAddOn(deal.SaleRecordId, id, 1).IsSuccess, id);
+            }
+
+            Assert.AreEqual(2, s.AccessoryAddOns.AddOnsOf(deal.SaleRecordId).Count);
+        }
+
+        [Test]
+        public void ARequestedAccessory_IsOneUnit_TheSameOneCannotBeSoldTwice()
+        {
+            GameSession s;
+            Money price;
+            SaleReceipt phone = RequestedSale(out s, out price, Case);
+            s.AccessoryStock.Add(Case, 5, Money.FromTl(350));
+            Assert.IsTrue(s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).IsSuccess);
+            Snap before = Snap.Of(s);
+
+            Assert.AreEqual("addon.request_limit", s.AccessoryAddOns.SellAddOn(phone.RecordId, Case, 1).ErrorCode);
+            AssertUnchanged(before, s);
+        }
+
+        [Test]
+        public void AtMostFiveAccessories_CanEverBeSoldToOneSale()
+        {
+            AddOnDeal deal = AddOnDeals.WithCount(5);
+            GameSession s = deal.Session;
+            foreach (AccessoryDefinition d in s.Content.Accessories.Definitions)
+            {
+                s.AccessoryStock.Add(d.Id, 3, Money.FromTl(150));
+            }
+
+            int sold = 0;
+            foreach (AccessoryDefinition d in s.Content.Accessories.Definitions)
+            {
+                sold += s.AccessoryAddOns.SellAddOn(deal.SaleRecordId, d.Id, 1).IsSuccess ? 1 : 0;
+            }
+
+            Assert.AreEqual(5, deal.Requested.Count);
+            Assert.AreEqual(5, sold, "6 aksesuardan yalnızca istenen 5'i satılır");
+            Assert.AreEqual(5, s.AccessoryAddOns.AddOnsOf(deal.SaleRecordId).Count);
+        }
+
+        [Test]
+        public void ARequestOfThree_CanBePartlySold_AndTheRestStaysUnsold()
+        {
+            AddOnDeal deal = AddOnDeals.WithCount(3);
+            GameSession s = deal.Session;
+            foreach (string id in deal.Requested)
+            {
+                s.AccessoryStock.Add(id, 2, Money.FromTl(100));
+            }
+
+            Assert.IsTrue(s.AccessoryAddOns.SellAddOn(deal.SaleRecordId, deal.Requested[0], 1).IsSuccess);
+
+            Assert.AreEqual(1, s.AccessoryAddOns.AddOnsOf(deal.SaleRecordId).Count);
+            Assert.AreEqual(2, s.AccessoryStock.Quantity(deal.Requested[1]), "satılmayan istek stokta kalır");
         }
 
         [Test]

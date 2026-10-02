@@ -1,4 +1,5 @@
 using Esnaf.Core;
+using Esnaf.Domain.Accessories;
 using Esnaf.Presentation;
 using UnityEngine;
 using UnityEngine.UI;
@@ -191,9 +192,13 @@ namespace Esnaf.App.Ui
 
         private void AddAddOnPanel(AddOnPanelViewModel panel)
         {
+            // Müşterinin gerçek talebi (söz) + istenen aksesuarlar; başka aksesuar gösterilmez.
+            RectTransform quote = UiKit.AutoCard(_content, "AddOnRequest", UiTheme.Ink, 10f, 36);
+            UiKit.Label(quote, "AddOnSpeaker", panel.CustomerName.ToUpperInvariant(), 28, UiTheme.Gold, true);
+            UiKit.Label(quote, "AddOnRequestLine", panel.RequestLine, 46, Color.white);
+
             RectTransform box = UiKit.AutoCard(_content, "AddOnPanel", UiTheme.Card, 14f, 30);
-            UiKit.Label(box, "AddOnTitle", panel.Title, 46, UiTheme.Ink, true);
-            UiKit.Label(box, "AddOnSubtitle", panel.Subtitle, 34, UiTheme.Muted);
+            UiKit.Label(box, "AddOnTitle", panel.Title + "   " + panel.ProgressLine, 44, UiTheme.Ink, true);
 
             if (!string.IsNullOrEmpty(panel.Feedback))
             {
@@ -226,11 +231,30 @@ namespace Esnaf.App.Ui
             Text detail = UiKit.Label(row, "Detail", card.PriceLine + "   \u2022   " + card.StockLine, 34, card.IsButtonEnabled ? UiTheme.Muted : UiTheme.Warn);
             UiBuilder.Stretch(detail.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(24f, -76f), new Vector2(-260f, -4f));
 
+            if (card.IsAdded)
+            {
+                // Eklenmiş istek: Ekle düğmesi yok, yerine "Eklendi" rozeti.
+                Text badge = UiKit.Badge(row, "AddedBadge_" + card.AccessoryId, UiTheme.Card, UiTheme.Ink, 34);
+                badge.text = card.ButtonText;
+                badge.fontStyle = FontStyle.Bold;
+                UiBuilder.Stretch(badge.transform.parent as RectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-236f, -52f), new Vector2(-16f, 52f));
+                return;
+            }
+
             string accessoryId = card.AccessoryId;
             Color fill = card.IsButtonEnabled ? UiTheme.Gold : UiTheme.Card;
-            Button add = UiKit.RoundedButton(row, "AddButton_" + accessoryId, card.ButtonText, 36, fill, UiTheme.Ink, () => _flow.SaleAddAccessory(accessoryId));
+            Button add = UiKit.RoundedButton(row, "AddButton_" + accessoryId, card.ButtonText, 36, fill, UiTheme.Ink, () => OnAddAccessory(accessoryId));
             add.interactable = card.IsButtonEnabled;
             UiBuilder.Stretch(add.GetComponent<RectTransform>(), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-236f, -52f), new Vector2(-16f, 52f));
+        }
+
+        // Ekle'ye basıldı: tek yol UiFlow → IGameApi.SellAccessoryAddOn. Sonuç Console'a yazılır (hangi kodun çalıştığını Play Mode'da görmek için).
+        private void OnAddAccessory(string accessoryId)
+        {
+            Result<AccessorySaleReceipt> result = _flow.SaleAddAccessory(accessoryId);
+            AddOnPanelViewModel panel = _flow.SaleScreen == null ? null : _flow.SaleScreen.AddOn;
+            Debug.Log("[AddOn] " + accessoryId + " -> " + (result.IsSuccess ? "satildi" : result.ErrorCode)
+                + (panel == null ? string.Empty : " | " + panel.ProgressLine + " eklendi, telefon satisi #" + panel.PhoneSaleRecordId));
         }
 
         private void AddReplies(SaleScreenViewModel screen)

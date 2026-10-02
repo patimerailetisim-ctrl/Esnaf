@@ -12,7 +12,11 @@ namespace Esnaf.Domain.Accessories
     /// stoktan çıkan GERÇEK (orantılı) maliyet kâr hesabına girer.
     ///
     /// ATOMİKTİR: bağlı satış, aksesuar ve stok doğrulanır; stoktan çıkarma ve defter yazma birlikte uygulanır, defter reddederse stok birebir geri konur.
-    /// Hatalar: sale.unknown, addon.sale_closed, accessory.unknown, stock.insufficient, amount.invalid (+ defterin kendi hataları, örn. ledger.day_regression).
+    ///
+    /// MÜŞTERİ TALEBİ (Gün 11.3.4): ek satış yalnızca müşterinin İSTEDİĞİ aksesuarlar için yapılır (<see cref="AccessoryRequestPolicy"/>; talep satışın değişmez
+    /// verisinden türer, kayıtta durum yoktur). Her talep edilen aksesuar 1 adet sayılır; talep en çok 5'tir.
+    /// Hatalar: sale.unknown, addon.sale_closed, accessory.unknown, addon.not_requested (müşteri hiç aksesuar istemedi), addon.not_in_request (bu aksesuarı istemedi),
+    /// addon.request_limit (istediği adet zaten satıldı), stock.insufficient, amount.invalid (+ defterin kendi hataları, örn. ledger.day_regression).
     /// </summary>
     public sealed class AccessoryAddOnService
     {
@@ -71,6 +75,26 @@ namespace Esnaf.Domain.Accessories
                 return Fail("accessory.unknown", "Unknown accessory '" + accessoryId + "'.");
             }
 
+            // 2b) müşteri talebi: istemediği aksesuar satılamaz; istediği her aksesuar 1 adettir
+            System.Collections.Generic.IReadOnlyList<string> requested = RequestedAccessories(phoneSaleRecordId);
+            if (requested.Count == 0)
+            {
+                return Fail("addon.not_requested", "The customer did not ask for any accessory with this phone sale.");
+            }
+
+            if (!Contains(requested, accessoryId))
+            {
+                return Fail("addon.not_in_request", "The customer did not ask for '" + accessoryId + "'.");
+            }
+
+            foreach (TransactionRecord earlier in AddOnsOf(phoneSaleRecordId))
+            {
+                if (earlier.DefinitionId == accessoryId)
+                {
+                    return Fail("addon.request_limit", "'" + accessoryId + "' was already added to this sale (the customer asked for one).");
+                }
+            }
+
             if (_stock.Quantity(accessoryId) < 1)
             {
                 return Fail("stock.insufficient", "There is no '" + accessoryId + "' in stock.");
@@ -99,6 +123,34 @@ namespace Esnaf.Domain.Accessories
 
             Money phoneProfit = phoneSale.Amount - phoneSale.SaleCostBasis.Value;
             return Result<AccessorySaleReceipt>.Ok(new AccessorySaleReceipt(accessoryId, phoneSaleRecordId, booked.Value.Id, price, cost, phoneProfit));
+        }
+
+        /// <summary>
+        /// Müşterinin bu telefon satışında İSTEDİĞİ aksesuarlar (kimlik sırasıyla; en çok 5, her biri 1 adet). Telefon satışı değilse boş. Deterministiktir: aynı satış
+        /// her zaman aynı talebi verir; kayıt yüklendikten sonra da aynıdır (defter satırından türer).
+        /// </summary>
+        public System.Collections.Generic.IReadOnlyList<string> RequestedAccessories(long phoneSaleRecordId)
+        {
+            TransactionRecord phoneSale;
+            if (!_state.Ledger.TryGetById(phoneSaleRecordId, out phoneSale) || phoneSale.TypeId != TransactionTypeIds.Sale)
+            {
+                return new string[0];
+            }
+
+            return AccessoryRequestPolicy.Generate(phoneSale.NpcId, phoneSale.Day, phoneSale.Id, phoneSale.Amount, _catalog.Definitions);
+        }
+
+        private static bool Contains(System.Collections.Generic.IReadOnlyList<string> ids, string id)
+        {
+            foreach (string candidate in ids)
+            {
+                if (candidate == id)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

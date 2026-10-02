@@ -191,17 +191,24 @@ namespace Esnaf.Presentation
         public const string PriceStepperHint = "Se\u00E7ti\u011Fin fiyat";
 
         // ---- aksesuar ek satışı (Gün 11.3.3) ----
-        public const string AddOnTitle = "Yan\u0131nda bir aksesuar ister misiniz?";
-        public const string AddOnSubtitle = "Bu sat\u0131\u015Fa aksesuar ekleyebilirsiniz.";
+        public const string AddOnTitle = "AKSESUAR TALEB\u0130";
+        public const string AddOnAddedBadge = "Eklendi";
+        public const string AddOnDeclineButton = "\u0130stemiyorum / Devam Et";
+        public const string AddOnContinueButton = "Devam Et";
         public const string AddOnAddButton = "Ekle";
         public const string AddOnOutOfStock = "Stokta yok";
-        public const string AddOnFinishButton = "Devam Et / Sat\u0131\u015F\u0131 Bitir";
         public const string AddOnPhoneLabel = "Telefon";
         public const string AddOnAccessoriesLabel = "Aksesuarlar";
         public const string AddOnTotalLabel = "Toplam";
         public const string AddOnPhoneProfitLabel = "Telefon k\u00E2r\u0131";
         public const string AddOnAccessoryProfitLabel = "Aksesuar k\u00E2r\u0131";
         public const string AddOnTotalProfitLabel = "Toplam k\u00E2r";
+
+        /// <summary>İlerleme: "1/4" (eklenen / müşterinin istediği).</summary>
+        public static string AddOnProgress(int added, int requested)
+        {
+            return added.ToString(CultureInfo.InvariantCulture) + "/" + requested.ToString(CultureInfo.InvariantCulture);
+        }
 
         public static string AddOnPriceLine(Money price)
         {
@@ -224,6 +231,11 @@ namespace Esnaf.Presentation
             {
                 case "stock.insufficient":
                     return AddOnOutOfStock + ".";
+                case "addon.not_requested":
+                case "addon.not_in_request":
+                    return "M\u00FC\u015Fteri bunu istemedi.";
+                case "addon.request_limit":
+                    return "Bu aksesuar zaten eklendi.";
                 case "addon.no_sale":
                 case "addon.sale_closed":
                 case "sale.unknown":

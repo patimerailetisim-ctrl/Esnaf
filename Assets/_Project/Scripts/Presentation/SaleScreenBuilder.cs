@@ -103,12 +103,14 @@ namespace Esnaf.Presentation
 
         private static SaleScreenViewModel BuildDone(IGameApi api, ContentPresentation content, SaleUiState ui)
         {
-            var replies = new List<SaleReplyViewModel> { new SaleReplyViewModel(SaleReplyKind.Continue, TurkishTexts.SaleDoneButton, true) };
-            return Describe(SaleMode.Done, content, ui, ui.Final, replies, false, Money.Zero, BuildAddOn(api, ui));
+            AddOnPanelViewModel addOn = BuildAddOn(api, content, ui);
+            string continueText = addOn == null ? TurkishTexts.SaleDoneButton : addOn.FinishButtonText;
+            var replies = new List<SaleReplyViewModel> { new SaleReplyViewModel(SaleReplyKind.Continue, continueText, true) };
+            return Describe(SaleMode.Done, content, ui, ui.Final, replies, false, Money.Zero, addOn);
         }
 
-        // Aksesuar paneli yalnızca anlaşmayla biten telefon satışında ve oyun aynı satışı (aynı tutar) ek satışa açık gösteriyorsa kurulur.
-        private static AddOnPanelViewModel BuildAddOn(IGameApi api, SaleUiState ui)
+        // Aksesuar paneli yalnızca anlaşmayla biten telefon satışında, oyun aynı satışı (aynı tutar) gösteriyorsa VE müşteri aksesuar İSTEDİYSE kurulur.
+        private static AddOnPanelViewModel BuildAddOn(IGameApi api, ContentPresentation content, SaleUiState ui)
         {
             if (ui.Final == null || ui.Final.Phase != NegotiationPhase.Deal)
             {
@@ -116,26 +118,31 @@ namespace Esnaf.Presentation
             }
 
             AccessoryAddOnView view = api.GetAccessoryAddOns();
-            if (!view.HasPhoneSale || view.BuyerNpcId != ui.Final.NpcId || view.PhoneSalePrice != ui.Final.DealPrice)
+            if (!view.HasPhoneSale || !view.HasRequest || view.BuyerNpcId != ui.Final.NpcId || view.PhoneSalePrice != ui.Final.DealPrice)
             {
                 return null;
             }
 
             var cards = new List<AddOnCardViewModel>();
+            var names = new List<string>();
             foreach (AccessoryAddOnOptionView option in view.Options)
             {
+                names.Add(option.AccessoryName);
+                string button = option.IsAdded ? TurkishTexts.AddOnAddedBadge : option.IsAvailable ? TurkishTexts.AddOnAddButton : TurkishTexts.AddOnOutOfStock;
                 cards.Add(new AddOnCardViewModel(
                     option.AccessoryId,
                     option.AccessoryName,
                     TurkishTexts.AddOnPriceLine(option.RetailPrice),
-                    option.IsAvailable ? TurkishTexts.AddOnStockLine(option.InStock) : TurkishTexts.AddOnOutOfStock,
+                    option.IsAvailable || option.IsAdded ? TurkishTexts.AddOnStockLine(option.InStock) : TurkishTexts.AddOnOutOfStock,
                     option.InStock,
-                    option.IsAvailable ? TurkishTexts.AddOnAddButton : TurkishTexts.AddOnOutOfStock,
-                    option.IsAvailable));
+                    button,
+                    option.IsAvailable,
+                    option.IsAdded));
             }
 
+            string personality = ui.Final.Profile == null ? null : ui.Final.Profile.PersonalityId;
             return new AddOnPanelViewModel(
-                view.PhoneSaleRecordId, cards, view.PhoneSalePrice, view.AccessoryRevenue, view.PhoneProfit, view.AccessoryProfit,
+                view.PhoneSaleRecordId, content.CustomerName(ui.Final.CustomerId, ui.Final.NpcId), SaleDialogue.AccessoryRequest(personality, names), cards, view.PhoneSalePrice, view.AccessoryRevenue, view.PhoneProfit, view.AccessoryProfit,
                 view.AddOnsSold, ui.AddOnFeedback, ui.AddOnFeedbackIsError);
         }
 

@@ -120,13 +120,16 @@ namespace Esnaf.Domain.Game
 
         /// <summary>
         /// Aksesuar ek satış fırsatı (Gün 11.3.2): bugünün SON tamamlanmış telefon satışı (<c>PhoneSaleRecordId</c>) ve ona eklenebilecek aksesuarlar
-        /// (sabit fiyat, stok). Bugün tamamlanmış telefon satışı yoksa <c>HasPhoneSale</c> false. Durumu değiştirmez.
+        /// (sabit fiyat, stok). Yalnızca MÜŞTERİNİN İSTEDİĞİ aksesuarlar listelenir (Gün 11.3.4; en çok 5, her biri 1 adet); müşteri bir şey istemediyse
+        /// <c>HasRequest</c> false ve seçenek yoktur. Bugün tamamlanmış telefon satışı yoksa <c>HasPhoneSale</c> false. Durumu değiştirmez.
         /// </summary>
         AccessoryAddOnView GetAccessoryAddOns();
 
         /// <summary>
         /// Bugünün son tamamlanmış telefon satışına BİR aksesuar ek satar (stoktan 1 adet, sabit retailPrice, gerçek maliyet). Telefon satışı tekrarlanmaz.
-        /// Hatalar: addon.no_sale (bugün tamamlanmış telefon satışı yok), accessory.unknown, stock.insufficient, amount.invalid, ledger hataları.
+        /// Yalnızca müşterinin istediği aksesuar satılır. Hatalar: addon.no_sale (bugün tamamlanmış telefon satışı yok), accessory.unknown,
+        /// addon.not_requested (müşteri aksesuar istemedi), addon.not_in_request (bu aksesuarı istemedi), addon.request_limit (istediği adet zaten satıldı),
+        /// stock.insufficient, amount.invalid, ledger hataları.
         /// </summary>
         Result<AccessorySaleReceipt> SellAccessoryAddOn(string accessoryId);
 

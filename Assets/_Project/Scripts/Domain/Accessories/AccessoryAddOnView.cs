@@ -5,7 +5,10 @@ using Esnaf.Core;
 
 namespace Esnaf.Domain.Accessories
 {
-    /// <summary>Bir aksesuar ek satış seçeneği: sabit satış fiyatı ve stok. Stok yoksa <see cref="IsAvailable"/> false'tur.</summary>
+    /// <summary>
+    /// Müşterinin İSTEDİĞİ bir aksesuar (1 adet): sabit satış fiyatı ve stok. Zaten eklendiyse <see cref="IsAdded"/>; stok yoksa ya da eklendiyse
+    /// <see cref="IsAvailable"/> false'tur.
+    /// </summary>
     public sealed class AccessoryAddOnOptionView
     {
         public string AccessoryId { get; }
@@ -16,13 +19,17 @@ namespace Esnaf.Domain.Accessories
 
         public int InStock { get; }
 
+        /// <summary>Bu istek bu satışa zaten eklendi.</summary>
+        public bool IsAdded { get; }
+
         public bool IsAvailable
         {
-            get { return InStock > 0; }
+            get { return !IsAdded && InStock > 0; }
         }
 
-        public AccessoryAddOnOptionView(string accessoryId, string accessoryName, Money retailPrice, int inStock)
+        public AccessoryAddOnOptionView(string accessoryId, string accessoryName, Money retailPrice, int inStock, bool isAdded = false)
         {
+            IsAdded = isAdded;
             AccessoryId = accessoryId;
             AccessoryName = accessoryName;
             RetailPrice = retailPrice;
@@ -58,7 +65,14 @@ namespace Esnaf.Domain.Accessories
         /// <summary>Telefon kârı + şimdiye kadarki aksesuar kârları.</summary>
         public Money TotalProfit { get; }
 
+        /// <summary>Müşterinin istediği aksesuarlar (yalnızca bunlar; en çok 5). Müşteri aksesuar istemediyse boştur.</summary>
         public IReadOnlyList<AccessoryAddOnOptionView> Options { get; }
+
+        /// <summary>Müşteri bu satışta aksesuar istedi mi? İstemediyse ek satış paneli açılmaz ve ek satış yapılamaz.</summary>
+        public bool HasRequest
+        {
+            get { return Options.Count > 0; }
+        }
 
         public AccessoryAddOnView(
             bool hasPhoneSale, long phoneSaleRecordId, string buyerNpcId, Money phoneSalePrice, Money phoneProfit,

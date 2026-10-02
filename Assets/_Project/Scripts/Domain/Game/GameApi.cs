@@ -241,11 +241,24 @@ namespace Esnaf.Domain.Game
                 accessoryRevenue += addOn.Amount;
             }
 
+            // Yalnızca müşterinin istediği aksesuarlar (Gün 11.3.4); her biri 1 adet, eklendiyse "eklendi" işaretli.
             var options = new List<AccessoryAddOnOptionView>();
-            foreach (AccessoryDefinition definition in _session.Content.Accessories.Definitions)
+            foreach (string requestedId in _session.AccessoryAddOns.RequestedAccessories(sale.Id))
             {
+                AccessoryDefinition definition;
+                if (!_session.Content.Accessories.TryGet(requestedId, out definition))
+                {
+                    continue;
+                }
+
+                bool added = false;
+                foreach (TransactionRecord addOn in addOns)
+                {
+                    added |= addOn.DefinitionId == requestedId;
+                }
+
                 options.Add(new AccessoryAddOnOptionView(
-                    definition.Id, definition.Name, definition.RetailPrice, _session.AccessoryStock.Quantity(definition.Id)));
+                    definition.Id, definition.Name, definition.RetailPrice, _session.AccessoryStock.Quantity(definition.Id), added));
             }
 
             return new AccessoryAddOnView(

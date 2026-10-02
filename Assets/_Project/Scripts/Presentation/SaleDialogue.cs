@@ -9,6 +9,76 @@ namespace Esnaf.Presentation
     /// </summary>
     public static class SaleDialogue
     {
+        /// <summary>
+        /// Müşterinin aksesuar talebi (telefon anlaşmasından sonra): istediği aksesuarların adlarından doğal Türkçe söz. Kişiliğe göre ton değişir;
+        /// SAF metindir (rastgelelik yok). 0 aksesuar için boş döner.
+        /// </summary>
+        public static string AccessoryRequest(string personalityId, System.Collections.Generic.IReadOnlyList<string> accessoryNames)
+        {
+            if (accessoryNames == null || accessoryNames.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            string list = JoinNames(accessoryNames);
+            if (accessoryNames.Count == 1)
+            {
+                switch (personalityId)
+                {
+                    case "hurried":
+                        return "Tamam abi, \u00E7abuk olal\u0131m. " + Capitalize(list) + " da var m\u0131?";
+                    case "indecisive":
+                        return "Hmm\u2026 bir de " + list + " olsa iyi olurdu galiba.";
+                    case "budget_limited":
+                        return "B\u00FCt\u00E7em dar ama bir " + list + " bakabilir miyim abi?";
+                    default:
+                        return "Telefon tamam abi. Bir de " + list + " var m\u0131?";
+                }
+            }
+
+            switch (personalityId)
+            {
+                case "hurried":
+                    return "Tamam abi, acelem var. " + Capitalize(list) + " lazım, hemen verir misin?";
+                case "showoff":
+                    return "Abi bunu tam tak\u0131m yapal\u0131m: " + list + ".";
+                case "budget_limited":
+                    return "B\u00FCt\u00E7em dar ama " + list + " da laz\u0131m, bakar m\u0131s\u0131n abi?";
+                default:
+                    return accessoryNames.Count == 2
+                        ? "Abi bir de " + list + " alay\u0131m."
+                        : "Abi bir de " + list + " laz\u0131m.";
+            }
+        }
+
+        // "kılıf", "kılıf ve kablo", "kılıf, cam ve kablo": adlar küçük harfe çevrilir (Türkçe İ/I kuralıyla).
+        private static string JoinNames(System.Collections.Generic.IReadOnlyList<string> names)
+        {
+            var lower = new System.Collections.Generic.List<string>();
+            foreach (string name in names)
+            {
+                lower.Add(TurkishLower(name));
+            }
+
+            if (lower.Count == 1)
+            {
+                return lower[0];
+            }
+
+            string head = string.Join(", ", lower.GetRange(0, lower.Count - 1));
+            return head + " ve " + lower[lower.Count - 1];
+        }
+
+        private static string TurkishLower(string text)
+        {
+            return text.Replace('I', '\u0131').Replace('\u0130', 'i').ToLowerInvariant();
+        }
+
+        private static string Capitalize(string text)
+        {
+            return text.Length == 0 ? text : text.Substring(0, 1).ToUpperInvariant() + text.Substring(1);
+        }
+
         public static string Greeting(string personalityId, string model)
         {
             switch (personalityId)
