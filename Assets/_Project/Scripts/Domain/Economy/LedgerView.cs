@@ -165,7 +165,7 @@ namespace Esnaf.Domain.Economy
             Money? expense = null;
             AppraisalStatus? status = null;
 
-            if (type.ProfitEffect == ProfitEffect.Sale)
+            if (type.ProfitEffect == ProfitEffect.Sale || type.ProfitEffect == ProfitEffect.AccessorySale)
             {
                 costBasis = record.SaleCostBasis;
                 profit = record.Amount - record.SaleCostBasis.Value;

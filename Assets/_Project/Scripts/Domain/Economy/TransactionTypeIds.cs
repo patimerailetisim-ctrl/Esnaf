@@ -24,6 +24,9 @@ namespace Esnaf.Domain.Economy
         /// <summary>Çekirdek değil: toptancıdan aksesuar paketi alışı. Nakit düşer, maliyet aksesuar stoğuna girer (kâr etkisi yok; satışta maliyet olur).</summary>
         public const string WholesalePurchase = "wholesale_purchase";
 
+        /// <summary>Çekirdek değil: telefon satışına ek aksesuar satışı (Gün 11.3.1). Nakit artar, maliyet stoktan düşer; kâr = satış − gerçek maliyet.</summary>
+        public const string AccessorySale = "accessory_sale";
+
         public static readonly IReadOnlyList<string> Required = new ReadOnlyCollection<string>(new[]
         {
             OpeningCapital, Purchase, Sale, Appraisal, WastedAppraisal, Repair, DailyExpense, Investment

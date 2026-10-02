@@ -99,6 +99,19 @@ namespace Esnaf.Domain.Economy
                     return Fail("ledger.cost_basis_invalid", "Cost basis must be non-negative and a multiple of 10 TL.");
                 }
             }
+            else if (type.ProfitEffect == ProfitEffect.AccessorySale)
+            {
+                // Aksesuar maliyeti stoktan gelen gerçek orantılı maliyettir: negatif olamaz; 10 ₺'nin katı olma şartı yoktur (tutarın kendisi öyle olmalıdır).
+                if (!costBasis.HasValue || string.IsNullOrEmpty(definitionId))
+                {
+                    return Fail("ledger.sale_details_missing", "An accessory sale needs an accessory id and a cost basis.");
+                }
+
+                if (costBasis.Value.IsNegative)
+                {
+                    return Fail("ledger.cost_basis_invalid", "Cost basis must not be negative.");
+                }
+            }
             else if (costBasis.HasValue)
             {
                 return Fail("ledger.cost_basis_unexpected", "Only sales carry a cost basis.");

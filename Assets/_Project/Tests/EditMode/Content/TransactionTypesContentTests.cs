@@ -314,7 +314,8 @@ namespace Esnaf.Tests.Content
                 new object[] { "daily_expense", TransactionCategory.Expense, TransactionDirection.Outflow, ProfitEffect.Expense },
                 new object[] { "investment", TransactionCategory.Investment, TransactionDirection.Outflow, ProfitEffect.None },
                 new object[] { "content_refund", TransactionCategory.Trade, TransactionDirection.Inflow, ProfitEffect.None }, // çekirdek değil: GDD 6.7 içerik iadesi
-                new object[] { "wholesale_purchase", TransactionCategory.Trade, TransactionDirection.Outflow, ProfitEffect.None } // çekirdek değil: Day 11.2.2 toptan aksesuar alışı
+                new object[] { "wholesale_purchase", TransactionCategory.Trade, TransactionDirection.Outflow, ProfitEffect.None }, // çekirdek değil: Day 11.2.2 toptan aksesuar alışı
+                new object[] { "accessory_sale", TransactionCategory.Trade, TransactionDirection.Inflow, ProfitEffect.AccessorySale } // çekirdek değil: Day 11.3.1 aksesuar ek satışı
             };
             Assert.AreEqual(expected.Length, types.Count);
             for (int i = 0; i < expected.Length; i++)

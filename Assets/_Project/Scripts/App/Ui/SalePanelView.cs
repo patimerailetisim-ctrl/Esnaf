@@ -85,6 +85,11 @@ namespace Esnaf.App.Ui
             _info.text = screen.InfoLine;
             AddStage(screen);
             AddSubtitle(screen);
+            if (screen.AddOn != null)
+            {
+                AddAddOnPanel(screen.AddOn);
+            }
+
             AddReplies(screen);
         }
 
@@ -180,6 +185,52 @@ namespace Esnaf.App.Ui
                 Text echo = UiKit.Label(card, "PlayerLine", "Sen: " + screen.PlayerLine, 32, new Color(1f, 1f, 1f, 0.55f));
                 echo.alignment = TextAnchor.UpperRight;
             }
+        }
+
+        // ---------- aksesuar ek satışı (telefon satışı bittikten sonra) ----------
+
+        private void AddAddOnPanel(AddOnPanelViewModel panel)
+        {
+            RectTransform box = UiKit.AutoCard(_content, "AddOnPanel", UiTheme.Card, 14f, 30);
+            UiKit.Label(box, "AddOnTitle", panel.Title, 46, UiTheme.Ink, true);
+            UiKit.Label(box, "AddOnSubtitle", panel.Subtitle, 34, UiTheme.Muted);
+
+            if (!string.IsNullOrEmpty(panel.Feedback))
+            {
+                RectTransform note = UiKit.AutoCard(box, "AddOnFeedback", panel.FeedbackIsError ? UiTheme.WarnSoft : UiTheme.CardSoft, 4f, 20);
+                UiKit.Label(note, "Message", panel.Feedback, 34, UiTheme.Ink, true, TextAnchor.MiddleCenter);
+            }
+
+            foreach (AddOnCardViewModel card in panel.Cards)
+            {
+                AddAddOnCard(box, card);
+            }
+
+            RectTransform totals = UiKit.AutoCard(box, "AddOnTotals", UiTheme.CardSoft, 6f, 24);
+            UiKit.Label(totals, "PhoneLine", panel.PhoneLine, 36, UiTheme.Ink);
+            UiKit.Label(totals, "AccessoriesLine", panel.AccessoriesLine, 36, UiTheme.Ink);
+            UiKit.Label(totals, "TotalLine", panel.TotalLine, 44, UiTheme.Ink, true);
+            UiKit.Label(totals, "PhoneProfitLine", panel.PhoneProfitLine, 32, UiTheme.Muted);
+            UiKit.Label(totals, "AccessoryProfitLine", panel.AccessoryProfitLine, 32, UiTheme.Muted);
+            UiKit.Label(totals, "TotalProfitLine", panel.TotalProfitLine, 36, UiTheme.Ink, true);
+        }
+
+        private void AddAddOnCard(RectTransform parent, AddOnCardViewModel card)
+        {
+            RectTransform row = UiKit.Rounded(parent, "AddOn_" + card.AccessoryId, UiTheme.CardSoft);
+            row.GetComponent<Image>().raycastTarget = false;
+            UiKit.Size2(row, 0f, 170f);
+
+            Text name = UiKit.Label(row, "Name", card.Name, 42, UiTheme.Ink, true);
+            UiBuilder.Stretch(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(24f, 8f), new Vector2(-260f, 76f));
+            Text detail = UiKit.Label(row, "Detail", card.PriceLine + "   \u2022   " + card.StockLine, 34, card.IsButtonEnabled ? UiTheme.Muted : UiTheme.Warn);
+            UiBuilder.Stretch(detail.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(24f, -76f), new Vector2(-260f, -4f));
+
+            string accessoryId = card.AccessoryId;
+            Color fill = card.IsButtonEnabled ? UiTheme.Gold : UiTheme.Card;
+            Button add = UiKit.RoundedButton(row, "AddButton_" + accessoryId, card.ButtonText, 36, fill, UiTheme.Ink, () => _flow.SaleAddAccessory(accessoryId));
+            add.interactable = card.IsButtonEnabled;
+            UiBuilder.Stretch(add.GetComponent<RectTransform>(), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-236f, -52f), new Vector2(-16f, 52f));
         }
 
         private void AddReplies(SaleScreenViewModel screen)

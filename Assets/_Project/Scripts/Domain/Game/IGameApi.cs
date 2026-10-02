@@ -118,6 +118,18 @@ namespace Esnaf.Domain.Game
         /// <summary>Aksesuar stoğu: kalemler, toplam birim ve maliyet, kapasite. Telefon rafından (GetInventory) ayrıdır.</summary>
         AccessoryStockView GetAccessoryStock();
 
+        /// <summary>
+        /// Aksesuar ek satış fırsatı (Gün 11.3.2): bugünün SON tamamlanmış telefon satışı (<c>PhoneSaleRecordId</c>) ve ona eklenebilecek aksesuarlar
+        /// (sabit fiyat, stok). Bugün tamamlanmış telefon satışı yoksa <c>HasPhoneSale</c> false. Durumu değiştirmez.
+        /// </summary>
+        AccessoryAddOnView GetAccessoryAddOns();
+
+        /// <summary>
+        /// Bugünün son tamamlanmış telefon satışına BİR aksesuar ek satar (stoktan 1 adet, sabit retailPrice, gerçek maliyet). Telefon satışı tekrarlanmaz.
+        /// Hatalar: addon.no_sale (bugün tamamlanmış telefon satışı yok), accessory.unknown, stock.insufficient, amount.invalid, ledger hataları.
+        /// </summary>
+        Result<AccessorySaleReceipt> SellAccessoryAddOn(string accessoryId);
+
         /// <summary>Bir ilanın ürünü için bilinen ekspertiz sonuçları (sonuç sırasıyla); ilan yoksa boş.</summary>
         IReadOnlyList<AppraisalView> GetAppraisals(long listingId);
 

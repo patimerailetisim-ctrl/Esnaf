@@ -623,6 +623,34 @@ namespace Esnaf.Presentation
             return SendSale(() => _api.LetCustomerGo(), TurkishTexts.ReplyLetGo, SaleSpeech.Ask);
         }
 
+        /// <summary>
+        /// Biten (anlaşmalı) telefon satışına bir aksesuar ekler (IGameApi.SellAccessoryAddOn; fiyat, stok ve kâr oyundan gelir, burada kural yoktur).
+        /// Telefon satışı değişmez. Başarıda "… eklendi (+120 ₺)." der, hatada Türkçe nedeni söyler; ikisi de panelde gösterilir.
+        /// </summary>
+        public Result<AccessorySaleReceipt> SaleAddAccessory(string accessoryId)
+        {
+            AddOnPanelViewModel panel = CurrentScreen == UiScreen.Sale && SaleScreen != null ? SaleScreen.AddOn : null;
+            if (panel == null)
+            {
+                return Result<AccessorySaleReceipt>.Fail("ui.no_addon_panel", "The accessory add-on panel is not open.");
+            }
+
+            string name = accessoryId;
+            foreach (AddOnCardViewModel card in panel.Cards)
+            {
+                if (card.AccessoryId == accessoryId)
+                {
+                    name = card.Name;
+                }
+            }
+
+            Result<AccessorySaleReceipt> result = _api.SellAccessoryAddOn(accessoryId);
+            _sale.AddOnFeedbackIsError = result.IsFailure;
+            _sale.AddOnFeedback = result.IsSuccess ? TurkishTexts.AddOnAdded(name, result.Value.SalePrice) : TurkishTexts.AddOnError(result.ErrorCode);
+            Refresh();
+            return result;
+        }
+
         /// <summary>Biten satıştan müşteri listesine döner (yalnızca arayüz durumunu temizler).</summary>
         public bool SaleNext()
         {
@@ -765,6 +793,8 @@ namespace Esnaf.Presentation
             _sale.PlayerLine = null;
             _sale.Final = null;
             _sale.DefinitionId = null;
+            _sale.AddOnFeedback = null;
+            _sale.AddOnFeedbackIsError = false;
             _sale.Initialized = false;
         }
 

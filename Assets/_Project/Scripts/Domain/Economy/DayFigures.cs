@@ -4,7 +4,7 @@ using Esnaf.Core;
 namespace Esnaf.Domain.Economy
 {
     /// <summary>
-    /// Bir günün kâr rakamları (GDD v0.2 9.2): Gün Net Kârı = Σ(satış − maliyet tabanı) − boşa ekspertiz − günlük gider.
+    /// Bir günün kâr rakamları (GDD v0.2 9.2): Gün Net Kârı = Σ(satış − maliyet tabanı) [telefon + aksesuar ek satışı] − boşa ekspertiz − günlük gider.
     /// Gün özeti ve defter görünümü aynı hesabı paylaşır.
     /// </summary>
     internal sealed class DayFigures
@@ -12,6 +12,11 @@ namespace Esnaf.Domain.Economy
         public List<SoldItemSummary> Sales { get; } = new List<SoldItemSummary>();
         public Money GrossProfit { get; private set; }
         public Money WastedAppraisal { get; private set; }
+
+        /// <summary>Aksesuar ek satışlarının geliri ve kârı (kâr zaten <see cref="GrossProfit"/>'e dahildir; ayrıca gösterilir).</summary>
+        public Money AccessorySalesIncome { get; private set; }
+
+        public Money AccessoryProfit { get; private set; }
         public Money Expense { get; private set; }
 
         public Money NetProfit
@@ -32,6 +37,12 @@ namespace Esnaf.Domain.Economy
                             record.Id, record.InstanceId.Value, record.DefinitionId, record.NpcId, record.Amount, record.SaleCostBasis.Value);
                         figures.Sales.Add(sold);
                         figures.GrossProfit += sold.Profit;
+                        break;
+                    case ProfitEffect.AccessorySale:
+                        figures.AccessorySalesIncome += record.Amount;
+                        Money accessoryProfit = record.Amount - record.SaleCostBasis.Value;
+                        figures.AccessoryProfit += accessoryProfit;
+                        figures.GrossProfit += accessoryProfit;
                         break;
                     case ProfitEffect.Expense:
                         figures.Expense += record.Amount.Abs();

@@ -40,6 +40,87 @@ namespace Esnaf.Presentation
         }
     }
 
+    /// <summary>Aksesuar ek satışı kartı: ad, fiyat, stok ve "Ekle" düğmesi. Düğme yalnızca stok yoksa devre dışıdır (stok bilgisi API'den gelir).</summary>
+    public sealed class AddOnCardViewModel
+    {
+        public string AccessoryId { get; }
+        public string Name { get; }
+        public string PriceLine { get; }
+        public string StockLine { get; }
+        public int InStock { get; }
+        public string ButtonText { get; }
+        public bool IsButtonEnabled { get; }
+
+        public AddOnCardViewModel(string accessoryId, string name, string priceLine, string stockLine, int inStock, string buttonText, bool isButtonEnabled)
+        {
+            AccessoryId = accessoryId;
+            Name = name;
+            PriceLine = priceLine;
+            StockLine = stockLine;
+            InStock = inStock;
+            ButtonText = buttonText;
+            IsButtonEnabled = isButtonEnabled;
+        }
+    }
+
+    /// <summary>Biten telefon satışından sonra açılan aksesuar paneli: kartlar, toplam/kâr özeti ve son geri bildirim. Kural içermez; hepsi IGameApi.GetAccessoryAddOns'tan gelir.</summary>
+    public sealed class AddOnPanelViewModel
+    {
+        public string Title { get; }
+        public string Subtitle { get; }
+        public long PhoneSaleRecordId { get; }
+        public IReadOnlyList<AddOnCardViewModel> Cards { get; }
+
+        public Money PhonePrice { get; }
+        public Money AccessoriesPrice { get; }
+        public Money TotalPrice { get; }
+        public Money PhoneProfit { get; }
+        public Money AccessoryProfit { get; }
+        public Money TotalProfit { get; }
+        public int AddOnsSold { get; }
+
+        public string PhoneLine { get; }
+        public string AccessoriesLine { get; }
+        public string TotalLine { get; }
+        public string PhoneProfitLine { get; }
+        public string AccessoryProfitLine { get; }
+        public string TotalProfitLine { get; }
+
+        /// <summary>Son ekleme sonucu ("Şarj Kablosu eklendi (+120 ₺)." ya da hata); yoksa null.</summary>
+        public string Feedback { get; }
+
+        public bool FeedbackIsError { get; }
+
+        public string FinishButtonText { get; }
+
+        public AddOnPanelViewModel(
+            long phoneSaleRecordId, IEnumerable<AddOnCardViewModel> cards,
+            Money phonePrice, Money accessoriesPrice, Money phoneProfit, Money accessoryProfit, int addOnsSold,
+            string feedback, bool feedbackIsError)
+        {
+            Title = TurkishTexts.AddOnTitle;
+            Subtitle = TurkishTexts.AddOnSubtitle;
+            PhoneSaleRecordId = phoneSaleRecordId;
+            Cards = new ReadOnlyCollection<AddOnCardViewModel>(new List<AddOnCardViewModel>(cards));
+            PhonePrice = phonePrice;
+            AccessoriesPrice = accessoriesPrice;
+            TotalPrice = phonePrice + accessoriesPrice;
+            PhoneProfit = phoneProfit;
+            AccessoryProfit = accessoryProfit;
+            TotalProfit = phoneProfit + accessoryProfit;
+            AddOnsSold = addOnsSold;
+            PhoneLine = TurkishTexts.AddOnPhoneLabel + ": " + MoneyFormatter.Format(phonePrice);
+            AccessoriesLine = TurkishTexts.AddOnAccessoriesLabel + ": " + MoneyFormatter.Format(accessoriesPrice);
+            TotalLine = TurkishTexts.AddOnTotalLabel + ": " + MoneyFormatter.Format(TotalPrice);
+            PhoneProfitLine = TurkishTexts.AddOnPhoneProfitLabel + ": " + MoneyFormatter.Format(phoneProfit);
+            AccessoryProfitLine = TurkishTexts.AddOnAccessoryProfitLabel + ": " + MoneyFormatter.Format(accessoryProfit);
+            TotalProfitLine = TurkishTexts.AddOnTotalProfitLabel + ": " + MoneyFormatter.Format(TotalProfit);
+            Feedback = feedback;
+            FeedbackIsError = feedbackIsError;
+            FinishButtonText = TurkishTexts.AddOnFinishButton;
+        }
+    }
+
     /// <summary>Dükkândaki bir müşterinin kartı (lobi).</summary>
     public sealed class SaleCustomerCardViewModel
     {
@@ -93,6 +174,9 @@ namespace Esnaf.Presentation
         public Money AskPrice { get; }
         public string AskPriceText { get; }
 
+        /// <summary>Anlaşmayla biten telefon satışından sonra aksesuar paneli; başka her durumda null.</summary>
+        public AddOnPanelViewModel AddOn { get; }
+
         public SaleScreenViewModel(
             SaleMode mode,
             string title,
@@ -110,7 +194,8 @@ namespace Esnaf.Presentation
             IEnumerable<SaleReplyViewModel> replies,
             bool showsPriceStepper,
             Money askPrice,
-            string askPriceText)
+            string askPriceText,
+            AddOnPanelViewModel addOn = null)
         {
             Mode = mode;
             Title = title;
@@ -129,6 +214,7 @@ namespace Esnaf.Presentation
             ShowsPriceStepper = showsPriceStepper;
             AskPrice = askPrice;
             AskPriceText = askPriceText;
+            AddOn = addOn;
         }
     }
 }

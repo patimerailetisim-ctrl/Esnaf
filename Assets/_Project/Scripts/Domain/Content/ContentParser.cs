@@ -952,7 +952,7 @@ namespace Esnaf.Domain.Content
                 issues.Add(ContentIssue.Error(
                     ContentIssueCodes.TransactionTypeProfitEffectInvalid,
                     fileName,
-                    label + ": invalid profitEffect '" + dto.ProfitEffect + "' (allowed: none, expense, sale, write_off)."));
+                    label + ": invalid profitEffect '" + dto.ProfitEffect + "' (allowed: none, expense, sale, write_off, accessory_sale)."));
                 ok = false;
             }
 

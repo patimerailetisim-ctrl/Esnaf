@@ -124,6 +124,30 @@ namespace Esnaf.Domain.Economy
             return result;
         }
 
+        /// <summary>
+        /// Telefon satışına ek aksesuar satışı: nakit satış fiyatı kadar artar, defterde TEK satır yazılır (tür accessory_sale; aksesuar = definitionId,
+        /// alıcı NPC = npcId, bağlı telefon satış satırı = not argümanı, maliyet tabanı = stoktan çıkan gerçek maliyet).
+        /// Hata olursa defter ve nakit değişmez (tutar geçersiz, defter kuralı...). Stoktan düşme çağıranın işidir (AccessoryAddOnService).
+        /// </summary>
+        public Result<TransactionRecord> RecordAccessorySale(string accessoryId, string buyerNpcId, Money price, Money costBasis, long phoneSaleRecordId, int day)
+        {
+            if (!IsPositiveRounded(price) || costBasis.IsNegative)
+            {
+                return Result<TransactionRecord>.Fail("amount.invalid", "An accessory price must be positive and a multiple of 10 TL; its cost must not be negative.");
+            }
+
+            Money oldCash = _state.Cash;
+            Result<TransactionRecord> result = _state.Ledger.Append(
+                TransactionTypeIds.AccessorySale, price, day, null, accessoryId, buyerNpcId, costBasis,
+                memoArgs: new[] { phoneSaleRecordId.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+            if (result.IsSuccess)
+            {
+                Publish(result.Value, oldCash);
+            }
+
+            return result;
+        }
+
         public Result<TransactionRecord> RecordSale(long instanceId, string definitionId, string buyerNpcId, Money price, Money costBasis, int day)
         {
             if (!IsPositiveRounded(price) || costBasis.IsNegative || !costBasis.IsRoundedTo10)

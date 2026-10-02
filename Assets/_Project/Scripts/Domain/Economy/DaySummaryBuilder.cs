@@ -120,6 +120,8 @@ namespace Esnaf.Domain.Economy
                 expense,
                 investment,
                 capital,
+                figures.AccessorySalesIncome,
+                figures.AccessoryProfit,
                 figures.GrossProfit,
                 figures.WastedAppraisal,
                 figures.NetProfit,

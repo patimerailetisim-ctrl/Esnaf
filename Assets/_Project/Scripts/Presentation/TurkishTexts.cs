@@ -190,6 +190,53 @@ namespace Esnaf.Presentation
         public const string ReplyAcceptFinalPrefix = "Tamam abi, ";
         public const string PriceStepperHint = "Se\u00E7ti\u011Fin fiyat";
 
+        // ---- aksesuar ek satışı (Gün 11.3.3) ----
+        public const string AddOnTitle = "Yan\u0131nda bir aksesuar ister misiniz?";
+        public const string AddOnSubtitle = "Bu sat\u0131\u015Fa aksesuar ekleyebilirsiniz.";
+        public const string AddOnAddButton = "Ekle";
+        public const string AddOnOutOfStock = "Stokta yok";
+        public const string AddOnFinishButton = "Devam Et / Sat\u0131\u015F\u0131 Bitir";
+        public const string AddOnPhoneLabel = "Telefon";
+        public const string AddOnAccessoriesLabel = "Aksesuarlar";
+        public const string AddOnTotalLabel = "Toplam";
+        public const string AddOnPhoneProfitLabel = "Telefon k\u00E2r\u0131";
+        public const string AddOnAccessoryProfitLabel = "Aksesuar k\u00E2r\u0131";
+        public const string AddOnTotalProfitLabel = "Toplam k\u00E2r";
+
+        public static string AddOnPriceLine(Money price)
+        {
+            return MoneyFormatter.Format(price);
+        }
+
+        public static string AddOnStockLine(int stock)
+        {
+            return "Stok: " + stock.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string AddOnAdded(string accessoryName, Money price)
+        {
+            return accessoryName + " eklendi (+" + MoneyFormatter.Format(price) + ").";
+        }
+
+        public static string AddOnError(string code)
+        {
+            switch (code)
+            {
+                case "stock.insufficient":
+                    return AddOnOutOfStock + ".";
+                case "addon.no_sale":
+                case "addon.sale_closed":
+                case "sale.unknown":
+                    return "Bu sat\u0131\u015Fa art\u0131k aksesuar eklenemez.";
+                case "accessory.unknown":
+                    return "Bu aksesuar art\u0131k yok.";
+                case "amount.invalid":
+                    return "Bu aksesuar\u0131n tutar\u0131 ge\u00E7ersiz.";
+                default:
+                    return Error(code);
+            }
+        }
+
         // ---- toptancı ve aksesuar stoğu (Gün 11.2.3) ----
         public const string WholesaleTitle = "Toptanc\u0131";
         public const string WholesaleButton = "Toptanc\u0131";

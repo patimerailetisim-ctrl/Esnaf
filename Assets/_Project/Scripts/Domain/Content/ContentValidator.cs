@@ -407,6 +407,7 @@ namespace Esnaf.Domain.Content
             switch (effect)
             {
                 case ProfitEffect.Sale:
+                case ProfitEffect.AccessorySale:
                     return direction == TransactionDirection.Inflow;
                 case ProfitEffect.Expense:
                     return direction == TransactionDirection.Outflow;

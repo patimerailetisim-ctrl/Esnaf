@@ -23,7 +23,10 @@ namespace Esnaf.Domain.Economy
         None = 0,
         Expense = 1,
         Sale = 2,
-        WriteOff = 3
+        WriteOff = 3,
+
+        /// <summary>Aksesuar ek satışı: kâr = satış − stoktan çıkan gerçek maliyet. Ürün örneği gerektirmez (Gün 11.3.1).</summary>
+        AccessorySale = 4
     }
 
     /// <summary>transaction_types.json'daki metin karşılıkları.</summary>
@@ -85,6 +88,9 @@ namespace Esnaf.Domain.Economy
                     return true;
                 case "write_off":
                     effect = ProfitEffect.WriteOff;
+                    return true;
+                case "accessory_sale":
+                    effect = ProfitEffect.AccessorySale;
                     return true;
                 default:
                     effect = ProfitEffect.None;

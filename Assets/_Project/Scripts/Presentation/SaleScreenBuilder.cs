@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Esnaf.Core;
+using Esnaf.Domain.Accessories;
 using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
@@ -17,6 +18,8 @@ namespace Esnaf.Presentation
         public string PlayerLine;
         public SaleView Final;               // biten satışın son görünümü (anlaşma / müşteri gitti)
         public string DefinitionId;          // ürünün modeli (satış bitince raftan çıkar)
+        public string AddOnFeedback;         // son aksesuar ekleme sonucu (başarı ya da Türkçe hata)
+        public bool AddOnFeedbackIsError;
         public bool Initialized;
     }
 
@@ -35,7 +38,7 @@ namespace Esnaf.Presentation
 
             if (ui.Final != null)
             {
-                return BuildDone(content, ui);
+                return BuildDone(api, content, ui);
             }
 
             return BuildLobby(api, content);
@@ -98,14 +101,46 @@ namespace Esnaf.Presentation
             return Describe(SaleMode.Talking, content, ui, sale, replies, stepper, ask);
         }
 
-        private static SaleScreenViewModel BuildDone(ContentPresentation content, SaleUiState ui)
+        private static SaleScreenViewModel BuildDone(IGameApi api, ContentPresentation content, SaleUiState ui)
         {
             var replies = new List<SaleReplyViewModel> { new SaleReplyViewModel(SaleReplyKind.Continue, TurkishTexts.SaleDoneButton, true) };
-            return Describe(SaleMode.Done, content, ui, ui.Final, replies, false, Money.Zero);
+            return Describe(SaleMode.Done, content, ui, ui.Final, replies, false, Money.Zero, BuildAddOn(api, ui));
+        }
+
+        // Aksesuar paneli yalnızca anlaşmayla biten telefon satışında ve oyun aynı satışı (aynı tutar) ek satışa açık gösteriyorsa kurulur.
+        private static AddOnPanelViewModel BuildAddOn(IGameApi api, SaleUiState ui)
+        {
+            if (ui.Final == null || ui.Final.Phase != NegotiationPhase.Deal)
+            {
+                return null;
+            }
+
+            AccessoryAddOnView view = api.GetAccessoryAddOns();
+            if (!view.HasPhoneSale || view.BuyerNpcId != ui.Final.NpcId || view.PhoneSalePrice != ui.Final.DealPrice)
+            {
+                return null;
+            }
+
+            var cards = new List<AddOnCardViewModel>();
+            foreach (AccessoryAddOnOptionView option in view.Options)
+            {
+                cards.Add(new AddOnCardViewModel(
+                    option.AccessoryId,
+                    option.AccessoryName,
+                    TurkishTexts.AddOnPriceLine(option.RetailPrice),
+                    option.IsAvailable ? TurkishTexts.AddOnStockLine(option.InStock) : TurkishTexts.AddOnOutOfStock,
+                    option.InStock,
+                    option.IsAvailable ? TurkishTexts.AddOnAddButton : TurkishTexts.AddOnOutOfStock,
+                    option.IsAvailable));
+            }
+
+            return new AddOnPanelViewModel(
+                view.PhoneSaleRecordId, cards, view.PhoneSalePrice, view.AccessoryRevenue, view.PhoneProfit, view.AccessoryProfit,
+                view.AddOnsSold, ui.AddOnFeedback, ui.AddOnFeedbackIsError);
         }
 
         private static SaleScreenViewModel Describe(
-            SaleMode mode, ContentPresentation content, SaleUiState ui, SaleView sale, List<SaleReplyViewModel> replies, bool stepper, Money ask)
+            SaleMode mode, ContentPresentation content, SaleUiState ui, SaleView sale, List<SaleReplyViewModel> replies, bool stepper, Money ask, AddOnPanelViewModel addOn = null)
         {
             CustomerProfile profile = sale.Profile;
             string info = profile == null ? string.Empty : profile.PersonalityName + " • " + TurkishTexts.BudgetOf(profile.Budget);
@@ -128,7 +163,8 @@ namespace Esnaf.Presentation
                 replies,
                 stepper,
                 ask,
-                stepper ? MoneyFormatter.Format(ask) : null);
+                stepper ? MoneyFormatter.Format(ask) : null,
+                addOn);
         }
     }
 }

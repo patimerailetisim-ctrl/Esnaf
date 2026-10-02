@@ -170,7 +170,7 @@ namespace Esnaf.Tests.Content
             ContentLoadResult result = ContentDatabase.Load(new DirectoryContentSource(TestPaths.ContentDataDirectory()));
 
             Assert.IsTrue(result.IsSuccess, result.FormatIssues());
-            Assert.AreEqual(10, result.Database.TransactionTypes.Types.Count, "8 çekirdek tür + içerik iadesi (GDD 6.7) + toptan alış (Day 11.2.2)");
+            Assert.AreEqual(11, result.Database.TransactionTypes.Types.Count, "8 çekirdek tür + içerik iadesi (GDD 6.7) + toptan alış (Day 11.2.2) + aksesuar ek satışı (Day 11.3.1)");
             Assert.AreEqual(Money.FromTl(250000), result.Database.EconomyConstants.OpeningCapital);
         }
     }

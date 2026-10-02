@@ -35,7 +35,13 @@ namespace Esnaf.Domain.Economy
         public Money InvestmentSpend { get; }
         public Money CapitalInflow { get; }
 
-        /// <summary>Σ(satış − maliyet tabanı).</summary>
+        /// <summary>O gün telefon satışlarına eklenen aksesuar satışlarının geliri (accessory_sale). Telefon <see cref="SalesIncome"/>'ından ayrıdır.</summary>
+        public Money AccessorySalesIncome { get; }
+
+        /// <summary>Aksesuar ek satışlarının kârı (satış − stoktan çıkan gerçek maliyet); <see cref="GrossProfit"/>'e dahildir.</summary>
+        public Money AccessoryProfit { get; }
+
+        /// <summary>Σ(satış − maliyet tabanı): telefon satışları + aksesuar ek satışları.</summary>
         public Money GrossProfit { get; }
 
         /// <summary>O gün gider yazılan ekspertiz ücretleri (ödeme günü değil, yazma günü).</summary>
@@ -43,10 +49,10 @@ namespace Esnaf.Domain.Economy
 
         public Money NetProfit { get; }
 
-        /// <summary>Toplam gelir = satış geliri.</summary>
+        /// <summary>Toplam gelir = telefon satış geliri + aksesuar ek satış geliri.</summary>
         public Money TotalIncome
         {
-            get { return SalesIncome; }
+            get { return SalesIncome + AccessorySalesIncome; }
         }
 
         /// <summary>Toplam gider = telefon alışı + toptan aksesuar alışı + ekspertiz + tamir + günlük gider (yatırım hariç: yatırım gider değildir).</summary>
@@ -86,6 +92,8 @@ namespace Esnaf.Domain.Economy
             Money dailyExpense,
             Money investmentSpend,
             Money capitalInflow,
+            Money accessorySalesIncome,
+            Money accessoryProfit,
             Money grossProfit,
             Money wastedAppraisal,
             Money netProfit,
@@ -106,6 +114,8 @@ namespace Esnaf.Domain.Economy
             DailyExpense = dailyExpense;
             InvestmentSpend = investmentSpend;
             CapitalInflow = capitalInflow;
+            AccessorySalesIncome = accessorySalesIncome;
+            AccessoryProfit = accessoryProfit;
             GrossProfit = grossProfit;
             WastedAppraisal = wastedAppraisal;
             NetProfit = netProfit;

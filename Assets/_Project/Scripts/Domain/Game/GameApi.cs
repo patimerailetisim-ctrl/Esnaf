@@ -223,6 +223,46 @@ namespace Esnaf.Domain.Game
             return new ReadOnlyCollection<ListingView>(views);
         }
 
+        public AccessoryAddOnView GetAccessoryAddOns()
+        {
+            TransactionRecord sale = _session.AccessoryAddOns.LatestPhoneSaleOn(_session.Time.Day);
+            if (sale == null)
+            {
+                return new AccessoryAddOnView(false, 0L, null, Money.Zero, Money.Zero, 0, Money.Zero, Money.Zero, Money.Zero, new AccessoryAddOnOptionView[0]);
+            }
+
+            Money phoneProfit = sale.Amount - sale.SaleCostBasis.Value;
+            Money accessoryProfit = Money.Zero;
+            Money accessoryRevenue = Money.Zero;
+            IReadOnlyList<TransactionRecord> addOns = _session.AccessoryAddOns.AddOnsOf(sale.Id);
+            foreach (TransactionRecord addOn in addOns)
+            {
+                accessoryProfit += addOn.Amount - addOn.SaleCostBasis.Value;
+                accessoryRevenue += addOn.Amount;
+            }
+
+            var options = new List<AccessoryAddOnOptionView>();
+            foreach (AccessoryDefinition definition in _session.Content.Accessories.Definitions)
+            {
+                options.Add(new AccessoryAddOnOptionView(
+                    definition.Id, definition.Name, definition.RetailPrice, _session.AccessoryStock.Quantity(definition.Id)));
+            }
+
+            return new AccessoryAddOnView(
+                true, sale.Id, sale.NpcId, sale.Amount, phoneProfit, addOns.Count, accessoryRevenue, accessoryProfit, phoneProfit + accessoryProfit, options);
+        }
+
+        public Result<AccessorySaleReceipt> SellAccessoryAddOn(string accessoryId)
+        {
+            TransactionRecord sale = _session.AccessoryAddOns.LatestPhoneSaleOn(_session.Time.Day);
+            if (sale == null)
+            {
+                return Result<AccessorySaleReceipt>.Fail("addon.no_sale", "There is no completed phone sale today to add an accessory to.");
+            }
+
+            return _session.AccessoryAddOns.SellAddOn(sale.Id, accessoryId, _session.Time.Day);
+        }
+
         public IReadOnlyList<WholesaleOfferView> GetWholesaleOffers()
         {
             int day = _session.Time.Day;
