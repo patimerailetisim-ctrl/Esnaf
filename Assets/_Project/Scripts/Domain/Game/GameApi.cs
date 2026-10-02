@@ -113,6 +113,11 @@ namespace Esnaf.Domain.Game
             return _session.Sell.AcceptFinal();
         }
 
+        public Result<SaleView> AcceptCustomerOffer()
+        {
+            return _session.Sell.AcceptOffer();
+        }
+
         public Result<SaleView> LetCustomerGo()
         {
             return _session.Sell.Leave();

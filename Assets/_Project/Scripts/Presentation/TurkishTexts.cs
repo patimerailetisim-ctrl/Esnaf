@@ -187,6 +187,7 @@ namespace Esnaf.Presentation
         public const string ReplyGreet = "Tabii abi, buyur.";
         public const string ReplyReport = "Ekspertizi yap\u0131ld\u0131, raporu g\u00F6stereyim.";
         public const string ReplyLetGo = "Olmad\u0131 abi, ba\u015Fka sefere.";
+        public const string AcceptOfferButton = "Teklifi Kabul Et";
         public const string ReplyAcceptFinalPrefix = "Tamam abi, ";
         public const string PriceStepperHint = "Se\u00E7ti\u011Fin fiyat";
 

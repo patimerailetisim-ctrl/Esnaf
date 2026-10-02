@@ -195,6 +195,25 @@ namespace Esnaf.Domain.Negotiation
             return Sell(active, work, null);
         }
 
+        /// <summary>Müşterinin şu anki teklifini aynen kabul eder (bkz. <see cref="SaleEngine.AcceptOffer"/>); satış normal akıştan tamamlanır.</summary>
+        public Result<SaleView> AcceptOffer()
+        {
+            ActiveSale active = _state.CurrentSale;
+            if (active == null)
+            {
+                return Result<SaleView>.Fail("sale.none", "There is no sale in progress.");
+            }
+
+            SaleState work = active.State.Clone();
+            Result accepted = _engine.AcceptOffer(work);
+            if (accepted.IsFailure)
+            {
+                return Result<SaleView>.Fail(accepted.ErrorCode, accepted.Message);
+            }
+
+            return Sell(active, work, null);
+        }
+
         public Result<SaleView> Leave()
         {
             ActiveSale active = _state.CurrentSale;

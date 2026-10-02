@@ -609,12 +609,12 @@ namespace Esnaf.Presentation
             return SendSale(() => _api.ShowReport(appraisalId), TurkishTexts.ReplyReport, SaleSpeech.Report);
         }
 
-        /// <summary>Müşterinin son fiyatını kabul eder (IGameApi.AcceptCustomerFinalOffer).</summary>
+        /// <summary>"Teklifi Kabul Et": müşterinin şu anki teklifini aynen kabul eder (IGameApi.AcceptCustomerOffer).</summary>
         public Result<SaleView> SaleAcceptFinal()
         {
             SaleView view = CurrentScreen == UiScreen.Sale ? _api.GetSale() : null;
             string line = view == null ? string.Empty : TurkishTexts.ReplyAcceptFinal(view.ShownPrice);
-            return SendSale(() => _api.AcceptCustomerFinalOffer(), line, SaleSpeech.Ask);
+            return SendSale(() => _api.AcceptCustomerOffer(), line, SaleSpeech.Ask);
         }
 
         /// <summary>"Olmadı abi, başka sefere.": müşteriyi yolcu eder (IGameApi.LetCustomerGo); ürün rafta kalır.</summary>

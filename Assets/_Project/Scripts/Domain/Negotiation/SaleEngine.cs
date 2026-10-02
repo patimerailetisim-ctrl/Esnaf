@@ -160,6 +160,32 @@ namespace Esnaf.Domain.Negotiation
             return Result.Ok();
         }
 
+        /// <summary>
+        /// Müşterinin ŞU ANKİ teklifini (<see cref="SaleState.ShownPrice"/>) aynen kabul eder: anlaşma o fiyattan olur. Müşteri bir teklif vermiş olmalıdır:
+        /// "son teklif" aşaması ya da en az bir tur oynanmış açık pazarlık. İlk turdan önce (müşteri henüz teklif vermedi) reddedilir. Rastgelelik yoktur.
+        /// </summary>
+        public Result AcceptOffer(SaleState state)
+        {
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            if (!state.IsOpen)
+            {
+                return Result.Fail("negotiation.closed", "The negotiation is over.");
+            }
+
+            if (state.Phase != NegotiationPhase.FinalOffer && state.Round < 1)
+            {
+                return Result.Fail("negotiation.no_offer", "The customer has not made an offer yet.");
+            }
+
+            state.Phase = NegotiationPhase.Deal;
+            state.DealPrice = state.ShownPrice;
+            return Result.Ok();
+        }
+
         /// <summary>Müşteriyi yolcu eder; pazarlık başarısız biter.</summary>
         public Result Leave(SaleState state)
         {

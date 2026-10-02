@@ -79,6 +79,12 @@ namespace Esnaf.Domain.Game
         /// <summary>Müşterinin "son teklifim" fiyatını (sabır bitince) kabul eder. Hata: negotiation.no_final_offer.</summary>
         Result<SaleView> AcceptCustomerFinalOffer();
 
+        /// <summary>
+        /// Müşterinin ŞU ANKİ teklifini aynen kabul eder (fiyat = müşterinin teklifi; satış normal akıştan tamamlanır). Müşteri bir teklif vermiş olmalı
+        /// (son teklif ya da en az bir tur). Hatalar: sale.none, negotiation.no_offer (müşteri henüz teklif vermedi), negotiation.closed.
+        /// </summary>
+        Result<SaleView> AcceptCustomerOffer();
+
         /// <summary>Müşteriyi yolcu eder: pazarlık biter, ürün rafta kalır, müşteri o gün geri gelmez.</summary>
         Result<SaleView> LetCustomerGo();
 

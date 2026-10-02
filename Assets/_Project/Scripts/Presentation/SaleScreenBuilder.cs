@@ -78,9 +78,12 @@ namespace Esnaf.Presentation
             bool stepper = false;
             Money ask = Money.FromTl(ui.AskTl);
 
-            if (sale.Phase == NegotiationPhase.FinalOffer)
+            // Müşteri teklif verdiyse (son teklif aşaması ya da ilk istenen fiyattan sonra "… olsa alırım" diye karşı teklif) oyuncuya YALNIZCA "Teklifi Kabul Et" gösterilir:
+            // fiyat seçici, "… olur abi" ve "Olmadı abi, başka sefere" yoktur; kabul müşterinin teklif ettiği fiyatı aynen kullanır.
+            bool customerMadeAnOffer = sale.Phase == NegotiationPhase.FinalOffer || sale.Round >= 1;
+            if (customerMadeAnOffer)
             {
-                replies.Add(new SaleReplyViewModel(SaleReplyKind.AcceptFinal, TurkishTexts.ReplyAcceptFinal(sale.ShownPrice), true));
+                replies.Add(new SaleReplyViewModel(SaleReplyKind.AcceptFinal, TurkishTexts.AcceptOfferButton, true));
             }
             else if (ui.Stage == 0)
             {
@@ -96,7 +99,10 @@ namespace Esnaf.Presentation
                 }
             }
 
-            replies.Add(new SaleReplyViewModel(SaleReplyKind.LetGo, TurkishTexts.ReplyLetGo, false));
+            if (!customerMadeAnOffer)
+            {
+                replies.Add(new SaleReplyViewModel(SaleReplyKind.LetGo, TurkishTexts.ReplyLetGo, false));
+            }
 
             return Describe(SaleMode.Talking, content, ui, sale, replies, stepper, ask);
         }
