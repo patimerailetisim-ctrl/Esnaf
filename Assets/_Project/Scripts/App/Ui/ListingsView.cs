@@ -78,10 +78,7 @@ namespace Esnaf.App.Ui
                 return;
             }
 
-            for (int i = _content.childCount - 1; i >= 0; i--)
-            {
-                Object.Destroy(_content.GetChild(i).gameObject);
-            }
+            UiKit.Clear(_content); // Play Mode'da Destroy, Edit Mode'da (testler) DestroyImmediate
 
             foreach (ListingRowViewModel row in _flow.Listings)
             {
