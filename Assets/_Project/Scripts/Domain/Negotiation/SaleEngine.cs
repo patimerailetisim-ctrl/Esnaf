@@ -37,6 +37,15 @@ namespace Esnaf.Domain.Negotiation
 
         public Result<SaleRound> Ask(SaleState state, Money ask)
         {
+            return Ask(state, ask, 0.0);
+        }
+
+        /// <summary>
+        /// <paramref name="directAcceptRatio"/> &gt; 0 ise (bkz. <see cref="DirectAcceptPolicy"/>): müşteri, müşterinin kendi teklifinden yüksek ama
+        /// <c>≤ oran × M</c> olan istenen fiyatı DOĞRUDAN kabul eder; anlaşma İSTENEN fiyata olur (≤ M). 0 ise eski davranış (yalnızca müşterinin teklifi üzerinden anlaşma).
+        /// </summary>
+        public Result<SaleRound> Ask(SaleState state, Money ask, double directAcceptRatio)
+        {
             if (state == null)
             {
                 throw new ArgumentNullException(nameof(state));
@@ -83,6 +92,12 @@ namespace Esnaf.Domain.Negotiation
                 // (3) anlaşma: istenen fiyata değil müşterinin teklifine
                 phase = NegotiationPhase.Deal;
                 deal = shown;
+            }
+            else if (directAcceptRatio > 0.0 && ask.Tl <= FloorTo10(max * Math.Min(1.0, directAcceptRatio)))
+            {
+                // (3b) doğrudan kabul: istenen fiyat müşterinin kabul edebileceği aralıkta (≤ oran × M ≤ M); müşteri pazarlığa girmeden istenen fiyata anlaşır
+                phase = NegotiationPhase.Deal;
+                deal = ask;
             }
             else
             {

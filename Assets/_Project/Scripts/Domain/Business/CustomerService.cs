@@ -266,6 +266,17 @@ namespace Esnaf.Domain.Business
             return new SaleSetup(OpeningFor(slot.NpcId, max), max, npc.Customer.Patience, trust, npc.Seller.Urgency, _time.Day);
         }
 
+        /// <summary>
+        /// Müşterinin istenen fiyatı pazarlıksız kabul edebileceği tavan oranı (M'nin oranı): mevcut kişilik sayılarından ve o anki güvenden türer
+        /// (<see cref="DirectAcceptPolicy"/>); rastgelelik ve yeni durum yoktur.
+        /// </summary>
+        public double DirectAcceptRatioOf(string npcId, int trust)
+        {
+            NpcDefinition npc = _content.GetNpc(npcId);
+            return DirectAcceptPolicy.Ratio(
+                npc.Customer.OpeningOfferRatio, npc.Customer.ValueRatio, npc.Customer.Patience, npc.Seller.Urgency, npc.Customer.ValueSigma, trust);
+        }
+
         /// <summary>Yuvanın başlangıç güveni: 50 ± 10 (çekime göre), 0–100'e kırpılır. Satış kurulumu ve kişilik profili aynı sayıyı kullanır.</summary>
         private int StartTrustOf(CustomerSlot slot)
         {

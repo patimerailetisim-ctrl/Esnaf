@@ -123,7 +123,7 @@ namespace Esnaf.Domain.Negotiation
             }
 
             SaleState work = active.State.Clone();
-            Result<SaleRound> round = _engine.Ask(work, ask);
+            Result<SaleRound> round = _engine.Ask(work, ask, _customers.DirectAcceptRatioOf(active.NpcId, work.Trust));
             if (round.IsFailure)
             {
                 return Result<SaleView>.Fail(round.ErrorCode, round.Message);
