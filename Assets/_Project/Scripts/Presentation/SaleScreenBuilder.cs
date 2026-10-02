@@ -78,10 +78,12 @@ namespace Esnaf.Presentation
             bool stepper = false;
             Money ask = Money.FromTl(ui.AskTl);
 
-            // Müşteri teklif verdiyse (son teklif aşaması ya da ilk istenen fiyattan sonra "… olsa alırım" diye karşı teklif) oyuncuya YALNIZCA "Teklifi Kabul Et" gösterilir:
-            // fiyat seçici, "… olur abi" ve "Olmadı abi, başka sefere" yoktur; kabul müşterinin teklif ettiği fiyatı aynen kullanır.
-            bool customerMadeAnOffer = sale.Phase == NegotiationPhase.FinalOffer || sale.Round >= 1;
-            if (customerMadeAnOffer)
+            // Mevcut pazarlık ekranı KORUNUR; müşteri teklif verdikten sonra buna ek olarak "Teklifi Kabul Et" eylemi eklenir:
+            //  - son teklif aşaması: [Teklifi Kabul Et, Olmadı abi] (oyun fiyat istemeyi bu aşamada zaten reddeder; ekran eskisi gibi)
+            //  - müşteri karşı teklif verdi (en az bir tur oynandı): fiyat seçici, "… olur abi", [Teklifi Kabul Et], rapor, "Olmadı abi"
+            //  - müşteri henüz teklif vermedi: eskisi gibi (selam / fiyat seçici + "… olur abi" + "Olmadı abi"), "Teklifi Kabul Et" YOK.
+            // "Teklifi Kabul Et", müşterinin söylediği fiyatı aynen kabul eder; ayrı bir "pazarlığa devam" düğmesi yoktur ("… olur abi" zaten devam ettirir).
+            if (sale.Phase == NegotiationPhase.FinalOffer)
             {
                 replies.Add(new SaleReplyViewModel(SaleReplyKind.AcceptFinal, TurkishTexts.AcceptOfferButton, true));
             }
@@ -93,16 +95,18 @@ namespace Esnaf.Presentation
             {
                 stepper = true;
                 replies.Add(new SaleReplyViewModel(SaleReplyKind.Ask, TurkishTexts.ReplyPrice(ask), true));
+                if (sale.Round >= 1)
+                {
+                    replies.Add(new SaleReplyViewModel(SaleReplyKind.AcceptFinal, TurkishTexts.AcceptOfferButton, false));
+                }
+
                 if (!sale.ReportShown && sale.Reports.Count > 0)
                 {
                     replies.Add(new SaleReplyViewModel(SaleReplyKind.ShowReport, TurkishTexts.ReplyReport, false, sale.Reports[0].AppraisalId));
                 }
             }
 
-            if (!customerMadeAnOffer)
-            {
-                replies.Add(new SaleReplyViewModel(SaleReplyKind.LetGo, TurkishTexts.ReplyLetGo, false));
-            }
+            replies.Add(new SaleReplyViewModel(SaleReplyKind.LetGo, TurkishTexts.ReplyLetGo, false));
 
             return Describe(SaleMode.Talking, content, ui, sale, replies, stepper, ask);
         }

@@ -16,8 +16,8 @@ using UnityEngine.UI;
 namespace Esnaf.App.Tests
 {
     /// <summary>
-    /// Unity-only (Test Runner > EditMode): müşteri son teklifini verince satış panelinde YALNIZCA "Teklifi Kabul Et" düğmesi vardır (pazarlığa devam / ayrılma / fiyat
-    /// seçici yok); tırnaksız yazılır; tıklayınca müşterinin teklif fiyatıyla satış tamamlanır.
+    /// Unity-only (Test Runner > EditMode): mevcut pazarlık ekranı KORUNUR (fiyat seçici, "… olur abi", "Olmadı abi"); müşteri teklif verdikten sonra buna EK olarak
+    /// "Teklifi Kabul Et" gelir (tırnaksız); teklif öncesi görünmez; tıklayınca müşterinin teklif fiyatıyla satış tamamlanır.
     /// </summary>
     public class SaleAcceptOfferPanelTests
     {
@@ -27,8 +27,12 @@ namespace Esnaf.App.Tests
         private UiFlow _flow;
         private SalePanelView _sale;
 
-        // Satışı istenen aşamaya getirir: finalOffer ise sabır bitene kadar, değilse yalnızca BİR yüksek fiyat istenir (müşteri "… olsa alırım" der: Active, tur 1).
-        private void Build(bool finalOffer)
+        private const int BeforeAsk = 0;      // müşteri henüz teklif vermedi (selamlaşıldı, fiyat seçici açık)
+        private const int CounterOffer = 1;   // BİR yüksek fiyat istendi; müşteri "… olsa alırım" der (Active, tur 1)
+        private const int FinalOffer = 2;     // sabır bitene kadar; müşteri son teklifini verdi
+
+        // Satışı istenen aşamaya getirir.
+        private void Build(int stage)
         {
             string dir = Path.Combine(Application.dataPath, "_Project", "Content", "Data");
             ContentLoadResult loaded = ContentDatabase.Load(new DirectoryContentSource(dir));
@@ -62,13 +66,15 @@ namespace Esnaf.App.Tests
                 flow.StartSale(s.Api.GetCustomers()[0].CustomerId);
                 flow.SaleGreet();
                 flow.AdjustSalePrice(3000);
-                for (int i = 0; i < (finalOffer ? 8 : 1) && s.Api.GetSale() != null && s.Api.GetSale().Phase == NegotiationPhase.Active; i++)
+                for (int i = 0; i < (stage == FinalOffer ? 8 : stage == CounterOffer ? 1 : 0) && s.Api.GetSale() != null && s.Api.GetSale().Phase == NegotiationPhase.Active; i++)
                 {
                     flow.SaleAsk();
                 }
 
                 SaleView reached = s.Api.GetSale();
-                bool ok = reached != null && (finalOffer ? reached.Phase == NegotiationPhase.FinalOffer : reached.Phase == NegotiationPhase.Active && reached.Round == 1);
+                bool ok = reached != null && (stage == FinalOffer
+                    ? reached.Phase == NegotiationPhase.FinalOffer
+                    : reached.Phase == NegotiationPhase.Active && reached.Round == (stage == CounterOffer ? 1 : 0));
                 if (ok)
                 {
                     _session = s;
@@ -126,23 +132,22 @@ namespace Esnaf.App.Tests
         }
 
         [Test]
-        public void OnTheCustomersFinalOffer_OnlyTheAcceptOfferButtonIsShown_WithoutQuotes()
+        public void OnTheCustomersFinalOffer_TheExistingScreenIsKept_AcceptOfferAndLetGo_WithoutQuotes()
         {
-            Build(true);
+            Build(FinalOffer);
 
             Assert.IsNotNull(Find("Reply_" + SaleReplyKind.AcceptFinal));
             Assert.AreEqual("Teklifi Kabul Et", Find("Reply_" + SaleReplyKind.AcceptFinal).GetComponentInChildren<Text>().text);
-            Assert.AreEqual(1, CountNamed("Reply_"), "tek eylem düğmesi");
-            Assert.IsNull(Find("Reply_" + SaleReplyKind.Ask), "pazarlığa devam yok");
-            Assert.IsNull(Find("Reply_" + SaleReplyKind.LetGo));
-            Assert.AreEqual(0, CountNamed("Step_"), "fiyat seçici düğmeleri yok");
-            Assert.IsNull(Find("Stepper"));
+            Assert.IsNotNull(Find("Reply_" + SaleReplyKind.LetGo), "\"Olmadı abi, başka sefere\" kalır");
+            Assert.AreEqual(2, CountNamed("Reply_"));
+            Assert.IsNull(Find("Reply_" + SaleReplyKind.Ask), "oyun son teklifte fiyat istemeyi reddeder; ekran eskisi gibi");
+            Assert.AreEqual(0, CountNamed("Step_"));
         }
 
         [Test]
         public void ClickingAcceptOffer_CompletesTheSale_AtTheCustomersOfferPrice()
         {
-            Build(true);
+            Build(FinalOffer);
 
             Money offer = _session.Api.GetSale().ShownPrice;
             Money cash = _session.Api.GetCash();
@@ -158,25 +163,61 @@ namespace Esnaf.App.Tests
             Assert.IsNotNull(Find("Reply_" + SaleReplyKind.Continue), "talep yoksa sonuç ekranı, varsa aksesuar paneli ve devam düğmesi");
         }
 
-        // Play Mode'da yakalanan senaryo: müşteri "… olsa alırım" (karşı teklif, pazarlık Active) → yalnızca "Teklifi Kabul Et"
+        // Play Mode'da yakalanan senaryo: müşteri "… olsa alırım" (karşı teklif, pazarlık Active) → mevcut ekran + "Teklifi Kabul Et"
         [Test]
-        public void OnTheCustomersCounterOffer_OnlyTheAcceptOfferButtonIsShown_NoStepperNoAskNoLetGo()
+        public void OnTheCustomersCounterOffer_TheNegotiationScreenStays_AndAcceptOfferIsAdded()
         {
-            Build(false);
+            Build(CounterOffer);
 
-            Assert.IsNotNull(Find("Reply_" + SaleReplyKind.AcceptFinal));
+            Assert.IsNotNull(Find("Stepper"), "fiyat seçici kaybolmaz");
+            Assert.Greater(CountNamed("Step_"), 0);
+            Assert.IsNotNull(Find("Reply_" + SaleReplyKind.Ask), "\"… olur abi\" kalır");
+            Assert.IsNotNull(Find("Reply_" + SaleReplyKind.LetGo), "\"Olmadı abi, başka sefere\" kalır");
+            Assert.IsNotNull(Find("Reply_" + SaleReplyKind.AcceptFinal), "Teklifi Kabul Et eklenir");
             Assert.AreEqual("Teklifi Kabul Et", Find("Reply_" + SaleReplyKind.AcceptFinal).GetComponentInChildren<Text>().text);
-            Assert.AreEqual(1, CountNamed("Reply_"));
-            Assert.IsNull(Find("Reply_" + SaleReplyKind.Ask), "\"… olur abi\" yok");
-            Assert.IsNull(Find("Reply_" + SaleReplyKind.LetGo), "\"Olmadı abi, başka sefere\" yok");
-            Assert.AreEqual(0, CountNamed("Step_"));
-            Assert.IsNull(Find("Stepper"), "fiyat seçici yok");
+            Assert.AreEqual(3, CountNamed("Reply_"), "ayrı bir pazarlığa devam düğmesi yok");
+        }
+
+        [Test]
+        public void BeforeTheCustomersFirstOffer_AcceptOfferIsNotShown()
+        {
+            Build(BeforeAsk);
+
+            Assert.IsNull(Find("Reply_" + SaleReplyKind.AcceptFinal));
+            Assert.IsNotNull(Find("Reply_" + SaleReplyKind.LetGo));
+        }
+
+        [Test]
+        public void ClickingTheNormalAskAfterACounterOffer_ContinuesTheNegotiation()
+        {
+            Build(CounterOffer);
+            Money offer = _session.Api.GetSale().ShownPrice;
+            _flow.AdjustSalePrice(-100000);
+            _flow.AdjustSalePrice((int)(offer.Tl + 5000));
+
+            Find("Reply_" + SaleReplyKind.Ask).GetComponent<Button>().onClick.Invoke();
+
+            SaleView after = _session.Api.GetSale();
+            Assert.IsTrue(after == null ? _flow.SaleScreen.Mode == SaleMode.Done : after.Round == 2, "pazarlık sürdü ya da anlaşıldı");
+        }
+
+        [Test]
+        public void ClickingLetGoAfterACounterOffer_EndsTheSaleAsBefore()
+        {
+            Build(CounterOffer);
+            int sales = _session.EconomyState.Ledger.Records.Count(r => r.TypeId == TransactionTypeIds.Sale);
+
+            Find("Reply_" + SaleReplyKind.LetGo).GetComponent<Button>().onClick.Invoke();
+
+            Assert.IsNull(_session.Api.GetSale());
+            Assert.AreEqual(sales, _session.EconomyState.Ledger.Records.Count(r => r.TypeId == TransactionTypeIds.Sale));
+            Assert.AreEqual(1, _session.Api.GetInventory().Count, "ürün rafta kaldı");
         }
 
         [Test]
         public void ClickingAcceptOnTheCounterOffer_SellsAtExactlyTheCustomersOffer()
         {
-            Build(false);
+            Build(CounterOffer);
             Money offer = _session.Api.GetSale().ShownPrice;
             Money cash = _session.Api.GetCash();
 

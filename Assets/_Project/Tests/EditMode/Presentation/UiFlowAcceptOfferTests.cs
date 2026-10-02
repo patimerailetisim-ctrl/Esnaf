@@ -14,8 +14,9 @@ using NUnit.Framework;
 namespace Esnaf.Tests.Presentation
 {
     /// <summary>
-    /// "Teklifi Kabul Et" akışı: müşteri son teklifini verince oyuncuya yalnızca bu eylem gösterilir (pazarlığa devam / ayrılma yok); kabul, müşterinin teklif fiyatıyla
-    /// normal satış akışından tamamlanır; talep varsa aksesuar paneli, yoksa sonuç ekranı gelir. Mevcut AcceptCustomerFinalOffer yeniden kullanılır.
+    /// "Teklifi Kabul Et" akışı: mevcut pazarlık ekranı AYNEN korunur (fiyat seçici, "… olur abi", "Olmadı abi"); müşteri teklif verdikten sonra buna EK olarak
+    /// "Teklifi Kabul Et" gelir (ayrı "pazarlığa devam" düğmesi yok). Kabul, müşterinin teklif fiyatıyla normal satış akışından tamamlanır; talep varsa aksesuar paneli,
+    /// yoksa sonuç ekranı gelir. Teklif öncesinde "Teklifi Kabul Et" görünmez.
     /// </summary>
     public class UiFlowAcceptOfferTests
     {
@@ -149,22 +150,63 @@ namespace Esnaf.Tests.Presentation
         }
 
         [Test]
-        public void WhenTheCustomerMakesACounterOffer_OnlyAcceptOfferIsShown_AsInThePlayModeScreenshot()
+        public void AfterACounterOffer_TheNegotiationScreenStaysAsItWas_AndAcceptOfferIsAddedToIt()
         {
             GameSession s;
             using (UiFlow flow = CounterOffer(out s))
             {
                 SaleScreenViewModel screen = flow.SaleScreen;
                 SaleView sale = s.Api.GetSale();
+                SaleReplyKind[] kinds = screen.Replies.Select(r => r.Kind).ToArray();
 
-                Assert.AreEqual(NegotiationPhase.Active, sale.Phase, "karşı teklif: pazarlık Active, FinalOffer değil");
+                Assert.AreEqual(NegotiationPhase.Active, sale.Phase, "karşı teklif: pazarlık Active");
                 Assert.AreEqual(SaleMode.Talking, screen.Mode);
-                CollectionAssert.AreEqual(new[] { SaleReplyKind.AcceptFinal }, screen.Replies.Select(r => r.Kind).ToArray());
-                Assert.AreEqual("Teklifi Kabul Et", screen.Replies[0].Text);
-                Assert.IsFalse(screen.ShowsPriceStepper, "fiyat seçici yok");
-                Assert.IsFalse(screen.Replies.Any(r => r.Kind == SaleReplyKind.Ask), "\"… olur abi\" yok");
-                Assert.IsFalse(screen.Replies.Any(r => r.Kind == SaleReplyKind.LetGo), "\"Olmadı abi, başka sefere\" yok");
+                Assert.IsTrue(screen.ShowsPriceStepper, "fiyat seçici kaybolmaz");
+                Assert.Contains(SaleReplyKind.Ask, kinds, "\"… olur abi\" kalır");
+                Assert.Contains(SaleReplyKind.LetGo, kinds, "\"Olmadı abi, başka sefere\" kalır");
+                Assert.Contains(SaleReplyKind.AcceptFinal, kinds, "Teklifi Kabul Et eklenir");
+                Assert.AreEqual("Teklifi Kabul Et", screen.Replies.Single(r => r.Kind == SaleReplyKind.AcceptFinal).Text);
+                Assert.AreEqual(SaleReplyKind.Ask, screen.Replies[0].Kind, "ilk ve vurgulu cevap hâlâ fiyat");
+                Assert.IsTrue(screen.Replies[0].IsPrimary);
+                Assert.IsFalse(screen.Replies.Any(r => r.Text.ToLowerInvariant().Contains("devam")), "ayrı pazarlığa devam düğmesi yok");
+                Assert.AreEqual(1, kinds.Count(k => k == SaleReplyKind.AcceptFinal));
                 StringAssert.Contains(MoneyFormatter.Format(sale.ShownPrice), screen.CustomerLine, "müşteri teklifini söylüyor");
+            }
+        }
+
+        [Test]
+        public void AfterACounterOffer_AskingAnotherPrice_ContinuesTheNegotiation_AsBefore()
+        {
+            GameSession s;
+            using (UiFlow flow = CounterOffer(out s))
+            {
+                Money offer = s.Api.GetSale().ShownPrice;
+                flow.AdjustSalePrice(-100000);
+                flow.AdjustSalePrice((int)(offer.Tl + 5000));
+
+                Result<SaleView> again = flow.SaleAsk();
+
+                Assert.IsTrue(again.IsSuccess, again.ErrorCode);
+                Assert.IsTrue(again.Value.Round == 2 || again.Value.Phase == NegotiationPhase.Deal, "pazarlık sürdü ya da anlaşıldı");
+                Assert.AreNotEqual(NegotiationPhase.Failed, again.Value.Phase);
+            }
+        }
+
+        [Test]
+        public void AfterACounterOffer_LettingTheCustomerGo_WorksAsBefore()
+        {
+            GameSession s;
+            using (UiFlow flow = CounterOffer(out s))
+            {
+                int sales = s.EconomyState.Ledger.Records.Count(r => r.TypeId == TransactionTypeIds.Sale);
+
+                Result<SaleView> result = flow.SaleLetGo();
+
+                Assert.IsTrue(result.IsSuccess, result.ErrorCode);
+                Assert.AreEqual(NegotiationPhase.Failed, result.Value.Phase);
+                Assert.AreEqual(sales, s.EconomyState.Ledger.Records.Count(r => r.TypeId == TransactionTypeIds.Sale), "satış olmadı");
+                Assert.AreEqual(1, s.Api.GetInventory().Count, "ürün rafta kaldı");
+                Assert.IsNull(flow.SaleScreen.AddOn);
             }
         }
 
@@ -209,6 +251,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual("negotiation.no_offer", s.Api.AcceptCustomerOffer().ErrorCode);
                 Assert.AreEqual(digest, s.Api.GetStateDigest());
                 Assert.IsTrue(flow.SaleScreen.ShowsPriceStepper);
+                CollectionAssert.AreEqual(new[] { SaleReplyKind.Ask, SaleReplyKind.LetGo }, flow.SaleScreen.Replies.Select(r => r.Kind).ToArray(), "teklif öncesi Teklifi Kabul Et yok");
             }
         }
 
@@ -227,7 +270,7 @@ namespace Esnaf.Tests.Presentation
         }
 
         [Test]
-        public void WhenTheCustomerMakesTheirFinalOffer_OnlyAcceptOfferIsShown()
+        public void OnTheFinalOffer_TheExistingScreenIsKept_WithAcceptOfferAndLetGo()
         {
             GameSession s;
             using (UiFlow flow = FinalOfferWhere("any-no", false, out s))
@@ -235,17 +278,13 @@ namespace Esnaf.Tests.Presentation
                 SaleScreenViewModel screen = flow.SaleScreen;
 
                 Assert.AreEqual(SaleMode.Talking, screen.Mode);
-                CollectionAssert.AreEqual(new[] { SaleReplyKind.AcceptFinal }, screen.Replies.Select(r => r.Kind).ToArray(), "yalnızca tek eylem");
+                Assert.AreEqual(NegotiationPhase.FinalOffer, s.Api.GetSale().Phase);
+                CollectionAssert.AreEqual(new[] { SaleReplyKind.AcceptFinal, SaleReplyKind.LetGo }, screen.Replies.Select(r => r.Kind).ToArray(), "mevcut son teklif ekranı: kabul + ayrılma");
                 Assert.AreEqual("Teklifi Kabul Et", screen.Replies[0].Text);
                 Assert.IsTrue(screen.Replies[0].IsPrimary);
-                Assert.IsFalse(screen.ShowsPriceStepper, "pazarlığa devam için fiyat seçici yok");
-                foreach (SaleReplyViewModel reply in screen.Replies)
-                {
-                    StringAssert.DoesNotContain("azarl", reply.Text);
-                    StringAssert.DoesNotContain("devam", reply.Text.ToLowerInvariant());
-                }
-
-                Assert.IsFalse(screen.Replies.Any(r => r.Kind == SaleReplyKind.Ask || r.Kind == SaleReplyKind.LetGo || r.Kind == SaleReplyKind.ShowReport || r.Kind == SaleReplyKind.Greet));
+                Assert.AreEqual(1, screen.Replies.Count(r => r.Kind == SaleReplyKind.AcceptFinal));
+                Assert.IsFalse(screen.ShowsPriceStepper, "oyun son teklifte fiyat istemeyi reddeder; ekran eskisi gibi");
+                Assert.IsFalse(screen.Replies.Any(r => r.Text.ToLowerInvariant().Contains("devam")), "ayrı pazarlığa devam düğmesi yok");
             }
         }
 
