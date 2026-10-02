@@ -281,7 +281,9 @@ namespace Esnaf.App.Ui
             {
                 SaleReplyViewModel chosen = reply;
                 Color fill = reply.IsPrimary ? UiTheme.Gold : UiTheme.Card;
-                Button button = UiKit.RoundedButton(_content, "Reply_" + reply.Kind, "“" + reply.Text + "”", 42, fill, UiTheme.Ink, () => OnReply(chosen));
+                // Söylenen cevaplar tırnak içinde gösterilir; "Devam" ise konuşma değil gezinme düğmesidir, tırnaksız yazılır.
+                string label = reply.Kind == SaleReplyKind.Continue ? reply.Text : "“" + reply.Text + "”";
+                Button button = UiKit.RoundedButton(_content, "Reply_" + reply.Kind, label, 42, fill, UiTheme.Ink, () => OnReply(chosen));
                 UiKit.AddShadow(button.gameObject, reply.IsPrimary ? 0.18f : 0.07f, reply.IsPrimary ? 8f : 6f);
                 UiKit.Size2(button.GetComponent<RectTransform>(), 0f, ButtonHeight);
                 if (reply.IsPrimary)
