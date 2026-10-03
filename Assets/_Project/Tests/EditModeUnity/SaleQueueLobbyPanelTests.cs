@@ -112,6 +112,9 @@ namespace Esnaf.App.Tests
         }
 
         // Gerçek zamanlı saati n gerçek saniye boyunca akıtır.
+        // 1 gerçek sn = 3 oyun dk (Gün 12.6).
+        private static readonly double OneMinute = 1.0 / UiFlow.GameMinutesPerRealSecond;
+
         private void TickSeconds(int seconds)
         {
             for (int i = 0; i < seconds; i++)
@@ -122,7 +125,10 @@ namespace Esnaf.App.Tests
 
         private void TickToArrival(QueuedCustomer customer)
         {
-            TickSeconds(customer.ArrivalMinute - Now());
+            while (Now() < customer.ArrivalMinute)
+            {
+                _flow.Tick(OneMinute); // dakika dakika: geliş dakikasını aşmaz
+            }
         }
 
         private void Attach()
@@ -175,7 +181,7 @@ namespace Esnaf.App.Tests
             Assert.AreEqual("09:00", TextOf("ClockText"));
             TickSeconds(75);
 
-            Assert.AreEqual("10:15", TextOf("ClockText"), "75 saniye = 75 dakika");
+            Assert.AreEqual("12:45", TextOf("ClockText"), "75 saniye = 225 dakika");
             StringAssert.Contains("Gün", TextOf("DayText"));
         }
 
@@ -303,7 +309,7 @@ namespace Esnaf.App.Tests
             TickToArrival(first);
             Assert.IsNotNull(Find("Customer_" + first.CustomerId));
 
-            TickSeconds(QueuePolicy.MaxWaitMinutes);
+            TickSeconds(20); // 20 gerçek saniye = 60 oyun dakikası
 
             Assert.IsNull(Find("Customer_" + first.CustomerId), "sabrı bitti, çıktı");
             Assert.IsNotNull(_flow.StatusMessage);
@@ -335,7 +341,7 @@ namespace Esnaf.App.Tests
         {
             Build(true);
             _flow.ClockTicked += Refresh;
-            TickSeconds(12 * 60 + 30);
+            TickSeconds(245); // 4 gerçek dakika = tüm gün
             _flow.OpenCustomers();
 
             Assert.AreEqual(0, CountNamed("Customer_"));

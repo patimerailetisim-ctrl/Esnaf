@@ -551,14 +551,14 @@ namespace Esnaf.Presentation
             return true;
         }
 
-        /// <summary>1 gerçek saniye = 1 oyun dakikası (Gün 12.6).</summary>
-        public const double GameMinutesPerRealSecond = 1.0;
+        /// <summary>1 gerçek saniye = 3 oyun dakikası (Gün 12.6): 09:00-21:00 toplam 4 gerçek dakikada geçer, 60 dk'lık müşteri sabrı 20 gerçek saniyedir.</summary>
+        public const double GameMinutesPerRealSecond = 3.0;
 
-        /// <summary>Tek <see cref="Tick"/> çağrısında işlenecek en çok gerçek saniye (duraklama/takılma sonrası saatin sıçramasını önler).</summary>
+        /// <summary>Tek <see cref="Tick"/> çağrısında işlenecek en çok gerçek saniye (5 sn = en çok 15 oyun dakikası) (duraklama/takılma sonrası saatin sıçramasını önler).</summary>
         public const double MaxTickSeconds = 5.0;
 
         /// <summary>
-        /// Gerçek zamanlı saat (Gün 12.6): geçen gerçek saniyeyi biriktirir (1 sn = 1 oyun dakikası) ve TAM dakikaları mevcut IGameApi.AdvanceTime ile işler. Domain gerçek zamandan
+        /// Gerçek zamanlı saat (Gün 12.6): geçen gerçek saniyeyi biriktirir (1 sn = 3 oyun dakikası) ve TAM dakikaları mevcut IGameApi.AdvanceTime ile işler. Domain gerçek zamandan
         /// habersizdir; yalnızca AdvanceTime çağrılır, bu yüzden oyun deterministik ve kayıtla uyumlu kalır. Mağaza kapalıyken (21:00) saat durur. Aynı saniyede birden çok çağrı
         /// ya da küçük kesirler birikir. İşlenen oyun dakikasını döndürür. Ekran YALNIZCA kuyruk (gelen/çıkan müşteri) ya da durum mesajı değişirse yeniden kurulur
         /// (<see cref="Changed"/>); aksi halde yalnızca <see cref="ClockTicked"/> yayınlanır (üst çubuk saati).

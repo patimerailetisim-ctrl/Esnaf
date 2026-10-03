@@ -115,7 +115,7 @@ namespace Esnaf.App
             ShowScreen();
         }
 
-        // Gün 12.6: saat kendiliğinden akar (1 gerçek saniye = 1 oyun dakikası). Gerçek zaman yalnızca burada okunur; kural UiFlow/IGameApi'dedir.
+        // Gün 12.6: saat kendiliğinden akar (1 gerçek saniye = 3 oyun dakikası). Gerçek zaman yalnızca burada okunur; kural UiFlow/IGameApi'dedir.
         private void Update()
         {
             if (_flow != null)

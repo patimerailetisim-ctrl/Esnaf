@@ -55,7 +55,10 @@ namespace Esnaf.Tests.Presentation
             return s.Api.GetClock().MinuteOfDay;
         }
 
-        // Gerçek zamanlı saat: n gerçek saniyeyi 1 saniyelik adımlarla işler.
+        // Tam 1 oyun dakikasına denk gelen gerçek süre (Gün 12.6 hız değişikliği: 1 gerçek sn = 3 oyun dk).
+        private static readonly double OneMinute = 1.0 / UiFlow.GameMinutesPerRealSecond;
+
+        // Gerçek zamanlı saat: n gerçek saniyeyi 1 saniyelik adımlarla işler (her adım 3 oyun dakikası).
         private static void TickSeconds(UiFlow flow, int seconds)
         {
             for (int i = 0; i < seconds; i++)
@@ -70,7 +73,7 @@ namespace Esnaf.Tests.Presentation
             int guard = 0;
             while (Now(s) < minuteOfDay && guard++ < 2000)
             {
-                flow.Tick(1.0);
+                flow.Tick(OneMinute); // dakika dakika: hedef dakikayı aşmaz
             }
         }
 
@@ -160,7 +163,7 @@ namespace Esnaf.Tests.Presentation
         // ---------- gerçek zamanlı saat ----------
 
         [Test]
-        public void TheGameStartsAtNine_AndOneRealSecondIsOneGameMinute()
+        public void TheGameStartsAtNine_AndOneRealSecondIsThreeGameMinutes()
         {
             GameSession s = New(1UL);
             using (UiFlow flow = Flow(s))
@@ -169,11 +172,13 @@ namespace Esnaf.Tests.Presentation
 
                 int moved = flow.Tick(1.0);
 
-                Assert.AreEqual(1, moved);
-                Assert.AreEqual(StoreHours.OpenMinute + 1, Now(s));
-                Assert.AreEqual("09:01", flow.TopBar.ClockText);
-                TickSeconds(flow, 59);
-                Assert.AreEqual("10:00", flow.TopBar.ClockText, "60 saniye = 60 dakika");
+                Assert.AreEqual(3, moved);
+                Assert.AreEqual(StoreHours.OpenMinute + 3, Now(s));
+                Assert.AreEqual("09:03", flow.TopBar.ClockText);
+                TickSeconds(flow, 19);
+                Assert.AreEqual("10:00", flow.TopBar.ClockText, "20 saniye = 60 dakika");
+                TickSeconds(flow, 220);
+                Assert.AreEqual("21:00", flow.TopBar.ClockText, "toplam 4 gerçek dakika (240 sn) = 09:00-21:00");
             }
         }
 
@@ -183,14 +188,15 @@ namespace Esnaf.Tests.Presentation
             GameSession s = New(1UL);
             using (UiFlow flow = Flow(s))
             {
-                Assert.AreEqual(0, flow.Tick(0.4));
-                Assert.AreEqual(0, flow.Tick(0.4));
+                Assert.AreEqual(0, flow.Tick(0.1), "0.3 dk birikir");
+                Assert.AreEqual(0, flow.Tick(0.2), "0.9 dk birikir");
                 Assert.AreEqual(StoreHours.OpenMinute, Now(s));
 
-                Assert.AreEqual(1, flow.Tick(0.4), "0.4+0.4+0.4 = 1.2 sn: 1 dakika, 0.2 birikir");
+                Assert.AreEqual(1, flow.Tick(0.1), "0.9+0.3 = 1.2 dk: 1 dakika işlenir, 0.2 birikir");
                 Assert.AreEqual(StoreHours.OpenMinute + 1, Now(s));
-                Assert.AreEqual(0, flow.Tick(0.7));
-                Assert.AreEqual(1, flow.Tick(0.1), "0.2+0.7+0.1 = 1.0 sn");
+                Assert.AreEqual(0, flow.Tick(0.1), "0.5 dk");
+                Assert.AreEqual(0, flow.Tick(0.1), "0.8 dk");
+                Assert.AreEqual(1, flow.Tick(0.1), "1.1 dk");
                 Assert.AreEqual(StoreHours.OpenMinute + 2, Now(s));
                 Assert.AreEqual(0, flow.Tick(0.0));
                 Assert.AreEqual(0, flow.Tick(-3.0), "negatif/sıfır süre saati oynatmaz");
@@ -205,8 +211,9 @@ namespace Esnaf.Tests.Presentation
             {
                 int moved = flow.Tick(600.0);
 
-                Assert.AreEqual((int)UiFlow.MaxTickSeconds, moved, "duraklama sonrası saat sıçramaz");
-                Assert.AreEqual(StoreHours.OpenMinute + 5, Now(s));
+                Assert.AreEqual(15, (int)(UiFlow.MaxTickSeconds * UiFlow.GameMinutesPerRealSecond));
+                Assert.AreEqual(15, moved, "tek Tick en çok 5 gerçek sn = 15 oyun dakikası; duraklama sonrası saat sıçramaz");
+                Assert.AreEqual(StoreHours.OpenMinute + 15, Now(s));
             }
         }
 
@@ -216,7 +223,7 @@ namespace Esnaf.Tests.Presentation
             GameSession s = New(1UL);
             using (UiFlow flow = Flow(s))
             {
-                TickSeconds(flow, 900);
+                TickSeconds(flow, 300);
 
                 Assert.AreEqual(StoreHours.CloseMinute, Now(s), "21:00'i aşmaz");
                 Assert.AreEqual("21:00", flow.TopBar.ClockText);
@@ -234,10 +241,10 @@ namespace Esnaf.Tests.Presentation
             using (UiFlow fa = Flow(a))
             using (UiFlow fb = Flow(b))
             {
-                TickSeconds(fa, 300);
-                for (int i = 0; i < 100; i++)
+                TickSeconds(fa, 100); // 300 oyun dakikası
+                for (int i = 0; i < 40; i++)
                 {
-                    fb.Tick(3.0); // başka adım boyuyla aynı oyun dakikası
+                    fb.Tick(2.5); // başka adım boyuyla aynı oyun dakikası (40 x 7.5 = 300)
                 }
 
                 Assert.AreEqual(Now(a), Now(b));
@@ -260,8 +267,8 @@ namespace Esnaf.Tests.Presentation
                 TickSeconds(flow, 30);
 
                 Assert.AreEqual(0, changed, "ekran yeniden kurulmaz");
-                Assert.AreEqual(30, ticked, "üst çubuk saati her dakika güncellenir");
-                Assert.AreEqual("09:30", flow.TopBar.ClockText);
+                Assert.AreEqual(30, ticked, "üst çubuk saati her tikte güncellenir");
+                Assert.AreEqual("10:30", flow.TopBar.ClockText, "30 sn = 90 dk");
             }
         }
 
@@ -295,7 +302,7 @@ namespace Esnaf.Tests.Presentation
                 TickUntil(s, flow, first.ArrivalMinute - 1);
                 Assert.AreEqual(QueueLobbyState.Empty, flow.SaleScreen.Queue.State, "geliş saatinden bir dakika önce kimse yok");
 
-                flow.Tick(1.0);
+                flow.Tick(OneMinute);
 
                 QueueLobbyViewModel queue = flow.SaleScreen.Queue;
                 Assert.AreEqual(first.ArrivalMinute, Now(s));
@@ -337,7 +344,7 @@ namespace Esnaf.Tests.Presentation
             {
                 for (int i = 0; i < 400; i++)
                 {
-                    flow.Tick(1.0);
+                    flow.Tick(OneMinute);
                     var texts = new List<string> { flow.QueueButtonText, flow.SaleScreen.Queue.StatusLine, flow.StatusMessage };
                     texts.AddRange(flow.SaleScreen.Queue.Waiting.Select(w => w.ArrivedText));
                     foreach (string t in texts.Where(x => x != null))
@@ -368,13 +375,32 @@ namespace Esnaf.Tests.Presentation
                 Assert.IsFalse(left.Any(e => e.CustomerId == first.CustomerId), "59. dakikada hâlâ bekliyor");
                 Assert.IsNotNull(flow.SaleScreen.Queue.Customer);
 
-                flow.Tick(1.0);
+                flow.Tick(OneMinute);
 
                 CustomerLeftWaiting e0 = left.First(e => e.CustomerId == first.CustomerId);
                 Assert.AreEqual(QueueLeaveReason.Timeout, e0.Reason);
                 StringAssert.Contains(flow.Content.CustomerName(first.CustomerId, first.NpcId), flow.StatusMessage);
                 StringAssert.Contains("\u201C", flow.StatusMessage, "müşterinin sözü tırnak içinde");
                 Assert.AreNotEqual(first.CustomerId, flow.SaleScreen.Queue.Customer == null ? 0L : flow.SaleScreen.Queue.Customer.CustomerId);
+            }
+        }
+
+        [Test]
+        public void TheSixtyMinuteWait_IsTwentyRealSeconds_AtThreeTimesSpeed()
+        {
+            GameSession s = InterestedFirstCustomer();
+            QueuedCustomer first = Plan(s)[0];
+            var left = new List<CustomerLeftWaiting>();
+            using (s.Bus.Subscribe<CustomerLeftWaiting>(e => left.Add(e)))
+            using (UiFlow flow = OpenLobby(s))
+            {
+                TickUntil(s, flow, first.ArrivalMinute);
+
+                TickSeconds(flow, 19);
+                Assert.IsFalse(left.Any(e => e.CustomerId == first.CustomerId), "19 gerçek saniye (57 dk): hâlâ bekliyor");
+
+                TickSeconds(flow, 1);
+                Assert.IsTrue(left.Any(e => e.CustomerId == first.CustomerId), "20 gerçek saniye (60 dk): çıktı");
             }
         }
 
@@ -512,7 +538,7 @@ namespace Esnaf.Tests.Presentation
                 {
                     for (int i = 0; i < 721; i++)
                     {
-                        flow.Tick(1.0);
+                        flow.Tick(OneMinute);
                         Assert.AreEqual(QueueLobbyState.Empty == flow.SaleScreen.Queue.State || Now(s) >= StoreHours.CloseMinute, true, "seed " + seed);
                     }
 
