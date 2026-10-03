@@ -95,18 +95,6 @@ namespace Esnaf.Tests.Presentation
             throw new InvalidOperationException("No seed.");
         }
 
-        // Rafta fiyatlı ürün var ama fiyatı o kadar yüksek ki hiçbir müşteri ilgilenmez (müşteri gelir, ürünü yoktur).
-        private static GameSession UninterestedFirstCustomer()
-        {
-            GameSession s = WithShelf(1UL, 90000);
-            QueuedCustomer first = Plan(s)[0];
-            s.Api.AdvanceTime(first.ArrivalMinute - Now(s));
-            CustomerView v = s.Api.GetActiveCustomer();
-            Assert.IsNotNull(v, "fiyatlı ürün rafta: müşteri gelir");
-            Assert.AreEqual(0L, v.InstanceId, "ama hiçbir ürüne ilgi duymaz");
-            return WithShelf(1UL, 90000);
-        }
-
         // İlk iki müşteri 45 dakikadan kısa arayla gelen, ilkinin ilgilendiği ürünü olan oturum.
         private static GameSession TwoCloseCustomers()
         {
@@ -488,11 +476,14 @@ namespace Esnaf.Tests.Presentation
         [Test]
         public void ACustomerWithNothingToBuy_ShowsADismissButton_AndDismissingUsesTheExistingFlow()
         {
-            GameSession s = UninterestedFirstCustomer();
+            // Gün 12.6: müşteri ilgilenebileceği ürün varken gelir; geldikten sonra ürün çok pahalıya etiketlenirse mevcut "ürün yok → Gönder" akışı sürer.
+            GameSession s = InterestedFirstCustomer();
             QueuedCustomer first = Plan(s)[0];
             using (UiFlow flow = OpenLobby(s))
             {
                 TickUntil(s, flow, first.ArrivalMinute);
+                Assert.IsTrue(s.Api.SetPrice(s.Api.GetInventory()[0].InstanceId, Money.FromTl(90000)).IsSuccess);
+                flow.Refresh();
                 QueueLobbyViewModel queue = flow.SaleScreen.Queue;
                 Assert.AreEqual(QueueLobbyState.NoInterest, queue.State);
                 Assert.IsTrue(queue.CanDismiss);

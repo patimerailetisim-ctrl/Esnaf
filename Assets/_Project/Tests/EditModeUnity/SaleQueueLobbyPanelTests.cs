@@ -77,18 +77,11 @@ namespace Esnaf.App.Tests
             return s;
         }
 
-        // Oturum: raflı (ilk müşterisi geldiğinde ilgilendiği ürün vardır) ya da fiyatı çok yüksek ürünlü (ilk müşteri gelir ama hiçbir ürüne ilgi duymaz).
-        private void Build(bool interested, int maxGapToSecond = int.MaxValue)
+        // Oturum: raflı; ilk müşterisi geldiğinde ilgilendiği ürün vardır (aksi halde müşteri hiç gelmezdi).
+        private void Build(int maxGapToSecond = int.MaxValue)
         {
             LoadContent();
             _session = null;
-            if (!interested)
-            {
-                _session = WithShelf(1UL, 90000);
-                Attach();
-                return;
-            }
-
             for (ulong seed = 1; seed <= 1500 && _session == null; seed++)
             {
                 GameSession probe = WithShelf(seed);
@@ -175,7 +168,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void TheTopBar_ShowsTheClock_AndFollowsTheRealTimeTick()
         {
-            Build(true);
+            Build();
             _flow.ClockTicked += Refresh;
 
             Assert.AreEqual("09:00", TextOf("ClockText"));
@@ -188,7 +181,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void BeforeAnyoneArrives_TheLobbyShowsNoCountNoNextTimeAndNoWaitButton()
         {
-            Build(true);
+            Build();
 
             _flow.OpenCustomers();
 
@@ -204,7 +197,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void ThePlayersMainButton_ShowsTheQueueState_NotTheOldSlotCountNorATime()
         {
-            Build(true);
+            Build();
             Assert.AreEqual(TurkishTexts.NoCustomersButton, Find("CustomersButton").GetComponentInChildren<Text>().text);
 
             QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
@@ -223,7 +216,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void ACustomerAppearsOnTheirOwn_AsExactlyOneCard_WithNoWaitButton()
         {
-            Build(true);
+            Build();
             QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
             _flow.OpenCustomers();
 
@@ -240,7 +233,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void AQueuedCustomer_IsListedLive_WithTheirEntryTime()
         {
-            Build(true, 45); // ilk iki müşteri 45 dk'dan yakın gelen tohum: ikincisi birincinin sabrı bitmeden kuyruğa girer
+            Build(45); // ilk iki müşteri 45 dk'dan yakın gelen tohum: ikincisi birincinin sabrı bitmeden kuyruğa girer
             IReadOnlyList<QueuedCustomer> plan = _session.CustomerQueue.PlanFor(1);
 
             _flow.OpenCustomers();
@@ -254,7 +247,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void TheOldRosterCards_AreNotDrawnInTheMainLobby()
         {
-            Build(true);
+            Build();
             long[] oldIds = _session.Api.GetCustomers().Select(c => c.CustomerId).ToArray();
             _flow.OpenCustomers();
             TickToArrival(_session.CustomerQueue.PlanFor(1)[0]);
@@ -270,7 +263,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void TappingTheActiveCustomer_StartsTheExistingSaleScreen()
         {
-            Build(true);
+            Build();
             _flow.OpenCustomers();
             TickToArrival(_session.CustomerQueue.PlanFor(1)[0]);
             long id = _flow.SaleScreen.Queue.Customer.CustomerId;
@@ -286,7 +279,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void AfterTheSale_TheLobbyReturns_WithTheCustomerCompleted()
         {
-            Build(true);
+            Build();
             _flow.OpenCustomers();
             TickToArrival(_session.CustomerQueue.PlanFor(1)[0]);
             Find("Customer_" + _flow.SaleScreen.Queue.Customer.CustomerId).GetComponent<Button>().onClick.Invoke();
@@ -303,7 +296,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void ACustomerWhoWaitsAnHour_LeavesWithANaturalLine_AndTheCardDisappears()
         {
-            Build(true);
+            Build();
             QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
             _flow.OpenCustomers();
             TickToArrival(first);
@@ -319,10 +312,13 @@ namespace Esnaf.App.Tests
         [Test]
         public void ACustomerWithNothingToBuy_ShowsADismissButton_AndNotAClickableCard()
         {
-            Build(false);
+            // Gün 12.6: müşteri ilgilenebileceği ürün varken gelir; geldikten sonra ürün çok pahalıya etiketlenirse "ürün yok → Gönder" akışı sürer.
+            Build();
             _flow.OpenCustomers();
             QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
             TickToArrival(first);
+            Assert.IsTrue(_session.Api.SetPrice(_session.Api.GetInventory()[0].InstanceId, Money.FromTl(90000)).IsSuccess);
+            _flow.Refresh();
 
             Assert.IsNotNull(Find("DismissButton"));
             Transform card = Find("Customer_" + first.CustomerId);
@@ -339,7 +335,7 @@ namespace Esnaf.App.Tests
         [Test]
         public void WhenTheStoreIsClosed_NoCustomerCardIsShown_AndTheClockStopsAtTwentyOne()
         {
-            Build(true);
+            Build();
             _flow.ClockTicked += Refresh;
             TickSeconds(245); // 4 gerçek dakika = tüm gün
             _flow.OpenCustomers();

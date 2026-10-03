@@ -16,7 +16,7 @@ namespace Esnaf.Domain.Business
     /// akışlara dokunmaz) ve mevcut 10 NPC/kişilik havuzundan seçilir. Geliş saati planın kendisidir; "giriş zamanı" ayrıca saklanmaz.
     ///
     /// <b>Kalıcı değerler</b> (mevcut <see cref="CustomerState"/>): <see cref="CustomerState.QueueCursor"/> (bu sıraya kadar herkes işlendi/geçti) ve
-    /// <see cref="CustomerState.QueueSkipped"/> (geliş anında rafta satılabilir ürün olmadığı için hiç gelmeyenler). Bekleme ve çıkış plan + saat + imleçten TÜRETİLİR.
+    /// <see cref="CustomerState.QueueSkipped"/> (geliş anında rafta KENDİSİNİN ilgilenebileceği fiyatlı ürün olmadığı için hiç gelmeyenler). Bekleme ve çıkış plan + saat + imleçten TÜRETİLİR.
     ///
     /// <b>Mağazada olan müşteri</b>: imleç ve atlananlar hariç, geliş saati geldiyse; süren satıştaki müşteri hep mağazadadır; diğerleri geliş + 60 dk dolunca ya da mağaza
     /// kapanınca (21:00) çıkar. İlk sıradaki mağazada olan müşteri aktiftir. Saat ilerledikçe (<see cref="StoreClock.Advanced"/>) gelişler (rafta ürün yoksa müşteri gelmez)
@@ -174,7 +174,7 @@ namespace Esnaf.Domain.Business
             IReadOnlyList<QueuedCustomer> plan = PlanFor(day);
             int cursor = CursorOf(plan);
 
-            // 1) gelişler: geliş saati bu aralıktaysa müşteri gelir; rafta satılabilir ürün yoksa HİÇ gelmez.
+            // 1) gelişler: geliş saati bu aralıktaysa müşteri gelir; kendisinin ilgilenebileceği fiyatlı ürün rafta yoksa HİÇ gelmez.
             foreach (QueuedCustomer customer in plan)
             {
                 if (customer.Index < cursor || IsSkipped(customer.Index) || customer.ArrivalMinute <= from || customer.ArrivalMinute > to)
@@ -182,7 +182,11 @@ namespace Esnaf.Domain.Business
                     continue;
                 }
 
-                if (!_customers.HasSellableStock())
+                // Müşteri özelinde: aynı "customer_queue_draws" türetmesiyle geçici yuva + mevcut FindInterest/IsEligible (fiyatlı, segment uyumlu, çok pahalı olmayan,
+                // anti-arbitraj dışı ürün). İlgilendiği ürün yoksa HİÇ gelmez ve kalıcı atlanır; genel "rafta fiyatlı ürün var" yetmez.
+                QueuedCustomer resolved;
+                CustomerSlot slot;
+                if (!TryResolve(customer.CustomerId, out resolved, out slot) || _customers.FindInterest(slot) == 0)
                 {
                     _state.QueueSkipped |= 1 << customer.Index;
                 }

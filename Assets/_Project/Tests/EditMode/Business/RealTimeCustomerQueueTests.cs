@@ -23,7 +23,7 @@ namespace Esnaf.Tests.Business
         }
 
         // Rafta bir telefon: priced=false ise fiyatsız (satılabilir stok sayılmaz).
-        private static GameSession Stocked(ulong seed, IEventBus bus = null, bool priced = true)
+        private static GameSession Stocked(ulong seed, IEventBus bus = null, bool priced = true, long priceTl = 5900)
         {
             GameSession s = New(seed, bus);
             var guided = s.Market.Listings.Single(l => l.IsGuided);
@@ -31,7 +31,7 @@ namespace Esnaf.Tests.Business
             Assert.IsTrue(s.Api.MakeOffer(Money.FromTl(5800)).IsSuccess);
             if (priced)
             {
-                Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(5900)).IsSuccess);
+                Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(priceTl)).IsSuccess);
             }
 
             return s;
@@ -323,6 +323,229 @@ namespace Esnaf.Tests.Business
 
             Assert.AreEqual(before, arrived.Count, "raf boşaldı: yeni müşteri gelmez");
             Assert.IsFalse(s.Customers.HasSellableStock());
+        }
+
+        // ---------- müşteri özelinde ilgi (Gün 12.8): gelmek için FindInterest != 0 ----------
+
+        // Müşterinin şu anki raf için ilgi ürünü (yok = 0): kuyruğun kullandığı aynı geçici yuva + mevcut FindInterest.
+        private static long InterestOf(GameSession s, QueuedCustomer customer)
+        {
+            QueuedCustomer resolved;
+            CustomerSlot slot;
+            Assert.IsTrue(s.CustomerQueue.TryResolve(customer.CustomerId, out resolved, out slot));
+            return s.Customers.FindInterest(slot);
+        }
+
+        [Test]
+        public void AGenerallySellablePhone_ThatIsTooExpensiveForEveryone_BringsNobody_AndTheyAreAllSkipped()
+        {
+            var bus = new EventBus();
+            var arrived = new List<CustomerArrived>();
+            bus.Subscribe<CustomerArrived>(arrived.Add);
+            GameSession s = Stocked(3UL, bus, true, 90000);
+            int n = Plan(s).Count;
+            Assert.IsTrue(s.Customers.HasSellableStock(), "genel olarak fiyatlı ürün var");
+
+            GoTo(s, StoreHours.CloseMinute);
+
+            Assert.AreEqual(0, arrived.Count, "ama hiçbir müşterinin ilgilenebileceği ürün değil");
+            Assert.AreEqual((1 << n) - 1, s.Capture().Customers.QueueSkipped, "hepsi kalıcı atlandı");
+        }
+
+        [Test]
+        public void ACustomerArrives_ExactlyWhenTheyHaveAnInterest_AndIsSkippedOtherwise_ForEveryCustomer()
+        {
+            int arrivedTotal = 0;
+            int skippedTotal = 0;
+            foreach (long price in new[] { 5900L, 9000L, 15000L, 90000L })
+            {
+                for (ulong seed = 1; seed <= 12; seed++)
+                {
+                    var bus = new EventBus();
+                    var arrived = new List<CustomerArrived>();
+                    bus.Subscribe<CustomerArrived>(arrived.Add);
+                    GameSession s = Stocked(seed, bus, true, price);
+                    IReadOnlyList<QueuedCustomer> plan = Plan(s);
+                    long[] interest = plan.Select(c => InterestOf(s, c)).ToArray();
+
+                    GoTo(s, StoreHours.CloseMinute);
+
+                    int mask = s.Capture().Customers.QueueSkipped ?? 0;
+                    for (int i = 0; i < plan.Count; i++)
+                    {
+                        bool came = arrived.Any(a => a.CustomerId == plan[i].CustomerId);
+                        Assert.AreEqual(interest[i] != 0, came, "seed " + seed + " fiyat " + price + " müşteri " + i);
+                        Assert.AreEqual(!came, (mask & (1 << i)) != 0, "QueueSkipped bit " + i + " seed " + seed);
+                        if (came) { arrivedTotal++; } else { skippedTotal++; }
+                    }
+                }
+            }
+
+            Assert.Greater(arrivedTotal, 0, "uygun fiyatlı ürünle müşteri gelir");
+            Assert.Greater(skippedTotal, 0, "uygunsuz fiyatla müşteri gelmez");
+        }
+
+        [Test]
+        public void AnAffordablyPricedPhone_BringsItsMatchingCustomers()
+        {
+            var bus = new EventBus();
+            var arrived = new List<CustomerArrived>();
+            bus.Subscribe<CustomerArrived>(arrived.Add);
+            GameSession s = null;
+            for (ulong seed = 1; seed <= 50 && s == null; seed++)
+            {
+                GameSession c = Stocked(seed, bus, true, 5900);
+                if (Plan(c).Any(q => InterestOf(c, q) != 0))
+                {
+                    s = c;
+                }
+            }
+
+            Assert.IsNotNull(s);
+            arrived.Clear();
+            GoTo(s, StoreHours.CloseMinute);
+
+            Assert.Greater(arrived.Count, 0);
+            Assert.IsTrue(arrived.All(a => InterestOf(s, Plan(s).Single(q => q.CustomerId == a.CustomerId)) != 0), "gelen herkesin ilgisi var");
+        }
+
+        [Test]
+        public void ASegmentMismatch_BringsNoOne_OfThatNpc()
+        {
+            // npc.cengiz yalnızca giriş/orta segmenti kabul eder (3. günden itibaren gelir); Upper bir telefona gelmez.
+            for (ulong seed = 1; seed <= 400; seed++)
+            {
+                var bus = new EventBus();
+                var arrived = new List<CustomerArrived>();
+                bus.Subscribe<CustomerArrived>(arrived.Add);
+                GameSession s = New(seed, bus);
+                Assert.IsTrue(s.Api.EndDay().IsSuccess);
+                Assert.IsTrue(s.Api.EndDay().IsSuccess);
+                var upper = s.Api.GetListings().FirstOrDefault(l => s.Content.GetProduct(l.DefinitionId).Segment == Esnaf.Domain.Products.ProductSegment.Upper);
+                if (upper == null || !Plan(s).Any(q => q.NpcId == "npc.cengiz"))
+                {
+                    continue;
+                }
+
+                Assert.IsTrue(s.Api.BuyListing(upper.ListingId).IsSuccess);
+                Assert.IsTrue(s.Api.SetPrice(s.Api.GetInventory().Last().InstanceId, upper.AskingPrice).IsSuccess);
+                arrived.Clear();
+                GoTo(s, StoreHours.CloseMinute);
+
+                foreach (QueuedCustomer c in Plan(s).Where(q => q.NpcId == "npc.cengiz"))
+                {
+                    Assert.AreEqual(0L, InterestOf(s, c), "segment uyumsuz");
+                    Assert.IsFalse(arrived.Any(a => a.CustomerId == c.CustomerId), "uyumsuz segment: gelmez");
+                    Assert.AreNotEqual(0, (s.Capture().Customers.QueueSkipped ?? 0) & (1 << c.Index), "atlandı");
+                }
+
+                return;
+            }
+
+            Assert.Fail("Upper telefonlu ve npc.cengiz'li bir oturum bulunamadı.");
+        }
+
+        [Test]
+        public void AntiArbitrage_ANpcWhoSoldThePhoneToThePlayer_DoesNotComeToBuyItBack()
+        {
+            for (ulong seed = 1; seed <= 400; seed++)
+            {
+                var bus = new EventBus();
+                var arrived = new List<CustomerArrived>();
+                bus.Subscribe<CustomerArrived>(arrived.Add);
+                GameSession s = Stocked(seed, bus, true, 5900);
+                IReadOnlyList<QueuedCustomer> plan = Plan(s);
+                long instanceId = s.Api.GetInventory()[0].InstanceId;
+                if (!plan.Any(q => q.NpcId == "npc.kemal" && InterestOf(s, q) != 0) || !plan.Any(q => q.NpcId == "npc.selin" && InterestOf(s, q) != 0))
+                {
+                    continue;
+                }
+
+                s.Npcs.RecordSoldToPlayer("npc.kemal", instanceId);
+                foreach (QueuedCustomer c in plan.Where(q => q.NpcId == "npc.kemal"))
+                {
+                    Assert.AreEqual(0L, InterestOf(s, c), "anti-arbitraj: satıcı NPC geri almaz");
+                }
+
+                arrived.Clear();
+                GoTo(s, StoreHours.CloseMinute);
+
+                Assert.IsFalse(arrived.Any(a => a.NpcId == "npc.kemal"), "ürünü oyuncuya satan NPC gelmez");
+                Assert.IsTrue(arrived.Any(a => a.NpcId == "npc.selin"), "diğer NPC'ler gelir");
+                return;
+            }
+
+            Assert.Fail("Uygun oturum bulunamadı.");
+        }
+
+        [Test]
+        public void ASkippedCustomer_StaysSkipped_EvenIfTheShelfLaterSuitsThem()
+        {
+            var bus = new EventBus();
+            var arrived = new List<CustomerArrived>();
+            bus.Subscribe<CustomerArrived>(arrived.Add);
+            GameSession s = Stocked(3UL, bus, true, 90000);
+            IReadOnlyList<QueuedCustomer> plan = Plan(s);
+            GoTo(s, plan[1].ArrivalMinute + 1);
+            Assert.AreEqual(0, arrived.Count);
+
+            Assert.IsTrue(s.Api.SetPrice(s.Api.GetInventory()[0].InstanceId, Money.FromTl(5900)).IsSuccess);
+            GoTo(s, StoreHours.CloseMinute);
+
+            Assert.IsFalse(arrived.Any(a => a.CustomerId == plan[0].CustomerId || a.CustomerId == plan[1].CustomerId), "atlananlar geri gelmez");
+        }
+
+        [Test]
+        public void TheSkipDecision_IsDeterministic_AcrossSeedsAndSaveLoad()
+        {
+            GameSession a = Stocked(6UL, null, true, 9000);
+            GameSession b = Stocked(6UL, null, true, 9000);
+            QueuedCustomer first = Plan(a)[0];
+            GoTo(a, first.ArrivalMinute + 40);
+            GoTo(b, first.ArrivalMinute + 40);
+            Assert.AreEqual(a.Api.GetStateDigest(), b.Api.GetStateDigest(), "aynı tohum, aynı sonuç");
+
+            GameSession r = GameSession.Restore(MarketHarness.RealContent(), a.Capture()).Value;
+            GoTo(a, StoreHours.CloseMinute);
+            GoTo(r, StoreHours.CloseMinute);
+
+            Assert.AreEqual(a.Api.GetStateDigest(), r.Api.GetStateDigest(), "kayıttan sonra aynı karar");
+            Assert.AreEqual(a.Capture().Customers.QueueSkipped, r.Capture().Customers.QueueSkipped);
+        }
+
+        [Test]
+        public void ACustomerWhoLosesInterestAfterArriving_StaysAndIsNotSentAwayAutomatically()
+        {
+            var bus = new EventBus();
+            var left = new List<CustomerLeftWaiting>();
+            bus.Subscribe<CustomerLeftWaiting>(left.Add);
+            GameSession s = null;
+            CustomerView active = null;
+            for (ulong seed = 1; seed <= 400 && s == null; seed++)
+            {
+                GameSession c = Stocked(seed, bus);
+                GoTo(c, Plan(c)[0].ArrivalMinute);
+                CustomerView v = c.Api.GetActiveCustomer();
+                if (v != null && v.InstanceId != 0)
+                {
+                    s = c;
+                    active = v;
+                }
+            }
+
+            Assert.IsNotNull(s);
+            left.Clear();
+            Assert.IsTrue(s.Api.SetPrice(active.InstanceId, Money.FromTl(90000)).IsSuccess);
+
+            GoTo(s, Now(s) + QueuePolicy.MaxWaitMinutes - 1);
+
+            CustomerView still = s.Api.GetActiveCustomer();
+            Assert.IsNotNull(still, "müşteri ayrılmaz");
+            Assert.AreEqual(active.CustomerId, still.CustomerId);
+            Assert.AreEqual(0L, still.InstanceId, "mevcut 'ürün bulamadı' akışı");
+            Assert.AreEqual("customer.no_interest", s.Api.StartSale(still.CustomerId).ErrorCode);
+            Assert.IsFalse(left.Any(e => e.CustomerId == active.CustomerId), "ilgi bitti diye otomatik ayrılma yok");
+            Assert.IsTrue(s.Api.CompleteCurrentCustomer().IsSuccess, "Gönder akışı çalışır");
         }
 
         // ---------- kayıt / özet / RNG ----------

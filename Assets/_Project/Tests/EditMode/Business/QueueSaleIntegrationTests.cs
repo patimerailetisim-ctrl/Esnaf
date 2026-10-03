@@ -295,12 +295,15 @@ namespace Esnaf.Tests.Business
         [Test]
         public void ACustomerWithNoProductOnTheShelf_IsActiveButNotSellable_AndCompleteCurrentCustomerSendsThemAway()
         {
-            GameSession s = WithShelf(5UL, 90000); // Gün 12.6: raf boşsa müşteri gelmez; fiyatlı ama hiç kimsenin ilgilenmeyeceği kadar pahalı ürün
-            GoTo(s, Plan(s)[0].ArrivalMinute);
+            // Gün 12.6: müşteri yalnızca ilgilenebileceği ürün varken gelir; geldikten sonra ürün hiç kimsenin ilgilenmeyeceği kadar pahalıya etiketlenirse mevcut "ürün yok" akışı sürer.
+            CustomerView arrived;
+            GameSession s = WithActive(v => true, out arrived);
+            Assert.IsTrue(s.Api.SetPrice(arrived.InstanceId, Money.FromTl(90000)).IsSuccess);
 
             CustomerView active = s.Api.GetActiveCustomer();
 
             Assert.IsNotNull(active);
+            Assert.AreEqual(arrived.CustomerId, active.CustomerId, "müşteri ayrılmaz");
             Assert.AreEqual(0, active.InstanceId, "ilgilendiği ürün yok");
             Assert.AreEqual("customer.no_interest", s.Api.StartSale(active.CustomerId).ErrorCode);
             Assert.IsTrue(s.Api.CompleteCurrentCustomer().IsSuccess);

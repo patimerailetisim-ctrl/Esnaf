@@ -336,14 +336,16 @@ namespace Esnaf.Tests.Business
         [Test]
         public void DismissingAnActiveCustomer_CostsTwoMinutes_AndWithoutOneNothing()
         {
-            // Gün 12.6: raf boşsa müşteri gelmez; ürünü olmayan müşteri için fiyatlı ama çok pahalı bir ürün rafta.
-            GameSession s = WithShelf(5UL, null, 90000);
-            QueuedCustomer first = Plan(s)[0];
-            int t0 = Now(s);
-            Assert.AreEqual("queue.no_active_customer", s.Api.CompleteCurrentCustomer().ErrorCode);
-            Assert.AreEqual(t0, Now(s), "başarısız çağrı 0 dk");
+            GameSession s0 = WithShelf(5UL);
+            int t0 = Now(s0);
+            Assert.AreEqual("queue.no_active_customer", s0.Api.CompleteCurrentCustomer().ErrorCode);
+            Assert.AreEqual(t0, Now(s0), "başarısız çağrı 0 dk");
 
-            GoTo(s, first.ArrivalMinute);
+            // Gün 12.6: müşteri yalnızca ilgilenebileceği ürün varken gelir; geldikten sonra ürün çok pahalıya etiketlenirse ilgisi biter ("ürün yok" akışı).
+            CustomerView active;
+            GameSession s = WithActive(out active);
+            Assert.IsTrue(s.Api.SetPrice(active.InstanceId, Money.FromTl(90000)).IsSuccess);
+            Assert.AreEqual(0L, s.Api.GetActiveCustomer().InstanceId, "ilgilendiği ürün artık yok");
             int t = Now(s);
 
             Assert.IsTrue(s.Api.CompleteCurrentCustomer().IsSuccess);

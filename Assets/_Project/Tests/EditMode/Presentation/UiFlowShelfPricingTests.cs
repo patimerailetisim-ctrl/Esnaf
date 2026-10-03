@@ -264,7 +264,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual(0, arrived.Count, "fiyatsızken kimse gelmez");
 
                 flow.SelectShelfItem(Line(s).InstanceId);
-                flow.SetShelfPrice(Line(s).CostBasis.Tl + 1500);
+                flow.SetShelfPrice(Line(s).CostBasis.Tl);
                 Assert.IsTrue(flow.SaveShelfPrice().IsSuccess);
                 s.Api.AdvanceTime(StoreHours.CloseMinute - s.Api.GetClock().MinuteOfDay);
 
