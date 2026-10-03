@@ -117,6 +117,38 @@ namespace Esnaf.Domain.Inventory
             return Result.Ok();
         }
 
+        /// <summary>
+        /// Raftaki ürünü satıştan çıkarır (Gün 13.2): etiket fiyatı 0'a döner (mevcut "satış dışı" durumu; yeni durum yoktur). Ürün YOK EDİLMEZ, stoktan düşmez, maliyet tabanı ve
+        /// mülkiyet değişmez, yalnızca satılabilir stok olmaktan çıkar (müşteri talep havuzuna girmez). Fiyat girilerek yeniden satışa alınabilir. Zaten fiyatsızsa etkisizdir (başarılı).
+        /// Hatalar: instance.unknown, instance.not_in_inventory.
+        /// </summary>
+        public Result ClearPrice(long instanceId)
+        {
+            ProductInstance instance;
+            if (!_store.TryGet(instanceId, out instance))
+            {
+                return Result.Fail("instance.unknown", "Unknown product instance " + instanceId + ".");
+            }
+
+            if (instance.Location != ProductLocation.Inventory || !_state.Contains(instanceId))
+            {
+                return Result.Fail("instance.not_in_inventory", "Instance " + instanceId + " is not on the shelf.");
+            }
+
+            if (!instance.ListPrice.IsPositive)
+            {
+                return Result.Ok();
+            }
+
+            instance.ListPrice = Money.Zero;
+            if (_events != null)
+            {
+                _events.Publish(new ItemPriced(instanceId, Money.Zero));
+            }
+
+            return Result.Ok();
+        }
+
         /// <summary>Raftaki ürünü verilen fiyata satar. Kâr/zarar = satış − maliyet tabanı.</summary>
         public Result<SaleReceipt> Sell(long instanceId, Money price, int day, string buyerNpcId = null)
         {

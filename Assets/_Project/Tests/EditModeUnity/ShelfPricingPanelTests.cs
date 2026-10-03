@@ -128,5 +128,41 @@ namespace Esnaf.App.Tests
             Assert.IsNull(Find("PriceEditor"));
             Assert.IsFalse(_session.Api.GetInventory()[0].ListPrice.IsPositive);
         }
+
+        [Test]
+        public void ThePanel_ShowsImageStockAndTheRemoveButton_OnlyForAPricedPhone()
+        {
+            Build();
+            long id = _session.Api.GetInventory()[0].InstanceId;
+            Find("Item_" + id).GetComponent<Button>().onClick.Invoke();
+            Assert.IsNotNull(Find("PhoneImage"), "telefon görseli");
+            Assert.AreEqual(TurkishTexts.ShelfStock(1), Find("EditorStock").GetComponent<Text>().text);
+            Assert.IsNull(Find("RemoveFromSaleButton"), "fiyatsız telefon: Satıştan Çıkar yok");
+
+            Find("SavePriceButton").GetComponent<Button>().onClick.Invoke();
+            Find("Item_" + id).GetComponent<Button>().onClick.Invoke();
+
+            Assert.IsNotNull(Find("RemoveFromSaleButton"), "satıştaki telefon: Satıştan Çıkar var");
+        }
+
+        [Test]
+        public void RemoveFromSale_PutsThePhoneOffSale_WithoutLosingIt()
+        {
+            Build();
+            long id = _session.Api.GetInventory()[0].InstanceId;
+            long cost = _session.Api.GetInventory()[0].CostBasis.Tl;
+            Find("Item_" + id).GetComponent<Button>().onClick.Invoke();
+            Find("SavePriceButton").GetComponent<Button>().onClick.Invoke();
+            Find("Item_" + id).GetComponent<Button>().onClick.Invoke();
+
+            Find("RemoveFromSaleButton").GetComponent<Button>().onClick.Invoke();
+
+            Assert.IsFalse(_session.Api.GetInventory()[0].ListPrice.IsPositive, "satış dışı");
+            Assert.AreEqual(1, _session.Api.GetInventory().Count, "telefon rafta duruyor");
+            Assert.AreEqual(cost, _session.Api.GetInventory()[0].CostBasis.Tl, "maliyet aynı");
+            Assert.IsFalse(_session.Customers.HasSellableStock());
+            Assert.IsNull(Find("RemoveFromSaleButton"), "artık satıştan çıkarılacak bir şey yok");
+            Assert.IsNotNull(Find("SavePriceButton"), "panel açık: yeniden fiyatlanabilir");
+        }
     }
 }

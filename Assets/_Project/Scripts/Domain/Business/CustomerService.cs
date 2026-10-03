@@ -219,6 +219,42 @@ namespace Esnaf.Domain.Business
         }
 
         /// <summary>
+        /// Raftaki ürün için "müşterilerin gelebileceği" en yüksek etiket fiyatı (yalnızca BİLGİ; hiçbir karar buna bağlı değildir): o gün gelebilecek müşteri NPC'lerinden
+        /// ürünün segmentini kabul eden ve ürünü oyuncuya satmamış olanların her biri için mevcut <see cref="MaxFor"/> TARAFSIZ çekimle (u = 0,5: σ etkisi sıfır) çağrılır ve
+        /// <see cref="IsEligible"/>'ın kullandığı tavan (SellTooExpensiveRatio × Max) alınır; sonuç bu tavanların EN KÜÇÜĞÜdür (10 ₺'ye aşağı yuvarlı), yani uygun her NPC tipi
+        /// bu fiyatta ilgi duyar. Uygun NPC yoksa <see cref="Money.Zero"/>. σ &gt; 0 olan NPC'nin gerçek çekimi bunun altına düşebilir; bu bir garanti değil, güvenli bir üst sınırdır.
+        /// Yeni ekonomi formülü yoktur; ekonomi, Max, kişilikler ve IsEligible değişmez.
+        /// </summary>
+        public Money DemandCeilingFor(ProductInstance instance)
+        {
+            ProductDefinition definition = _content.GetProduct(instance.DefinitionId);
+            double ceiling = double.MaxValue;
+            bool any = false;
+            foreach (NpcDefinition npc in _content.Npcs)
+            {
+                if (npc.Customer.AvailableFromDay > _time.Day
+                    || !npc.Customer.AcceptsSegment(definition.Segment)
+                    || _npcs.HasSoldToPlayer(npc.Id, instance.InstanceId))
+                {
+                    continue;
+                }
+
+                var neutral = new CustomerSlot(0L, npc.Id, 0.5, 0.5, 0.5);
+                double limit = _content.Negotiation.SellTooExpensiveRatio * MaxFor(neutral, instance, false);
+                ceiling = Math.Min(ceiling, limit);
+                any = true;
+            }
+
+            if (!any)
+            {
+                return Money.Zero;
+            }
+
+            long tl = (long)Math.Floor(ceiling / 10.0) * 10L;
+            return tl > 0 ? Money.FromTl(tl) : Money.Zero;
+        }
+
+        /// <summary>
         /// Ürün bu müşteriye uygun mu: etiketli, segment uyumlu, aynı NPC'nin oyuncuya sattığı ürün değil (anti-arbitraj) ve
         /// etiket ≤ "çok pahalı" oranı × M. <paramref name="max"/> müşterinin bu ürün için Max'ıdır.
         /// </summary>

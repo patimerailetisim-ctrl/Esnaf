@@ -103,20 +103,42 @@ namespace Esnaf.App.Ui
             }
         }
 
-        // Seçili ürünün fiyat paneli: bilgi satırları, −/+ adımlar, Kaydet / Vazgeç.
+        // Seçili ürünün paneli (Gün 13.2): görsel, model, maliyet, stok, kayıtlı fiyat, müşteri tavanı, seçili fiyat, kâr/marj, uyarı; −/+ adımlar, Kaydet / Vazgeç, Satıştan Çıkar.
         private void AddEditor(ShelfPriceEditorViewModel editor)
         {
             RectTransform box = UiBuilder.CreatePanel(_content, "PriceEditor", EditorColor);
             var boxLayout = box.gameObject.AddComponent<LayoutElement>();
-            boxLayout.minHeight = 860f;
-            boxLayout.preferredHeight = 860f;
+            boxLayout.minHeight = 1250f;
+            boxLayout.preferredHeight = 1250f;
 
-            AddEditorLine(box, "EditorTitle", editor.Title, 44, 0, Color.white);
-            AddEditorLine(box, "EditorCost", editor.CostLine, 36, 1, new Color(0.75f, 0.78f, 0.85f, 1f));
-            AddEditorLine(box, "EditorSaved", editor.SavedLine, 32, 2, new Color(0.65f, 0.68f, 0.75f, 1f));
-            AddEditorLine(box, "EditorPrice", editor.PriceLine, 48, 3, new Color(1f, 0.85f, 0.4f, 1f));
-            AddEditorLine(box, "EditorProfit", editor.ProfitLine, 36, 4, Color.white);
-            AddEditorLine(box, "EditorMargin", editor.MarginLine, 36, 5, Color.white);
+            // Telefon görseli (üst sağ; gerçek görsel yoksa mock).
+            RectTransform imagePanel = UiBuilder.CreatePanel(box, "PhoneImage", new Color(0.09f, 0.1f, 0.13f, 1f));
+            imagePanel.GetComponent<Image>().raycastTarget = false;
+            UiBuilder.Stretch(imagePanel, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-270f, -270f), new Vector2(-20f, -20f));
+            imagePanel.gameObject.AddComponent<RectMask2D>();
+            var phone = new GameObject("Phone", typeof(RectTransform)).GetComponent<RectTransform>();
+            phone.SetParent(imagePanel, false);
+            phone.anchorMin = new Vector2(0.5f, 0.5f);
+            phone.anchorMax = new Vector2(0.5f, 0.5f);
+            phone.sizeDelta = new Vector2(700f, 700f);
+            phone.localScale = new Vector3(0.34f, 0.34f, 1f);
+            PhoneMockView.Draw(phone, editor.DefinitionId, PhoneAngle.Front);
+
+            AddEditorLine(box, "EditorTitle", editor.Title, 44, 0, Color.white, 290f);
+            AddEditorLine(box, "EditorCost", editor.CostLine, 36, 1, new Color(0.75f, 0.78f, 0.85f, 1f), 290f);
+            AddEditorLine(box, "EditorStock", editor.StockLine, 34, 2, new Color(0.75f, 0.78f, 0.85f, 1f), 290f);
+            AddEditorLine(box, "EditorSaved", editor.SavedLine, 32, 3, new Color(0.65f, 0.68f, 0.75f, 1f), 290f);
+            AddEditorLine(box, "EditorCeiling", editor.CeilingLine ?? string.Empty, 32, 4, new Color(0.55f, 0.9f, 0.6f, 1f), 30f);
+            AddEditorLine(box, "EditorPrice", editor.PriceLine, 48, 5, new Color(1f, 0.85f, 0.4f, 1f), 30f);
+            AddEditorLine(box, "EditorProfit", editor.ProfitLine, 36, 6, Color.white, 30f);
+            AddEditorLine(box, "EditorMargin", editor.MarginLine, 36, 7, Color.white, 30f);
+
+            if (!string.IsNullOrEmpty(editor.Warning))
+            {
+                Text warning = UiBuilder.CreateWrappedText(box, "EditorWarning", 32, TextAnchor.UpperLeft, new Color(1f, 0.7f, 0.45f, 1f));
+                warning.text = editor.Warning;
+                UiBuilder.Stretch(warning.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(30f, -16f - 8 * 78f - 100f), new Vector2(-30f, -16f - 8 * 78f));
+            }
 
             AddStepButton(box, "PriceMinus1000", "\u22121000", -1000L, 0);
             AddStepButton(box, "PriceMinus100", "\u2212100", -100L, 1);
@@ -127,21 +149,27 @@ namespace Esnaf.App.Ui
             UiBuilder.Stretch(save.GetComponent<RectTransform>(), new Vector2(0.04f, 0f), new Vector2(0.62f, 0f), new Vector2(0f, 24f), new Vector2(0f, 150f));
             Button cancel = UiBuilder.CreateButton(box, "CancelPriceButton", TurkishTexts.ShelfCloseEditorButton, 40, new Color(0.3f, 0.33f, 0.42f, 1f), () => _flow.CloseShelfEditor());
             UiBuilder.Stretch(cancel.GetComponent<RectTransform>(), new Vector2(0.66f, 0f), new Vector2(0.96f, 0f), new Vector2(0f, 24f), new Vector2(0f, 150f));
+
+            if (editor.CanRemoveFromSale)
+            {
+                Button remove = UiBuilder.CreateButton(box, "RemoveFromSaleButton", editor.RemoveButtonText, 40, new Color(0.7f, 0.3f, 0.25f, 1f), () => _flow.RemoveSelectedFromSale());
+                UiBuilder.Stretch(remove.GetComponent<RectTransform>(), new Vector2(0.04f, 0f), new Vector2(0.96f, 0f), new Vector2(0f, 170f), new Vector2(0f, 270f));
+            }
         }
 
-        private static void AddEditorLine(RectTransform box, string name, string text, int size, int row, Color color)
+        private static void AddEditorLine(RectTransform box, string name, string text, int size, int row, Color color, float rightInset)
         {
             Text label = UiBuilder.CreateText(box, name, size, TextAnchor.MiddleLeft, color);
             label.text = text;
             float top = -16f - row * 78f;
-            UiBuilder.Stretch(label.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(30f, top - 72f), new Vector2(-30f, top));
+            UiBuilder.Stretch(label.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(30f, top - 72f), new Vector2(-rightInset, top));
         }
 
         private void AddStepButton(RectTransform box, string name, string label, long delta, int column)
         {
             Button button = UiBuilder.CreateButton(box, name, label, 38, new Color(0.3f, 0.33f, 0.42f, 1f), () => _flow.AdjustShelfPrice(delta));
             float min = 0.04f + column * 0.235f;
-            UiBuilder.Stretch(button.GetComponent<RectTransform>(), new Vector2(min, 0f), new Vector2(min + 0.215f, 0f), new Vector2(0f, 200f), new Vector2(0f, 330f));
+            UiBuilder.Stretch(button.GetComponent<RectTransform>(), new Vector2(min, 0f), new Vector2(min + 0.215f, 0f), new Vector2(0f, 290f), new Vector2(0f, 420f));
         }
     }
 }

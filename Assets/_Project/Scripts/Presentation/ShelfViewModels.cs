@@ -53,9 +53,33 @@ namespace Esnaf.Presentation
 
         public string SaveButtonText { get; }
 
+        /// <summary>"Müşteri tavanı: 34.300 ₺" (mevcut müşteri hesabından türeyen bilgi); tavan bilinmiyorsa null.</summary>
+        public string CeilingLine { get; }
+
+        /// <summary>Seçili fiyat tavanın üstündeyse "Bu fiyatın üzerinde müşteriler bu telefonu pahalı bulabilir."; aksi halde null.</summary>
+        public string Warning { get; }
+
+        /// <summary>Modelin tanımı (telefon görseli için).</summary>
+        public string DefinitionId { get; }
+
+        /// <summary>"Stok: 2 adet": rafta bu modelden kaç telefon var (Gün 13.2).</summary>
+        public string StockLine { get; }
+
+        /// <summary>"Satıştan Çıkar" yalnızca şu an satışta (fiyatı girilmiş) ürün için vardır.</summary>
+        public bool CanRemoveFromSale { get; }
+
+        public string RemoveButtonText { get; }
+
         public ShelfPriceEditorViewModel(
-            long instanceId, string title, string costLine, string savedLine, Esnaf.Core.Money price, string priceLine, string profitLine, string marginLine, bool canSave, string saveButtonText)
+            long instanceId, string title, string costLine, string savedLine, Esnaf.Core.Money price, string priceLine, string profitLine, string marginLine, bool canSave, string saveButtonText,
+            string ceilingLine = null, string warning = null, string definitionId = null, string stockLine = null, bool canRemoveFromSale = false, string removeButtonText = null)
         {
+            CeilingLine = ceilingLine;
+            Warning = warning;
+            DefinitionId = definitionId;
+            StockLine = stockLine;
+            CanRemoveFromSale = canRemoveFromSale;
+            RemoveButtonText = removeButtonText;
             InstanceId = instanceId;
             Title = title;
             CostLine = costLine;

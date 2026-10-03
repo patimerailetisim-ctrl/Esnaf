@@ -63,6 +63,12 @@ namespace Esnaf.Domain.Game
         Result SetPrice(long instanceId, Money price);
 
         /// <summary>
+        /// Raftaki ürünü satıştan çıkarır (Gün 13.2): etiket fiyatı 0 olur; ürün yok edilmez, stok/maliyet/mülkiyet değişmez, müşteri talep havuzundan çıkar. Fiyat girilerek yeniden satışa alınabilir.
+        /// Hatalar: instance.unknown, instance.not_in_inventory, price.item_in_sale (ürünle süren bir satış varken).
+        /// </summary>
+        Result ClearPrice(long instanceId);
+
+        /// <summary>
         /// Gelen bir müşteriyle satış pazarlığı açar. Aynı anda tek pazarlık (alış ya da satış) olur; sürerken gün bitirilemez.
         /// Hatalar: customer.unknown, customer.no_interest, negotiation.in_progress.
         /// </summary>

@@ -515,9 +515,7 @@ namespace Esnaf.Presentation
             else
             {
                 _shelfSelectedId = instanceId;
-                _shelfPriceTl = line.ListPrice.IsPositive
-                    ? line.ListPrice.Tl
-                    : Math.Max(10L, (long)Math.Ceiling(line.CostBasis.Tl * 1.2 / ShelfPriceStep) * ShelfPriceStep);
+                _shelfPriceTl = line.ListPrice.IsPositive ? line.ListPrice.Tl : SuggestedShelfPrice(line);
             }
 
             StatusMessage = null;
@@ -598,6 +596,52 @@ namespace Esnaf.Presentation
 
             Refresh();
             return result;
+        }
+
+        /// <summary>
+        /// "Satıştan Çıkar" (Gün 13.2): seçili telefonu satıştan çıkarır (IGameApi.ClearPrice: etiket fiyatı 0). Telefon yok edilmez, stoktan düşmez, maliyeti ve mülkiyeti değişmez;
+        /// yalnızca satılabilir stok olmaktan çıkar ve müşteri talep havuzuna girmez. Panel açık kalır, başlangıç önerisiyle yeniden fiyatlanıp satışa alınabilir.
+        /// </summary>
+        public Result RemoveSelectedFromSale()
+        {
+            if (CurrentScreen != UiScreen.Shelf || !_shelfSelectedId.HasValue)
+            {
+                return Result.Fail("ui.no_shelf_item_selected", "No shelf item is selected.");
+            }
+
+            long id = _shelfSelectedId.Value;
+            Result result = _api.ClearPrice(id);
+            if (result.IsSuccess)
+            {
+                StockLine line = FindStockLine(id);
+                StatusMessage = TurkishTexts.ShelfRemoved(line == null ? string.Empty : _content.ModelName(line.DefinitionId));
+                if (line != null)
+                {
+                    _shelfPriceTl = SuggestedShelfPrice(line);
+                }
+            }
+            else
+            {
+                StatusMessage = TurkishTexts.PriceError(result.ErrorCode);
+            }
+
+            Refresh();
+            return result;
+        }
+
+        // Başlangıç ÖNERİSİ (kaydedilmez): maliyetin ~%20 üstü (100 ₺'ye yukarı), ama müşteri tavanını (StockLine.DemandCeiling; mevcut Max/IsEligible hesabından türer) AŞMAZ —
+        // tavan 100 ₺'ye aşağı yuvarlanır (tavan < 100 ise tavanın kendisi). Tavan bilinmiyorsa (0) eski öneri kalır.
+        internal static long SuggestedShelfPrice(StockLine line)
+        {
+            long suggested = Math.Max(10L, (long)Math.Ceiling(line.CostBasis.Tl * 1.2 / ShelfPriceStep) * ShelfPriceStep);
+            long ceiling = line.DemandCeiling.Tl;
+            if (ceiling > 0)
+            {
+                long safe = ceiling / ShelfPriceStep * ShelfPriceStep;
+                suggested = Math.Min(suggested, safe > 0 ? safe : ceiling);
+            }
+
+            return suggested;
         }
 
         private static bool IsValidShelfPrice(long tl)
@@ -1480,7 +1524,7 @@ namespace Esnaf.Presentation
                     selected));
                 if (selected)
                 {
-                    editor = BuildShelfEditor(line, model);
+                    editor = BuildShelfEditor(line, model, stock);
                 }
             }
 
@@ -1492,8 +1536,17 @@ namespace Esnaf.Presentation
                 editor);
         }
 
-        private ShelfPriceEditorViewModel BuildShelfEditor(StockLine line, string model)
+        private ShelfPriceEditorViewModel BuildShelfEditor(StockLine line, string model, IReadOnlyList<StockLine> stock)
         {
+            int units = 0;
+            foreach (StockLine other in stock)
+            {
+                if (other.DefinitionId == line.DefinitionId)
+                {
+                    units++;
+                }
+            }
+
             Money price = Money.FromTl(_shelfPriceTl);
             bool valid = IsValidShelfPrice(_shelfPriceTl);
             Money profit = price - line.CostBasis;
@@ -1508,7 +1561,13 @@ namespace Esnaf.Presentation
                 valid ? TurkishTexts.ShelfProfit(profit) : string.Empty,
                 valid ? TurkishTexts.ShelfMargin(margin) : string.Empty,
                 valid,
-                TurkishTexts.ShelfSavePriceButton);
+                TurkishTexts.ShelfSavePriceButton,
+                line.DemandCeiling.IsPositive ? TurkishTexts.ShelfCeilingLine(line.DemandCeiling) : null,
+                line.DemandCeiling.IsPositive && _shelfPriceTl > line.DemandCeiling.Tl ? TurkishTexts.ShelfExpensiveWarning : null,
+                line.DefinitionId,
+                TurkishTexts.ShelfStock(units),
+                line.ListPrice.IsPositive,
+                TurkishTexts.ShelfRemoveButton);
         }
 
         private TopBarViewModel BuildTopBar()

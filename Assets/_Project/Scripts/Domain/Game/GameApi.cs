@@ -122,6 +122,17 @@ namespace Esnaf.Domain.Game
             return _session.Trade.WalkAway();
         }
 
+        public Result ClearPrice(long instanceId)
+        {
+            SaleView running = GetSale();
+            if (running != null && running.InstanceId == instanceId)
+            {
+                return Result.Fail("price.item_in_sale", "The phone is part of the running sale.");
+            }
+
+            return _session.InventoryService.ClearPrice(instanceId);
+        }
+
         public Result SetPrice(long instanceId, Money price)
         {
             return _session.InventoryService.SetPrice(instanceId, price);
@@ -367,7 +378,20 @@ namespace Esnaf.Domain.Game
 
         public IReadOnlyList<StockLine> GetInventory()
         {
-            return _session.InventoryService.GetStockLines();
+            // Her satıra, mevcut müşteri hesabından türeyen "müşteri tavanı" (yalnızca bilgi) eklenir; gün sonu özeti bu zenginleştirmeyi kullanmaz.
+            IReadOnlyList<StockLine> lines = _session.InventoryService.GetStockLines();
+            var result = new List<StockLine>(lines.Count);
+            foreach (StockLine line in lines)
+            {
+                result.Add(new StockLine(
+                    line.InstanceId,
+                    line.DefinitionId,
+                    line.CostBasis,
+                    line.ListPrice,
+                    _session.Customers.DemandCeilingFor(_session.Store.Get(line.InstanceId))));
+            }
+
+            return new System.Collections.ObjectModel.ReadOnlyCollection<StockLine>(result);
         }
 
         public DaySummary GetTodaySummary()

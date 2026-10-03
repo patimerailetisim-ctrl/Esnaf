@@ -92,7 +92,8 @@ namespace Esnaf.Tests.Presentation
                 Assert.IsTrue(flow.SelectShelfItem(line.InstanceId));
 
                 ShelfPriceEditorViewModel editor = flow.ShelfScreen.Editor;
-                long suggested = (long)System.Math.Ceiling(line.CostBasis.Tl * 1.2 / 100.0) * 100;
+                long old = (long)System.Math.Ceiling(line.CostBasis.Tl * 1.2 / 100.0) * 100;
+                long suggested = line.DemandCeiling.IsPositive ? System.Math.Min(old, line.DemandCeiling.Tl / 100 * 100) : old; // Gün 13.2: öneri müşteri tavanını aşmaz
                 Assert.IsNotNull(editor);
                 Assert.AreEqual(TurkishTexts.ShelfAcquisitionCost(line.CostBasis), editor.CostLine, "alış maliyeti");
                 Assert.AreEqual(suggested, editor.Price.Tl, "başlangıç önerisi");
@@ -310,6 +311,123 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual(1, s.Api.GetInventory().Count(x => x.ListPrice.IsPositive), "yalnızca fiyatlanan ürün satılabilir");
                 Assert.IsTrue(flow.ShelfScreen.Items.Single(r => r.InstanceId == id).IsSellable);
                 Assert.AreEqual("Doluluk: 15/15", flow.ShelfScreen.CapacityLine);
+            }
+        }
+        // ---------- öneri müşteri tavanını aşmaz (E13 Pro) ----------
+
+        // Sahne tohumuyla ilk ilan (Elma E13 Pro, alış 31.650 ₺): eski öneri 38.000 ₺ tavanı (≈34.304 ₺) aşıyordu ve hiç müşteri gelmiyordu.
+        private static GameSession WithE13()
+        {
+            GameSession s = GameSession.NewGame(MarketHarness.RealContent(), 20260101UL);
+            var first = s.Api.GetListings()[0];
+            Assert.AreEqual("phone.elma_e13_pro", first.DefinitionId);
+            Assert.IsTrue(s.Api.BuyListing(first.ListingId).IsSuccess);
+            return s;
+        }
+
+        [Test]
+        public void E13Pro_TheSuggestionStaysWithinTheDemandCeiling_AndDoesNotDisableTheCustomers()
+        {
+            GameSession s = WithE13();
+            StockLine line = Line(s);
+            Assert.AreEqual(Money.FromTl(31650), line.CostBasis);
+            Assert.IsTrue(line.DemandCeiling.IsPositive, "müşteri tavanı bilinir");
+            Assert.AreEqual(34300L, line.DemandCeiling.Tl, "1,15 × Max (29.830) ≈ 34.304 → 10 ₺'ye aşağı");
+            using (UiFlow flow = OpenShelf(s))
+            {
+                flow.SelectShelfItem(line.InstanceId);
+
+                long suggested = flow.ShelfScreen.Editor.Price.Tl;
+
+                Assert.AreEqual(34300L, suggested, "eski öneri 38.000 ₺ idi");
+                Assert.LessOrEqual(suggested, line.DemandCeiling.Tl);
+                Assert.AreEqual(0L, suggested % 10, "geçerli fiyat adımı");
+                Assert.AreEqual(0L, suggested % UiFlow.ShelfPriceStep, "100 ₺'lik adıma uyar");
+                Assert.IsNull(flow.ShelfScreen.Editor.Warning, "önerilen fiyatta uyarı yok");
+                Assert.IsFalse(Line(s).ListPrice.IsPositive, "öneri kaydedilmiş fiyat değil");
+
+                Assert.IsTrue(flow.SaveShelfPrice().IsSuccess);
+
+                Assert.IsTrue(s.Customers.HasSellableStock());
+                foreach (QueuedCustomer c in s.CustomerQueue.PlanFor(1))
+                {
+                    QueuedCustomer qc;
+                    CustomerSlot slot;
+                    Assert.IsTrue(s.CustomerQueue.TryResolve(c.CustomerId, out qc, out slot));
+                    Assert.AreNotEqual(0L, s.Customers.FindInterest(slot), "öneriyi kaydetmek müşteriyi devre dışı bırakmaz: " + c.ArrivalText);
+                }
+            }
+        }
+
+        [Test]
+        public void ThePanel_ShowsTheCeiling_AndWarnsOnlyAboveIt()
+        {
+            GameSession s = WithE13();
+            StockLine line = Line(s);
+            using (UiFlow flow = OpenShelf(s))
+            {
+                flow.SelectShelfItem(line.InstanceId);
+                Assert.AreEqual(TurkishTexts.ShelfCeilingLine(line.DemandCeiling), flow.ShelfScreen.Editor.CeilingLine);
+
+                flow.SetShelfPrice(line.DemandCeiling.Tl);
+                Assert.IsNull(flow.ShelfScreen.Editor.Warning, "tavanın kendisinde uyarı yok");
+
+                flow.AdjustShelfPrice(ShelfStepUp());
+
+                Assert.AreEqual("Bu fiyatın üzerinde müşteriler bu telefonu pahalı bulabilir.", flow.ShelfScreen.Editor.Warning);
+                Assert.AreEqual(TurkishTexts.ShelfExpensiveWarning, flow.ShelfScreen.Editor.Warning);
+                Assert.IsTrue(flow.ShelfScreen.Editor.CanSave, "uyarı kaydı engellemez; karar oyuncunundur");
+            }
+        }
+
+        private static long ShelfStepUp()
+        {
+            return UiFlow.ShelfPriceStep;
+        }
+
+        [Test]
+        public void TheCeilingIsOnlyInformation_ItDoesNotChangeTheGameState_OrTheEligibilityRules()
+        {
+            GameSession s = WithE13();
+            long id = Line(s).InstanceId;
+            Assert.IsTrue(s.Api.SetPrice(id, Money.FromTl(38000)).IsSuccess, "tavanın üstünde de kaydedilebilir (kural değişmedi)");
+            string digest = s.Api.GetStateDigest();
+
+            for (int i = 0; i < 3; i++)
+            {
+                s.Api.GetInventory();
+            }
+
+            Assert.AreEqual(digest, s.Api.GetStateDigest(), "tavan hesabı durumu değiştirmez");
+            foreach (QueuedCustomer c in s.CustomerQueue.PlanFor(1))
+            {
+                QueuedCustomer qc;
+                CustomerSlot slot;
+                s.CustomerQueue.TryResolve(c.CustomerId, out qc, out slot);
+                Assert.AreEqual(0L, s.Customers.FindInterest(slot), "38.000 ₺ hâlâ çok pahalı: IsEligible değişmedi");
+            }
+        }
+
+        [Test]
+        public void WhenNoCustomerTypeFitsTheItem_TheOldSuggestionRemains_AndThereIsNoCeiling()
+        {
+            GameSession s = WithE13();
+            long id = Line(s).InstanceId;
+            // bilinen NPC'lerin hepsi ürünü oyuncuya satmış sayılsın: uygun müşteri tipi kalmaz
+            foreach (string npc in new[] { "npc.kemal", "npc.selin" })
+            {
+                s.Npcs.RecordSoldToPlayer(npc, id);
+            }
+
+            StockLine line = Line(s);
+            using (UiFlow flow = OpenShelf(s))
+            {
+                flow.SelectShelfItem(id);
+
+                Assert.IsFalse(line.DemandCeiling.IsPositive, "uygun müşteri tipi yok: tavan bilinmiyor");
+                Assert.IsNull(flow.ShelfScreen.Editor.CeilingLine);
+                Assert.IsNull(flow.ShelfScreen.Editor.Warning);
+                Assert.AreEqual((long)System.Math.Ceiling(line.CostBasis.Tl * 1.2 / 100.0) * 100, flow.ShelfScreen.Editor.Price.Tl, "eski öneri");
             }
         }
     }

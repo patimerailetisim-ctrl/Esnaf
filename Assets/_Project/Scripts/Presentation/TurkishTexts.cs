@@ -790,6 +790,25 @@ namespace Esnaf.Presentation
         public const string ShelfSavePriceButton = "Fiyat\u0131 Kaydet";
         public const string ShelfCloseEditorButton = "Vazge\u00E7";
 
+        public const string ShelfRemoveButton = "Sat\u0131\u015Ftan \u00C7\u0131kar";
+
+        public static string ShelfStock(int units)
+        {
+            return "Stok: " + units.ToString(CultureInfo.InvariantCulture) + " adet";
+        }
+
+        public static string ShelfRemoved(string model)
+        {
+            return model + " sat\u0131\u015Ftan \u00E7\u0131kar\u0131ld\u0131. Telefon rafta duruyor; fiyat girerek yeniden sat\u0131\u015Fa alabilirsin.";
+        }
+
+        public const string ShelfExpensiveWarning = "Bu fiyat\u0131n \u00FCzerinde m\u00FC\u015Fteriler bu telefonu pahal\u0131 bulabilir.";
+
+        public static string ShelfCeilingLine(Money ceiling)
+        {
+            return "M\u00FC\u015Fteri tavan\u0131: " + MoneyFormatter.Format(ceiling);
+        }
+
         public static string ShelfSellableLine(Money price)
         {
             return "Sat\u0131\u015F fiyat\u0131: " + MoneyFormatter.Format(price);
@@ -838,6 +857,8 @@ namespace Esnaf.Presentation
                 case "instance.not_in_inventory":
                 case "instance.unknown":
                     return "Bu \u00FCr\u00FCn rafta de\u011Fil.";
+                case "price.item_in_sale":
+                    return "Bu telefonla s\u00FCren bir sat\u0131\u015F var; \u00F6nce onu bitir.";
                 default:
                     return "Fiyat kaydedilemedi.";
             }
