@@ -44,7 +44,7 @@ namespace Esnaf.App.Ui
             icon.anchorMin = new Vector2(0.5f, 0.5f);
             icon.anchorMax = new Vector2(0.5f, 0.5f);
             icon.sizeDelta = new Vector2(NavIcons.Size, NavIcons.Size);
-            NavIcons.Draw(icon, NavTab.Listings, KarbazDark.TextPrimary, KarbazDark.Card);
+            NavIcons.Draw(icon, NavTab.Listings, KarbazDark.TextPrimary);
 
             Text title = UiBuilder.CreateText(root, "Title", 64, TextAnchor.MiddleLeft, KarbazDark.TextPrimary);
             title.text = TurkishTexts.ListingsTitle;

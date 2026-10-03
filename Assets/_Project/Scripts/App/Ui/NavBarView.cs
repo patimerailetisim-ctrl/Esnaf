@@ -7,7 +7,7 @@ namespace Esnaf.App.Ui
     /// <summary>
     /// Kalıcı alt navigasyon (Gün 13.4 revizyon): Dükkan | Toptancı | İlanlar | Profil — ikon üstte, yazı altta, 4 eşit alan. Koyu zemin, ince üst çizgi; aktif sekme altın renkte
     /// ve üstünde küçük altın vurgu çizgisi var, pasif sekmeler açık gri. Tüm ekranların altında sabit durur. Yalnızca <see cref="UiFlow.Nav"/>'ı çizer ve
-    /// <see cref="UiFlow.GoToTab"/>'ı çağırır; oyun kuralı yoktur. Emoji yok; ikonlar <see cref="NavIcons"/> ile çizilir.
+    /// <see cref="UiFlow.GoToTab"/>'ı çağırır; oyun kuralı yoktur. Emoji yok; ikonlar <see cref="NavIcons"/> (NavIconRaster'ın çizdiği sprite'lar) ile çizilir.
     /// </summary>
     internal sealed class NavBarView
     {
@@ -63,15 +63,15 @@ namespace Esnaf.App.Ui
                 iconHost.anchorMax = new Vector2(0.5f, 1f);
                 iconHost.pivot = new Vector2(0.5f, 1f);
                 iconHost.sizeDelta = new Vector2(NavIcons.Size, NavIcons.Size);
-                iconHost.anchoredPosition = new Vector2(0f, -22f);
-                NavIcons.Draw(iconHost, tab, tone, BarColor);
+                iconHost.anchoredPosition = new Vector2(0f, -20f);
+                NavIcons.Draw(iconHost, tab, tone);
 
                 // yazı (altta)
                 Text label = UiBuilder.CreateText(area, "Label", 30, TextAnchor.MiddleCenter, tone);
                 label.text = item.Label;
                 label.raycastTarget = false;
                 label.fontStyle = item.IsActive ? FontStyle.Bold : FontStyle.Normal;
-                UiBuilder.Stretch(label.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(4f, 12f), new Vector2(-4f, 56f));
+                UiBuilder.Stretch(label.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(4f, 10f), new Vector2(-4f, 56f));
                 index++;
             }
         }

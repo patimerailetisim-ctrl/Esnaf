@@ -204,7 +204,7 @@ namespace Esnaf.App.Tests
             {
                 Transform icon = Find(tab).Find("Icon");
                 Assert.IsNotNull(icon, tab + " ikonu");
-                Assert.Greater(icon.childCount, 1, tab + " ikonu birden çok parçadan çizilir (emoji değil)");
+                Assert.IsNotNull(icon.GetComponent<Image>().sprite, tab + " ikonu çizilmiş sprite (emoji/şekil parçası değil)");
                 Assert.IsNotNull(Find(tab).Find("Label"), tab + " yazısı");
             }
 
