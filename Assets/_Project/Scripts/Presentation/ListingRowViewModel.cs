@@ -34,6 +34,29 @@ namespace Esnaf.Presentation
 
         public string InspectButtonText { get; }
 
+        // ---- kart parçaları (Gün 13.4 UI revizyonu): yalnızca herkese açık ilan bilgisi; gizli durum etiketi uydurulmaz ----
+
+        /// <summary>"14 ay" (kullanım süresi etiketi).</summary>
+        public string AgeChip { get; }
+
+        /// <summary>"Kutu var" / "Kutu yok".</summary>
+        public string BoxChip { get; }
+
+        public bool HasBox { get; }
+
+        /// <summary>"Fatura var" / "Fatura yok".</summary>
+        public string InvoiceChip { get; }
+
+        public bool HasInvoice { get; }
+
+        /// <summary>İlan "Acil satış" ise "Acil satış", değilse null.</summary>
+        public string UrgentChip { get; }
+
+        /// <summary>"İstenen fiyat" (etiket) ve "31.650 ₺" (altın vurgulu değer).</summary>
+        public string AskingLabelText { get; }
+
+        public string PriceValueText { get; }
+
         private ListingRowViewModel(ListingView listing, ContentPresentation content, bool isSelected, IReadOnlyList<AppraisalView> appraisals)
         {
             DefinitionId = listing.DefinitionId;
@@ -41,6 +64,14 @@ namespace Esnaf.Presentation
             AskingText = TurkishTexts.AskingFull(listing.AskingPrice);
             EstimatedText = ListingEstimate.Text(appraisals);
             InspectButtonText = TurkishTexts.InspectButton;
+            AgeChip = TurkishTexts.Age(listing.AgeMonths);
+            HasBox = listing.HasBox;
+            HasInvoice = listing.HasInvoice;
+            BoxChip = listing.HasBox ? "Kutu var" : "Kutu yok";
+            InvoiceChip = listing.HasInvoice ? "Fatura var" : "Fatura yok";
+            UrgentChip = listing.Tags.Contains(ListingTags.UrgentSale) ? "Acil sat\u0131\u015F" : null;
+            AskingLabelText = "\u0130stenen fiyat";
+            PriceValueText = MoneyFormatter.Format(listing.AskingPrice);
             ListingId = listing.ListingId;
             Title = content.ModelName(listing.DefinitionId);
             StorageText = TurkishTexts.Storage(listing.StorageGb);

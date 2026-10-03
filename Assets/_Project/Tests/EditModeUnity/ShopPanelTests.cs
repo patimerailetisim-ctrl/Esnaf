@@ -197,6 +197,27 @@ namespace Esnaf.App.Tests
         }
 
         [Test]
+        public void TheNavBar_DrawsAnIconPerTab_AndMarksOnlyTheActiveTabWithTheGoldBar()
+        {
+            Build();
+            foreach (string tab in new[] { "Nav_Shop", "Nav_Wholesale", "Nav_Listings", "Nav_Profile" })
+            {
+                Transform icon = Find(tab).Find("Icon");
+                Assert.IsNotNull(icon, tab + " ikonu");
+                Assert.Greater(icon.childCount, 1, tab + " ikonu birden çok parçadan çizilir (emoji değil)");
+                Assert.IsNotNull(Find(tab).Find("Label"), tab + " yazısı");
+            }
+
+            Assert.IsNotNull(Find("Nav_Shop").Find("ActiveBar"), "aktif sekme altın vurgu çizgisi");
+            Assert.IsNull(Find("Nav_Wholesale").Find("ActiveBar"));
+            Assert.IsNotNull(Find("NavBar").Find("TopBorder"), "ince üst çizgi");
+
+            Find("Nav_Listings").GetComponent<Button>().onClick.Invoke();
+            Assert.IsNotNull(Find("Nav_Listings").Find("ActiveBar"));
+            Assert.IsNull(Find("Nav_Shop").Find("ActiveBar"));
+        }
+
+        [Test]
         public void TheActiveCustomer_ShowsOnTheShop_AndGoOpensTheExistingSale()
         {
             Build(1, 1);

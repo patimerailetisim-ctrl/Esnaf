@@ -5,18 +5,17 @@ using UnityEngine.UI;
 namespace Esnaf.App.Ui
 {
     /// <summary>
-    /// İlanlar ekranı: başlık, kaydırmalı ilan listesi, durum mesajı ve "Günü Bitir" düğmesi. Yalnızca <see cref="UiFlow"/> ile konuşur
-    /// (satırlar ListingRowViewModel, tıklama OpenListing: seçer ve detaya geçer, düğme EndDay, Raf düğmesi OpenShelf); oyun kuralı yoktur. Liste her değişimde yeniden kurulur.
+    /// İlanlar ekranı (Gün 13.4 UI revizyonu): koyu lacivert ikinci el telefon pazarı. Güçlü başlık + "İkinci el telefon ilanları" alt başlığı, yuvarlatılmış ilan kartları
+    /// (telefon görseli, model, kutu/fatura etiketleri, satıcı, altın vurgulu istenen fiyat, tahmini değer, "İncele") ve boş durum notu. Yalnızca <see cref="UiFlow"/> ile konuşur
+    /// (OpenListing, OpenShelf, OpenCustomers, OpenWholesale, OpenAccessoryStock, EndDay); oyun kuralı yoktur. Eski beş kısayol düğmesi korunur (işlev ve mevcut testler aynı) ama altta
+    /// tek sıra küçük hap olarak durur; asıl navigasyon artık kalıcı alt çubuktur. Liste her değişimde yeniden kurulur.
     /// </summary>
     internal sealed class ListingsView
     {
-        private const float StatusHeight = 90f;
-        private const float BottomBarHeight = 300f; // iki sıra düğme
-        private const float TitleHeight = 110f;
-        private const float CardHeight = 400f;
-
-        private static readonly Color RowColor = new Color(0.18f, 0.2f, 0.26f, 1f);
-        private static readonly Color SelectedRowColor = new Color(0.2f, 0.4f, 0.65f, 1f);
+        private const float StatusHeight = 70f;
+        private const float StripHeight = 96f;
+        private const float HeaderHeight = 200f;
+        private const float CardHeight = 330f;
 
         private readonly UiFlow _flow;
         private readonly GameObject _root;
@@ -31,43 +30,58 @@ namespace Esnaf.App.Ui
         {
             _flow = flow;
 
-            RectTransform root = UiBuilder.CreatePanel(canvas, "ListingsScreen", new Color(0.09f, 0.1f, 0.13f, 1f));
+            RectTransform root = UiBuilder.CreatePanel(canvas, "ListingsScreen", KarbazDark.Background);
             _root = root.gameObject;
             UiBuilder.Stretch(root, Vector2.zero, Vector2.one, new Vector2(0f, NavBarView.Height), new Vector2(0f, -TopBarView.Height));
 
-            Text title = UiBuilder.CreateText(root, "Title", 56, TextAnchor.MiddleLeft, Color.white);
+            // Başlık: telefon ikonlu yuvarlak kare + "İlanlar" + alt başlık
+            RectTransform badge = UiKit.Rounded(root, "TitleBadge", KarbazDark.Card);
+            badge.GetComponent<Image>().raycastTarget = false;
+            badge.gameObject.AddComponent<Outline>().effectColor = KarbazDark.Border;
+            UiBuilder.Stretch(badge, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -140f), new Vector2(120f, -50f));
+            var icon = new GameObject("Icon", typeof(RectTransform)).GetComponent<RectTransform>();
+            icon.SetParent(badge, false);
+            icon.anchorMin = new Vector2(0.5f, 0.5f);
+            icon.anchorMax = new Vector2(0.5f, 0.5f);
+            icon.sizeDelta = new Vector2(NavIcons.Size, NavIcons.Size);
+            NavIcons.Draw(icon, NavTab.Listings, KarbazDark.TextPrimary, KarbazDark.Card);
+
+            Text title = UiBuilder.CreateText(root, "Title", 64, TextAnchor.MiddleLeft, KarbazDark.TextPrimary);
             title.text = TurkishTexts.ListingsTitle;
-            UiBuilder.Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(40f, -TitleHeight), Vector2.zero);
+            title.fontStyle = FontStyle.Bold;
+            UiBuilder.Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(148f, -110f), new Vector2(-30f, -36f));
+            Text subtitle = UiBuilder.CreateText(root, "Subtitle", 34, TextAnchor.MiddleLeft, KarbazDark.TextMuted);
+            subtitle.text = TurkishTexts.ListingsSubtitle;
+            UiBuilder.Stretch(subtitle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(148f, -160f), new Vector2(-30f, -108f));
 
-            _content = UiBuilder.CreateVerticalList(root, "List", new Color(0.09f, 0.1f, 0.13f, 1f), 16f, 24f);
+            _content = UiBuilder.CreateVerticalList(root, "List", KarbazDark.Background, 22f, 24f);
             RectTransform list = _content.parent as RectTransform;
-            UiBuilder.Stretch(list, Vector2.zero, Vector2.one, new Vector2(0f, BottomBarHeight + StatusHeight), new Vector2(0f, -TitleHeight));
+            UiBuilder.Stretch(list, Vector2.zero, Vector2.one, new Vector2(0f, StatusHeight + StripHeight), new Vector2(0f, -HeaderHeight));
 
-            _empty = UiBuilder.CreateWrappedText(root, "Empty", 44, TextAnchor.MiddleCenter, new Color(0.7f, 0.72f, 0.78f, 1f));
+            _empty = UiBuilder.CreateWrappedText(root, "Empty", 44, TextAnchor.MiddleCenter, KarbazDark.TextMuted);
             _empty.text = TurkishTexts.NoListings;
-            UiBuilder.Stretch(_empty.rectTransform, new Vector2(0f, 0.4f), new Vector2(1f, 0.6f), Vector2.zero, Vector2.zero);
+            UiBuilder.Stretch(_empty.rectTransform, new Vector2(0.05f, 0.4f), new Vector2(0.95f, 0.6f), Vector2.zero, Vector2.zero);
 
-            _status = UiBuilder.CreateText(root, "Status", 40, TextAnchor.MiddleCenter, new Color(1f, 0.75f, 0.45f, 1f));
-            UiBuilder.Stretch(_status.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, BottomBarHeight), new Vector2(-40f, BottomBarHeight + StatusHeight));
+            _status = UiBuilder.CreateWrappedText(root, "Status", 36, TextAnchor.MiddleCenter, KarbazDark.Gold);
+            UiBuilder.Stretch(_status.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, StripHeight), new Vector2(-40f, StripHeight + StatusHeight));
 
-            Button endDay = UiBuilder.CreateButton(root, "EndDayButton", TurkishTexts.EndDayButton, 52, new Color(0.7f, 0.3f, 0.25f, 1f), OnEndDayClicked);
-            UiBuilder.Stretch(endDay.GetComponent<RectTransform>(), new Vector2(0.68f, 0f), new Vector2(1f, 0f), new Vector2(10f, 25f), new Vector2(-40f, 145f));
+            // Kısayol şeridi: Raf | Müşteriler | Toptancı | Aksesuar | Günü Bitir (tek sıra, küçük hap).
+            _shelfLabel = AddShortcut(root, "ShelfButton", TurkishTexts.ShelfButton(0, 0), 0, KarbazDark.Card, () => _flow.OpenShelf());
+            _customersLabel = AddShortcut(root, "CustomersButton", TurkishTexts.CustomersTitle, 1, KarbazDark.Card, () => _flow.OpenCustomers());
+            AddShortcut(root, "WholesaleButton", TurkishTexts.WholesaleButton, 2, KarbazDark.Card, () => _flow.OpenWholesale());
+            _accessoriesLabel = AddShortcut(root, "AccessoryStockButton", TurkishTexts.AccessoryStockButton(0, 0), 3, KarbazDark.Card, () => _flow.OpenAccessoryStock());
+            AddShortcut(root, "EndDayButton", TurkishTexts.EndDayButton, 4, new Color(0.36f, 0.16f, 0.17f, 1f), () => _flow.EndDay());
+        }
 
-            Button shelf = UiBuilder.CreateButton(root, "ShelfButton", TurkishTexts.ShelfButton(0, 0), 46, new Color(0.3f, 0.33f, 0.42f, 1f), OnShelfClicked);
-            UiBuilder.Stretch(shelf.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.5f, 0f), new Vector2(40f, 160f), new Vector2(-10f, BottomBarHeight - 20f));
-            _shelfLabel = shelf.GetComponentInChildren<Text>();
-            _shelfLabel.fontSize = 38;
-
-            Button customers = UiBuilder.CreateButton(root, "CustomersButton", TurkishTexts.CustomersTitle, 38, new Color(0.25f, 0.5f, 0.45f, 1f), OnCustomersClicked);
-            UiBuilder.Stretch(customers.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(1f, 0f), new Vector2(10f, 160f), new Vector2(-40f, BottomBarHeight - 20f));
-            _customersLabel = customers.GetComponentInChildren<Text>();
-
-            Button wholesale = UiBuilder.CreateButton(root, "WholesaleButton", TurkishTexts.WholesaleButton, 38, new Color(0.7f, 0.45f, 0.2f, 1f), OnWholesaleClicked);
-            UiBuilder.Stretch(wholesale.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0.34f, 0f), new Vector2(40f, 25f), new Vector2(-10f, 145f));
-
-            Button accessories = UiBuilder.CreateButton(root, "AccessoryStockButton", TurkishTexts.AccessoryStockButton(0, 0), 36, new Color(0.3f, 0.33f, 0.42f, 1f), OnAccessoryStockClicked);
-            UiBuilder.Stretch(accessories.GetComponent<RectTransform>(), new Vector2(0.34f, 0f), new Vector2(0.68f, 0f), new Vector2(10f, 25f), new Vector2(-10f, 145f));
-            _accessoriesLabel = accessories.GetComponentInChildren<Text>();
+        private static Text AddShortcut(RectTransform root, string name, string label, int index, Color fill, UnityEngine.Events.UnityAction onClick)
+        {
+            Button button = UiKit.RoundedButton(root, name, label, 24, fill, KarbazDark.TextPrimary, onClick);
+            Outline border = button.gameObject.AddComponent<Outline>();
+            border.effectColor = KarbazDark.Border;
+            border.effectDistance = new Vector2(2f, -2f);
+            float min = index * 0.2f;
+            UiBuilder.Stretch(button.GetComponent<RectTransform>(), new Vector2(min, 0f), new Vector2(min + 0.2f, 0f), new Vector2(6f, 12f), new Vector2(-6f, StripHeight - 8f));
+            return button.GetComponentInChildren<Text>();
         }
 
         public void Show()
@@ -94,41 +108,55 @@ namespace Esnaf.App.Ui
             _accessoriesLabel.text = _flow.AccessoryButtonText;
         }
 
-        // İlan kartı (Gün 13.3): solda telefon görseli, sağda model, kondisyon, satıcı, istenen fiyat, tahmini değer ve "İncele". Metinler sarılır; görsel maskelenir (taşmaz).
+        // İlan kartı: solda telefon görseli, ortada model + etiketler + satıcı, sağda istenen fiyat + tahmini değer + "İncele". Metinler sarılır, görsel maskelenir (taşmaz).
         private void AddRow(ListingRowViewModel row)
         {
             long listingId = row.ListingId;
-            Button button = UiBuilder.CreateButton(_content, "Listing_" + listingId, string.Empty, 40, row.IsSelected ? SelectedRowColor : RowColor, () => _flow.OpenListing(listingId));
-            var layout = button.gameObject.AddComponent<LayoutElement>();
-            layout.minHeight = CardHeight;
-            layout.preferredHeight = CardHeight;
-            button.GetComponentInChildren<Text>().gameObject.SetActive(false);
+            Button button = UiKit.RoundedButton(_content, "Listing_" + listingId, string.Empty, 30, KarbazDark.Card, KarbazDark.TextPrimary, () => _flow.OpenListing(listingId));
+            UiKit.AddShadow(button.gameObject, 0.25f, 10f);
+            Outline border = button.gameObject.AddComponent<Outline>();
+            border.effectColor = row.IsSelected ? KarbazDark.Gold : KarbazDark.Border;
+            border.effectDistance = new Vector2(2f, -2f);
             RectTransform card = button.GetComponent<RectTransform>();
+            UiKit.Size2(card, 0f, CardHeight);
+            button.GetComponentInChildren<Text>().gameObject.SetActive(false);
 
-            RectTransform image = UiBuilder.CreatePanel(card, "PhoneImage", new Color(0.09f, 0.1f, 0.13f, 1f));
+            // telefon görseli (portre oran, maskeli)
+            RectTransform image = UiKit.Rounded(card, "PhoneImage", KarbazDark.CardInset);
             image.GetComponent<Image>().raycastTarget = false;
-            UiBuilder.Stretch(image, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(20f, -115f), new Vector2(250f, 115f));
+            UiBuilder.Stretch(image, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(22f, -140f), new Vector2(222f, 140f));
             image.gameObject.AddComponent<RectMask2D>();
             var phone = new GameObject("Phone", typeof(RectTransform)).GetComponent<RectTransform>();
             phone.SetParent(image, false);
             phone.anchorMin = new Vector2(0.5f, 0.5f);
             phone.anchorMax = new Vector2(0.5f, 0.5f);
             phone.sizeDelta = new Vector2(700f, 700f);
-            phone.localScale = new Vector3(0.33f, 0.33f, 1f);
+            phone.localScale = new Vector3(0.38f, 0.38f, 1f);
             PhoneMockView.Draw(phone, row.DefinitionId, PhoneAngle.Front);
 
-            AddCardLine(card, "Title", row.Title, 44, 0f, 56f, Color.white, true);
-            AddCardLine(card, "Condition", row.ConditionText, 30, 58f, 84f, new Color(0.78f, 0.8f, 0.86f, 1f), false);
-            AddCardLine(card, "Seller", row.SellerText, 32, 144f, 46f, new Color(0.78f, 0.8f, 0.86f, 1f), false);
-            AddCardLine(card, "Asking", row.AskingText, 36, 192f, 50f, new Color(1f, 0.85f, 0.4f, 1f), true);
-            AddCardLine(card, "Estimated", row.EstimatedText, 32, 244f, 46f, new Color(0.55f, 0.9f, 0.6f, 1f), false);
+            // orta sütun
+            AddText(card, "Title", row.Title, 42, KarbazDark.TextPrimary, true, 0f, 0.62f, 24f, 60f);
+            RectTransform chips = AddChipRow(card, row);
+            AddText(card, "Seller", row.SellerText, 30, KarbazDark.TextMuted, false, 0f, 0.62f, 156f, 44f);
+            string detail = row.UrgentChip == null ? row.RemainingText : row.RemainingText + "  •  " + row.UrgentChip;
+            AddText(card, "Remaining", detail, 28, KarbazDark.TextMuted, false, 0f, 0.62f, 204f, 44f);
+            if (chips != null)
+            {
+                chips.SetAsLastSibling();
+            }
 
-            Button inspect = UiBuilder.CreateButton(card, "InspectButton", row.InspectButtonText, 36, new Color(0.2f, 0.4f, 0.65f, 1f), () => _flow.OpenListing(listingId));
-            UiBuilder.Stretch(inspect.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-260f, 16f), new Vector2(-20f, 90f));
+            // sağ sütun
+            AddText(card, "AskingLabel", row.AskingLabelText, 28, KarbazDark.TextMuted, false, 0.62f, 1f, 24f, 40f, 0f, 20f);
+            AddText(card, "Asking", row.PriceValueText, 46, KarbazDark.Gold, true, 0.62f, 1f, 62f, 62f, 0f, 20f);
+            AddText(card, "Estimated", row.EstimatedText, 26, KarbazDark.TextMuted, false, 0.62f, 1f, 128f, 70f, 0f, 20f);
+
+            Button inspect = UiKit.RoundedButton(card, "InspectButton", row.InspectButtonText + "  ›", 36, KarbazDark.Action, KarbazDark.TextPrimary, () => _flow.OpenListing(listingId));
+            UiBuilder.Stretch(inspect.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-250f, 22f), new Vector2(-22f, 100f));
+            inspect.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
         }
 
-        // Kartın sağ sütununda yukarıdan 'top' px aşağıda, 'height' px yüksekliğinde sarılan metin satırı.
-        private static void AddCardLine(RectTransform card, string name, string text, int size, float top, float height, Color color, bool bold)
+        // Kartın üstünden 'top' px aşağıda 'height' yüksekliğinde sarılan metin; yatay konum kartın genişlik oranlarıyla ('minX'..'maxX'), sol boşluk 'minPad' (görsel yanı) sağ boşluk 'rightPad'.
+        private static void AddText(RectTransform card, string name, string text, int size, Color color, bool bold, float minX, float maxX, float top, float height, float leftPad = -1f, float rightPad = 10f)
         {
             Text label = UiBuilder.CreateWrappedText(card, name, size, TextAnchor.UpperLeft, color);
             label.text = text;
@@ -138,32 +166,51 @@ namespace Esnaf.App.Ui
                 label.fontStyle = FontStyle.Bold;
             }
 
-            UiBuilder.Stretch(label.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(280f, -12f - top - height), new Vector2(-20f, -12f - top));
+            float left = leftPad >= 0f ? leftPad : 246f;
+            if (minX > 0f)
+            {
+                left = 0f;
+            }
+
+            UiBuilder.Stretch(label.rectTransform, new Vector2(minX, 1f), new Vector2(maxX, 1f), new Vector2(left, -top - height), new Vector2(-rightPad, -top));
         }
 
-        private void OnShelfClicked()
+        // Kutu / fatura etiketleri (yuvarlatılmış hap): "Kutu var", "Fatura var" ... Yalnızca herkese açık ilan bilgisi; hap genişliği yazıya göre.
+        private RectTransform AddChipRow(RectTransform card, ListingRowViewModel row)
         {
-            _flow.OpenShelf();
+            var go = new GameObject("Chips", typeof(RectTransform));
+            RectTransform rect = go.GetComponent<RectTransform>();
+            rect.SetParent(card, false);
+            UiBuilder.Stretch(rect, new Vector2(0f, 1f), new Vector2(0.62f, 1f), new Vector2(246f, -142f), new Vector2(-10f, -94f));
+            var layout = go.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 10f;
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            AddChip(rect, "Chip_Age", row.AgeChip, KarbazDark.ChipBlue, KarbazDark.TextPrimary);
+            AddChip(rect, "Chip_Box", row.BoxChip, KarbazDark.Chip, row.HasBox ? KarbazDark.TextPrimary : KarbazDark.TextMuted);
+            AddChip(rect, "Chip_Invoice", row.InvoiceChip, KarbazDark.Chip, row.HasInvoice ? KarbazDark.TextPrimary : KarbazDark.TextMuted);
+            return rect;
         }
 
-        private void OnWholesaleClicked()
+        private static void AddChip(RectTransform parent, string name, string text, Color fill, Color textColor)
         {
-            _flow.OpenWholesale();
-        }
-
-        private void OnAccessoryStockClicked()
-        {
-            _flow.OpenAccessoryStock();
-        }
-
-        private void OnCustomersClicked()
-        {
-            _flow.OpenCustomers();
-        }
-
-        private void OnEndDayClicked()
-        {
-            _flow.EndDay();
+            RectTransform chip = UiKit.Rounded(parent, name, fill);
+            chip.GetComponent<Image>().raycastTarget = false;
+            var layout = chip.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(14, 14, 4, 4);
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            chip.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            Text label = UiBuilder.CreateText(chip, "Label", 24, TextAnchor.MiddleCenter, textColor);
+            label.text = text;
+            label.raycastTarget = false;
         }
     }
 }

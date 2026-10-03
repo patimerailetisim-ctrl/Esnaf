@@ -179,12 +179,11 @@ namespace Esnaf.App.Ui
                 UiBuilder.Stretch(waiting.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(224f, -184f), new Vector2(-20f, -140f));
             }
 
-            if (customer.CanGo)
-            {
-                Button go = UiKit.RoundedButton(card, "GoToCustomerButton", customer.GoButtonText, 36, UiTheme.Gold, UiTheme.Ink, () => _flow.GoToActiveCustomer());
-                UiBuilder.Stretch(go.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-330f, 14f), new Vector2(-20f, 84f));
-                go.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
-            }
+            // İlgilendiği ürün varsa "Müşteriye Git" (konuşma doğrudan açılır); yoksa "Müşteriler" (mevcut lobi: "Gönder" akışı) — ikisi de GoToActiveCustomer.
+            Button go = UiKit.RoundedButton(
+                card, "GoToCustomerButton", customer.CanGo ? customer.GoButtonText : TurkishTexts.CustomersTitle, 36, customer.CanGo ? UiTheme.Gold : UiTheme.CardSoft, UiTheme.Ink, () => _flow.GoToActiveCustomer());
+            UiBuilder.Stretch(go.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-330f, 14f), new Vector2(-20f, 84f));
+            go.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
         }
     }
 }

@@ -799,6 +799,7 @@ namespace Esnaf.Presentation
 
         // ---- İlanlar pazarı (Gün 13.3) ----
         public const string InspectButton = "\u0130ncele";
+        public const string ListingsSubtitle = "\u0130kinci el telefon ilanlar\u0131";
         public const string DoAppraisalButton = "Ekspertiz Yap";
         public const string DoNegotiationButton = "Pazarl\u0131k Yap";
         public const string NoListingsHint = "Yeni ilanlar i\u00E7in g\u00FCn\u00FC bitirebilirsin.";

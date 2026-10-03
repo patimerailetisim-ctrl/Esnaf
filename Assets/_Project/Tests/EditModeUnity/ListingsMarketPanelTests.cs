@@ -88,7 +88,7 @@ namespace Esnaf.App.Tests
         }
 
         [Test]
-        public void EveryCard_ShowsImageModelConditionSellerAskingEstimateAndInspect()
+        public void EveryCard_ShowsImageModelChipsSellerAskingEstimateAndInspect()
         {
             Build();
             foreach (var row in _flow.Listings)
@@ -97,13 +97,27 @@ namespace Esnaf.App.Tests
                 Assert.IsNotNull(card, "kart");
                 Assert.IsNotNull(card.Find("PhoneImage"), "telefon görseli");
                 Assert.AreEqual(row.Title, card.Find("Title").GetComponent<Text>().text);
-                Assert.AreEqual(row.ConditionText, card.Find("Condition").GetComponent<Text>().text);
+                Transform chips = card.Find("Chips");
+                Assert.IsNotNull(chips, "etiket satırı");
+                Assert.AreEqual(row.AgeChip, chips.Find("Chip_Age").GetComponentInChildren<Text>().text);
+                Assert.AreEqual(row.BoxChip, chips.Find("Chip_Box").GetComponentInChildren<Text>().text);
+                Assert.AreEqual(row.InvoiceChip, chips.Find("Chip_Invoice").GetComponentInChildren<Text>().text);
                 Assert.AreEqual(row.SellerText, card.Find("Seller").GetComponent<Text>().text);
-                Assert.AreEqual(row.AskingText, card.Find("Asking").GetComponent<Text>().text);
+                Assert.AreEqual(row.AskingLabelText, card.Find("AskingLabel").GetComponent<Text>().text);
+                Assert.AreEqual(row.PriceValueText, card.Find("Asking").GetComponent<Text>().text, "altın vurgulu fiyat");
                 Assert.AreEqual(row.EstimatedText, card.Find("Estimated").GetComponent<Text>().text);
                 Assert.AreEqual("İncele", card.Find("InspectButton").GetComponentInChildren<Text>().text);
                 Assert.IsNotNull(card.Find("PhoneImage").GetComponent<RectMask2D>(), "görsel kartın dışına taşmaz");
             }
+        }
+
+        [Test]
+        public void TheHeader_ShowsTheStrongTitleAndTheSubtitle()
+        {
+            Build();
+
+            Assert.AreEqual("İlanlar", Find("Title").GetComponent<Text>().text);
+            Assert.AreEqual("İkinci el telefon ilanları", Find("Subtitle").GetComponent<Text>().text);
         }
 
         [Test]

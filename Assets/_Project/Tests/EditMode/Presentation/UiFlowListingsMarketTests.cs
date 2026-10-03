@@ -54,6 +54,31 @@ namespace Esnaf.Tests.Presentation
         }
 
         [Test]
+        public void TheCardChips_AndPrice_AreBuiltFromPublicListingData_WithoutAHiddenConditionLabel()
+        {
+            GameSession s = New();
+            using (UiFlow flow = Flow(s))
+            {
+                foreach (ListingView l in s.Api.GetListings())
+                {
+                    ListingRowViewModel row = flow.Listings.Single(r => r.ListingId == l.ListingId);
+                    Assert.AreEqual(TurkishTexts.Age(l.AgeMonths), row.AgeChip);
+                    Assert.AreEqual(l.HasBox ? "Kutu var" : "Kutu yok", row.BoxChip);
+                    Assert.AreEqual(l.HasInvoice ? "Fatura var" : "Fatura yok", row.InvoiceChip);
+                    Assert.AreEqual(l.Tags.Contains(ListingTags.UrgentSale) ? "Acil satış" : null, row.UrgentChip);
+                    Assert.AreEqual("İstenen fiyat", row.AskingLabelText);
+                    Assert.AreEqual(MoneyFormatter.Format(l.AskingPrice), row.PriceValueText, "altın vurgulu fiyat değeri");
+                    foreach (string hidden in new[] { "Temiz", "Çok iyi", "Orta", "Kötü" })
+                    {
+                        StringAssert.DoesNotContain(hidden, row.AgeChip + row.BoxChip + row.InvoiceChip, "gizli durum etiketi uydurulmaz");
+                    }
+                }
+
+                Assert.AreEqual("İkinci el telefon ilanları", TurkishTexts.ListingsSubtitle);
+            }
+        }
+
+        [Test]
         public void EveryCard_UsesTheListingsOwnPhoneImage_AndThatImageExistsInThePhoneCatalog()
         {
             GameSession s = New();
