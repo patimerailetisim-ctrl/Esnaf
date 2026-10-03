@@ -35,7 +35,7 @@ namespace Esnaf.Tests.Presentation
         [Test]
         public void ShelfCapacity_IsTheContentValue()
         {
-            Assert.AreEqual(6, Real().ShelfCapacity);
+            Assert.AreEqual(15, Real().ShelfCapacity);
         }
 
         [Test]

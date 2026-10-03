@@ -73,7 +73,7 @@ namespace Esnaf.Tests.Game
             CollectionAssert.Contains(lines, "economy.cash=250000");
             CollectionAssert.Contains(lines, "economy.businessAssets=0");
             CollectionAssert.Contains(lines, "ledger.count=1");
-            CollectionAssert.Contains(lines, "inventory.capacity=6");
+            CollectionAssert.Contains(lines, "inventory.capacity=15");
             CollectionAssert.Contains(lines, "inventory.items=");
             Assert.AreEqual(1, lines.Count(l => l.StartsWith("L|", StringComparison.Ordinal)), "defter satırları");
             Assert.AreEqual(3, lines.Count(l => l.StartsWith("I|", StringComparison.Ordinal)), "ürün örnekleri");
@@ -181,7 +181,7 @@ namespace Esnaf.Tests.Game
         public void BusinessAssets_AreListed()
         {
             GameSession s = New();
-            s.InventoryService.UpgradeCapacity(8, Money.FromTl(15000), 1);
+            s.InventoryService.UpgradeCapacity(20, Money.FromTl(15000), 1);
 
             CollectionAssert.Contains(GameStateDigest.Describe(s).Split('\n'), "economy.businessAssets=15000");
         }
@@ -275,7 +275,7 @@ namespace Esnaf.Tests.Game
             AssertChanges("nakit ve defter (alış)", s => s.InventoryService.Acquire(AnyInstance(s).InstanceId, Money.FromTl(1000), 1));
             AssertChanges("defter (gider)", s => s.EconomyService.ChargeDailyExpense(3));
             AssertChanges("bekleyen ekspertiz", s => s.EconomyService.PayAppraisal(AnyInstance(s).InstanceId, AnyInstance(s).DefinitionId, Money.FromTl(200), 1));
-            AssertChanges("yatırım", s => s.InventoryService.UpgradeCapacity(8, Money.FromTl(15000), 1));
+            AssertChanges("yatırım", s => s.InventoryService.UpgradeCapacity(20, Money.FromTl(15000), 1));
         }
 
         [Test]

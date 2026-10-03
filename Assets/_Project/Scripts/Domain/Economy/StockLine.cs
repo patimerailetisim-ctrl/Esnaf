@@ -9,11 +9,15 @@ namespace Esnaf.Domain.Economy
         public string DefinitionId { get; }
         public Money CostBasis { get; }
 
-        public StockLine(long instanceId, string definitionId, Money costBasis)
+        /// <summary>Etiket (satış) fiyatı; 0 = henüz fiyat girilmedi (satılabilir stok sayılmaz, müşteri talep havuzuna girmez).</summary>
+        public Money ListPrice { get; }
+
+        public StockLine(long instanceId, string definitionId, Money costBasis, Money listPrice = default(Money))
         {
             InstanceId = instanceId;
             DefinitionId = definitionId;
             CostBasis = costBasis;
+            ListPrice = listPrice;
         }
     }
 }

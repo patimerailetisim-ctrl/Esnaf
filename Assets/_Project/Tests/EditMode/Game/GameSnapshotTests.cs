@@ -68,7 +68,7 @@ namespace Esnaf.Tests.Game
             Assert.AreEqual(1, snap.Economy.Ledger.Count);
             Assert.AreEqual("opening_capital", snap.Economy.Ledger[0].Type);
             Assert.AreEqual(250000L, snap.Economy.Ledger[0].Amount);
-            Assert.AreEqual(6, snap.Inventory.Capacity);
+            Assert.AreEqual(15, snap.Inventory.Capacity);
             Assert.AreEqual(0, snap.Inventory.ItemIds.Count);
             Assert.AreEqual(3, snap.Market.Listings.Count);
             Assert.AreEqual(3, snap.Instances.Count);

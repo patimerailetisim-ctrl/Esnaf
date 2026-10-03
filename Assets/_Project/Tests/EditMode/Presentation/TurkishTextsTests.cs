@@ -269,7 +269,7 @@ namespace Esnaf.Tests.Presentation
             Assert.AreEqual("Sat\u0131c\u0131 fiyat\u0131nda direniyor: 9.500 \u20BA.", TurkishTexts.ReplyHolding(price));
             Assert.AreEqual("Sat\u0131c\u0131: Son fiyat\u0131m 9.500 \u20BA. Kabul et ya da kalk.", TurkishTexts.ReplyFinal(price));
             Assert.AreEqual("Teklifin sat\u0131c\u0131y\u0131 g\u00FCcendirdi.", TurkishTexts.Insulted);
-            Assert.AreEqual("Sat\u0131n al\u0131nd\u0131: Nova N3 Pro \u2014 9.500 \u20BA. Rafa eklendi (2/6).", TurkishTexts.Purchased("Nova N3 Pro", price, 2, 6));
+            Assert.AreEqual("Sat\u0131n al\u0131nd\u0131: Nova N3 Pro \u2014 9.500 \u20BA. Rafa eklendi (2/15).", TurkishTexts.Purchased("Nova N3 Pro", price, 2, 15));
             Assert.AreEqual("Pazarl\u0131ktan vazge\u00E7tin; ilan pazardan kalkt\u0131.", TurkishTexts.WalkedAway);
         }
 
@@ -310,9 +310,9 @@ namespace Esnaf.Tests.Presentation
         public void BuyAndShelfTexts_AreWrittenInTurkish()
         {
             Assert.AreEqual("Sat\u0131n Al \u2014 9.500 \u20BA", TurkishTexts.BuyNowLabel(Money.FromTl(9500)));
-            Assert.AreEqual("Raf (2/6)", TurkishTexts.ShelfButton(2, 6));
+            Assert.AreEqual("Raf (2/15)", TurkishTexts.ShelfButton(2, 15));
             Assert.AreEqual("Raf", TurkishTexts.ShelfTitle);
-            Assert.AreEqual("Doluluk: 2/6", TurkishTexts.ShelfCapacity(2, 6));
+            Assert.AreEqual("Doluluk: 2/15", TurkishTexts.ShelfCapacity(2, 15));
             Assert.AreEqual("Rafta \u00FCr\u00FCn yok.", TurkishTexts.ShelfEmpty);
             Assert.AreEqual("Maliyet: 9.500 \u20BA", TurkishTexts.ShelfCost(Money.FromTl(9500)));
         }

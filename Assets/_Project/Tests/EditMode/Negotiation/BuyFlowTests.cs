@@ -331,8 +331,8 @@ namespace Esnaf.Tests.Negotiation
                 source.Add(System.IO.Path.GetFileName(file), System.IO.File.ReadAllText(file));
             }
 
-            Assert.IsTrue(text.Contains("\"initialShelfCapacity\": 6"));
-            source.Add(ContentFileNames.EconomyConstants, text.Replace("\"initialShelfCapacity\": 6", "\"initialShelfCapacity\": 1"));
+            Assert.IsTrue(text.Contains("\"initialShelfCapacity\": 15"));
+            source.Add(ContentFileNames.EconomyConstants, text.Replace("\"initialShelfCapacity\": 15", "\"initialShelfCapacity\": 1"));
             ContentLoadResult load = ContentDatabase.Load(source);
             Assert.IsNotNull(load.Database, load.FormatIssues());
             GameSession s = New(content: load.Database);

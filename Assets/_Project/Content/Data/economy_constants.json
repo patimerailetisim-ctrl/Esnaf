@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "openingCapital": 250000,
   "dailyExpense": { "fromDay": 3, "amount": 500 },
-  "initialShelfCapacity": 6,
+  "initialShelfCapacity": 15,
   "customers": {
     "shopPremium": 0.05,
     "shopPremiumCap": 0.12,

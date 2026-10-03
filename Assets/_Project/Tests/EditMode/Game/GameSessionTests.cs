@@ -30,7 +30,7 @@ namespace Esnaf.Tests.Game
             Assert.AreEqual(Money.FromTl(250000), s.EconomyState.Cash, "GDD karar 2: 250.000 TL");
             Assert.AreEqual(1, s.EconomyState.Ledger.Count);
             Assert.AreEqual(0, s.EconomyState.Ledger.Records[0].Day, "sermaye 0. güne yazılır");
-            Assert.AreEqual(6, s.InventoryState.Capacity, "başlangıç raf kapasitesi 6");
+            Assert.AreEqual(15, s.InventoryState.Capacity, "başlangıç raf kapasitesi 15");
             Assert.AreEqual(0, s.InventoryState.Count);
             Assert.AreEqual(Money.FromTl(250000), s.Wealth.Calculate().Total);
         }
@@ -118,7 +118,7 @@ namespace Esnaf.Tests.Game
             ProductInstance guided = s.Store.All.First();
             Assert.IsTrue(s.InventoryService.Acquire(guided.InstanceId, Money.FromTl(1000), 1).IsSuccess);
             Assert.IsTrue(s.EconomyService.PayAppraisal(s.Store.All.Last().InstanceId, s.Store.All.Last().DefinitionId, Money.FromTl(200), 1).IsSuccess);
-            Assert.IsTrue(s.InventoryService.UpgradeCapacity(8, Money.FromTl(15000), 1).IsSuccess);
+            Assert.IsTrue(s.InventoryService.UpgradeCapacity(20, Money.FromTl(15000), 1).IsSuccess);
 
             WealthBreakdown wealth = s.Wealth.Calculate();
 

@@ -27,6 +27,8 @@ namespace Esnaf.Presentation
         private readonly ContentPresentation _content;
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private double _clockRemainder;
+        private long? _shelfSelectedId;
+        private long _shelfPriceTl;
         private string _lastSignature = string.Empty;
         private long? _selectedListingId;
         private string _selectedLevelId;
@@ -209,6 +211,10 @@ namespace Esnaf.Presentation
             else if (CurrentScreen == UiScreen.Negotiation)
             {
                 CurrentScreen = UiScreen.Detail; // pazarlık oyunda açık kalır; geri dönülünce kaldığı yerden sürer
+            }
+            else if (CurrentScreen == UiScreen.Shelf && _shelfSelectedId.HasValue)
+            {
+                _shelfSelectedId = null; // fiyat paneli açıksa önce o kapanır
             }
             else if (CurrentScreen == UiScreen.Detail || CurrentScreen == UiScreen.Shelf)
             {
@@ -461,10 +467,141 @@ namespace Esnaf.Presentation
             }
 
             CurrentScreen = UiScreen.Shelf;
+            _shelfSelectedId = null;
             StatusMessage = null;
             Rebuild();
             RaiseChanged();
             return true;
+        }
+
+        /// <summary>Fiyat seçicinin adımı (TL).</summary>
+        public const long ShelfPriceStep = 100L;
+
+        /// <summary>
+        /// Raf ekranında ürünü seçer (ikinci dokunuş seçimi kaldırır) ve fiyat panelini açar. Panelin başlangıç fiyatı: kayıtlı etiket fiyatı; yoksa maliyetin ~%20 üstü (yalnızca ekran önerisi,
+        /// KAYDEDİLMEZ: ürün siz kaydedene kadar fiyatsız ve satılamaz kalır). Raf ekranında değilse ya da ürün rafta yoksa hiçbir şey yapmaz (false).
+        /// </summary>
+        public bool SelectShelfItem(long instanceId)
+        {
+            if (CurrentScreen != UiScreen.Shelf)
+            {
+                return false;
+            }
+
+            StockLine line = FindStockLine(instanceId);
+            if (line == null)
+            {
+                return false;
+            }
+
+            if (_shelfSelectedId.HasValue && _shelfSelectedId.Value == instanceId)
+            {
+                _shelfSelectedId = null;
+            }
+            else
+            {
+                _shelfSelectedId = instanceId;
+                _shelfPriceTl = line.ListPrice.IsPositive
+                    ? line.ListPrice.Tl
+                    : Math.Max(10L, (long)Math.Ceiling(line.CostBasis.Tl * 1.2 / ShelfPriceStep) * ShelfPriceStep);
+            }
+
+            StatusMessage = null;
+            Refresh();
+            return true;
+        }
+
+        /// <summary>Seçili ürünün fiyat seçicisini adım kadar (TL) kaydırır; en az 10 ₺, en çok <see cref="MaxOffer"/>. Seçili ürün yoksa hiçbir şey yapmaz (false).</summary>
+        public bool AdjustShelfPrice(long deltaTl)
+        {
+            if (CurrentScreen != UiScreen.Shelf || !_shelfSelectedId.HasValue)
+            {
+                return false;
+            }
+
+            _shelfPriceTl = Math.Min(MaxOffer, Math.Max(10L, _shelfPriceTl + deltaTl));
+            StatusMessage = null;
+            Refresh();
+            return true;
+        }
+
+        /// <summary>Seçicideki fiyatı doğrudan ayarlar (ham değer; geçersizse panel "kaydedilemez" der). Seçili ürün yoksa hiçbir şey yapmaz (false).</summary>
+        public bool SetShelfPrice(long tl)
+        {
+            if (CurrentScreen != UiScreen.Shelf || !_shelfSelectedId.HasValue)
+            {
+                return false;
+            }
+
+            _shelfPriceTl = Math.Max(0L, tl);
+            StatusMessage = null;
+            Refresh();
+            return true;
+        }
+
+        /// <summary>Fiyat panelini kaydetmeden kapatır.</summary>
+        public void CloseShelfEditor()
+        {
+            if (CurrentScreen == UiScreen.Shelf && _shelfSelectedId.HasValue)
+            {
+                _shelfSelectedId = null;
+                StatusMessage = null;
+                Refresh();
+            }
+        }
+
+        /// <summary>
+        /// Seçili ürünün fiyatını kaydeder (mevcut IGameApi.SetPrice). Sıfır, negatif, 10 ₺'nin katı olmayan ya da üst sınırı aşan fiyat KAYDEDİLMEZ (price.invalid, Türkçe mesaj, durum değişmez).
+        /// Başarıda ürün satılabilir olur ve sonraki müşteri taleplerine girer; daha önce fiyatsızken atlanan müşteriler geri gelmez.
+        /// </summary>
+        public Result SaveShelfPrice()
+        {
+            if (CurrentScreen != UiScreen.Shelf || !_shelfSelectedId.HasValue)
+            {
+                return Result.Fail("ui.no_shelf_item_selected", "No shelf item is selected.");
+            }
+
+            long id = _shelfSelectedId.Value;
+            if (!IsValidShelfPrice(_shelfPriceTl))
+            {
+                StatusMessage = TurkishTexts.PriceError("price.invalid");
+                Refresh();
+                return Result.Fail("price.invalid", "Price must be positive and a multiple of 10 TL.");
+            }
+
+            Money price = Money.FromTl(_shelfPriceTl);
+            Result result = _api.SetPrice(id, price);
+            if (result.IsSuccess)
+            {
+                StockLine line = FindStockLine(id);
+                StatusMessage = TurkishTexts.ShelfPriceSaved(line == null ? string.Empty : _content.ModelName(line.DefinitionId), price);
+                _shelfSelectedId = null;
+            }
+            else
+            {
+                StatusMessage = TurkishTexts.PriceError(result.ErrorCode);
+            }
+
+            Refresh();
+            return result;
+        }
+
+        private static bool IsValidShelfPrice(long tl)
+        {
+            return tl > 0 && tl % 10 == 0 && tl <= MaxOffer;
+        }
+
+        private StockLine FindStockLine(long instanceId)
+        {
+            foreach (StockLine line in _api.GetInventory())
+            {
+                if (line.InstanceId == instanceId)
+                {
+                    return line;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>İlanlar (ya da Aksesuar Stoğu) ekranından Toptancı ekranını açar. Başka ekrandaysa hiçbir şey yapmaz (false).</summary>
@@ -1155,16 +1292,55 @@ namespace Esnaf.Presentation
         private ShelfScreenViewModel BuildShelf(IReadOnlyList<StockLine> stock)
         {
             var items = new List<ShelfItemRowViewModel>();
+            ShelfPriceEditorViewModel editor = null;
+            if (_shelfSelectedId.HasValue && FindStockLine(_shelfSelectedId.Value) == null)
+            {
+                _shelfSelectedId = null; // ürün artık rafta değil
+            }
+
             foreach (StockLine line in stock)
             {
-                items.Add(new ShelfItemRowViewModel(_content.ModelName(line.DefinitionId), TurkishTexts.ShelfCost(line.CostBasis)));
+                bool sellable = line.ListPrice.IsPositive;
+                bool selected = _shelfSelectedId.HasValue && _shelfSelectedId.Value == line.InstanceId;
+                string model = _content.ModelName(line.DefinitionId);
+                items.Add(new ShelfItemRowViewModel(
+                    model,
+                    TurkishTexts.ShelfCost(line.CostBasis),
+                    line.InstanceId,
+                    sellable ? TurkishTexts.ShelfSellableLine(line.ListPrice) : TurkishTexts.ShelfNoPriceLine,
+                    sellable,
+                    selected));
+                if (selected)
+                {
+                    editor = BuildShelfEditor(line, model);
+                }
             }
 
             return new ShelfScreenViewModel(
                 TurkishTexts.ShelfTitle,
                 TurkishTexts.ShelfCapacity(stock.Count, _content.ShelfCapacity),
                 items,
-                items.Count == 0 ? TurkishTexts.ShelfEmpty : null);
+                items.Count == 0 ? TurkishTexts.ShelfEmpty : null,
+                editor);
+        }
+
+        private ShelfPriceEditorViewModel BuildShelfEditor(StockLine line, string model)
+        {
+            Money price = Money.FromTl(_shelfPriceTl);
+            bool valid = IsValidShelfPrice(_shelfPriceTl);
+            Money profit = price - line.CostBasis;
+            long margin = price.Tl > 0 ? profit.Tl * 100L / price.Tl : 0L;
+            return new ShelfPriceEditorViewModel(
+                line.InstanceId,
+                model,
+                TurkishTexts.ShelfAcquisitionCost(line.CostBasis),
+                line.ListPrice.IsPositive ? TurkishTexts.ShelfSavedPrice(line.ListPrice) : TurkishTexts.ShelfNoSavedPrice,
+                price,
+                TurkishTexts.ShelfEditPrice(price),
+                valid ? TurkishTexts.ShelfProfit(profit) : string.Empty,
+                valid ? TurkishTexts.ShelfMargin(margin) : string.Empty,
+                valid,
+                TurkishTexts.ShelfSavePriceButton);
         }
 
         private TopBarViewModel BuildTopBar()

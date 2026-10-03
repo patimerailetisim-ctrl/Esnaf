@@ -67,7 +67,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
                 Assert.IsNull(flow.SelectedListingId);
                 Assert.AreEqual(
-                    "Satın alındı: " + session.Content.GetProduct(listing.DefinitionId).Name + " — " + MoneyFormatter.Format(listing.AskingPrice) + ". Rafa eklendi (1/6).",
+                    "Satın alındı: " + session.Content.GetProduct(listing.DefinitionId).Name + " — " + MoneyFormatter.Format(listing.AskingPrice) + ". Rafa eklendi (1/15).",
                     flow.StatusMessage);
             }
         }
@@ -161,23 +161,23 @@ namespace Esnaf.Tests.Presentation
             GameSession session = NewSession();
             using (UiFlow flow = Flow(session))
             {
-                for (int day = 0; day < 10 && session.Api.GetInventory().Count < 6; day++)
+                for (int day = 0; day < 20 && session.Api.GetInventory().Count < 15; day++)
                 {
                     foreach (ListingView listing in session.Api.GetListings().ToList())
                     {
-                        if (session.Api.GetInventory().Count < 6)
+                        if (session.Api.GetInventory().Count < 15)
                         {
                             Assert.IsTrue(session.Api.BuyListing(listing.ListingId).IsSuccess);
                         }
                     }
 
-                    if (session.Api.GetInventory().Count < 6)
+                    if (session.Api.GetInventory().Count < 15)
                     {
                         Assert.IsTrue(flow.EndDay().IsSuccess);
                     }
                 }
 
-                Assert.AreEqual(6, session.Api.GetInventory().Count);
+                Assert.AreEqual(15, session.Api.GetInventory().Count);
                 Assert.IsTrue(flow.EndDay().IsSuccess);
                 flow.OpenListing(flow.Listings[0].ListingId);
                 string digest = session.Api.GetStateDigest();
@@ -243,13 +243,13 @@ namespace Esnaf.Tests.Presentation
             GameSession session = NewSession();
             using (UiFlow flow = Flow(session))
             {
-                Assert.AreEqual("Raf (0/6)", flow.ShelfButtonText);
+                Assert.AreEqual("Raf (0/15)", flow.ShelfButtonText);
 
                 session.Api.BuyListing(flow.Listings[0].ListingId);
-                Assert.AreEqual("Raf (1/6)", flow.ShelfButtonText);
+                Assert.AreEqual("Raf (1/15)", flow.ShelfButtonText);
 
                 session.Api.BuyListing(flow.Listings[0].ListingId);
-                Assert.AreEqual("Raf (2/6)", flow.ShelfButtonText);
+                Assert.AreEqual("Raf (2/15)", flow.ShelfButtonText);
             }
         }
 
@@ -268,7 +268,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual(1, raised);
                 ShelfScreenViewModel shelf = flow.ShelfScreen;
                 Assert.AreEqual("Raf", shelf.Title);
-                Assert.AreEqual("Doluluk: 0/6", shelf.CapacityLine);
+                Assert.AreEqual("Doluluk: 0/15", shelf.CapacityLine);
                 Assert.AreEqual(0, shelf.Items.Count);
                 Assert.AreEqual("Rafta ürün yok.", shelf.EmptyNote);
             }
@@ -287,7 +287,7 @@ namespace Esnaf.Tests.Presentation
 
                 var stock = session.Api.GetInventory();
                 ShelfScreenViewModel shelf = flow.ShelfScreen;
-                Assert.AreEqual("Doluluk: 2/6", shelf.CapacityLine);
+                Assert.AreEqual("Doluluk: 2/15", shelf.CapacityLine);
                 Assert.AreEqual(stock.Count, shelf.Items.Count);
                 for (int i = 0; i < stock.Count; i++)
                 {
@@ -311,7 +311,7 @@ namespace Esnaf.Tests.Presentation
                 session.Api.BuyListing(session.Api.GetListings()[0].ListingId);
 
                 Assert.AreEqual(1, flow.ShelfScreen.Items.Count);
-                Assert.AreEqual("Doluluk: 1/6", flow.ShelfScreen.CapacityLine);
+                Assert.AreEqual("Doluluk: 1/15", flow.ShelfScreen.CapacityLine);
             }
         }
 

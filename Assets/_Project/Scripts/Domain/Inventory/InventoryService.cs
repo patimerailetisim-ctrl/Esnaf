@@ -207,7 +207,7 @@ namespace Esnaf.Domain.Inventory
             foreach (long id in _state.ItemIds)
             {
                 ProductInstance instance = _store.Get(id);
-                lines.Add(new StockLine(id, instance.DefinitionId, instance.CostBasis));
+                lines.Add(new StockLine(id, instance.DefinitionId, instance.CostBasis, instance.ListPrice));
             }
 
             return new ReadOnlyCollection<StockLine>(lines);

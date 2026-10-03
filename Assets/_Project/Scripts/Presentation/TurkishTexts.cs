@@ -764,6 +764,66 @@ namespace Esnaf.Presentation
             return "Doluluk: " + count.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture);
         }
 
+        // ---- Raf fiyatlandırma (Gün 12.7) ----
+        public const string ShelfNoPriceLine = "Fiyat girilmedi \u2014 sat\u0131\u015Fta de\u011Fil";
+        public const string ShelfPriceButtonHint = "Fiyat belirlemek i\u00E7in \u00FCr\u00FCne dokun";
+        public const string ShelfNoSavedPrice = "Kay\u0131tl\u0131 fiyat yok";
+        public const string ShelfSavePriceButton = "Fiyat\u0131 Kaydet";
+        public const string ShelfCloseEditorButton = "Vazge\u00E7";
+
+        public static string ShelfSellableLine(Money price)
+        {
+            return "Sat\u0131\u015F fiyat\u0131: " + MoneyFormatter.Format(price);
+        }
+
+        public static string ShelfAcquisitionCost(Money costBasis)
+        {
+            return "Al\u0131\u015F maliyeti: " + MoneyFormatter.Format(costBasis);
+        }
+
+        public static string ShelfSavedPrice(Money price)
+        {
+            return "Kay\u0131tl\u0131 fiyat: " + MoneyFormatter.Format(price);
+        }
+
+        public static string ShelfEditPrice(Money price)
+        {
+            return "Sat\u0131\u015F fiyat\u0131: " + MoneyFormatter.Format(price);
+        }
+
+        /// <summary>"Tahmini k\u00E2r: 1.200 \u20BA" ya da zararsa "Tahmini zarar: 500 \u20BA".</summary>
+        public static string ShelfProfit(Money profit)
+        {
+            return profit.Tl >= 0
+                ? "Tahmini k\u00E2r: " + MoneyFormatter.Format(profit)
+                : "Tahmini zarar: " + MoneyFormatter.Format(-profit);
+        }
+
+        public static string ShelfMargin(long percent)
+        {
+            return "Marj: %" + percent.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ShelfPriceSaved(string model, Money price)
+        {
+            return model + " i\u00E7in sat\u0131\u015F fiyat\u0131 kaydedildi: " + MoneyFormatter.Format(price) + ". Art\u0131k sat\u0131labilir.";
+        }
+
+        /// <summary>Fiyat belirleme hatas\u0131 (T\u00FCrk\u00E7e). Bilinmeyen kod genel mesaja d\u00FC\u015Fer.</summary>
+        public static string PriceError(string code)
+        {
+            switch (code)
+            {
+                case "price.invalid":
+                    return "Fiyat ge\u00E7erli olmal\u0131: s\u0131f\u0131rdan b\u00FCy\u00FCk ve 10 \u20BA'nin kat\u0131.";
+                case "instance.not_in_inventory":
+                case "instance.unknown":
+                    return "Bu \u00FCr\u00FCn rafta de\u011Fil.";
+                default:
+                    return "Fiyat kaydedilemedi.";
+            }
+        }
+
         public static string ShelfCost(Money costBasis)
         {
             return "Maliyet: " + MoneyFormatter.Format(costBasis);

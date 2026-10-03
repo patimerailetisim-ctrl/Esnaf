@@ -583,7 +583,7 @@ namespace Esnaf.Tests.Content
             Assert.AreEqual(Money.FromTl(250000), c.OpeningCapital);
             Assert.AreEqual(3, c.DailyExpenseFromDay);
             Assert.AreEqual(Money.FromTl(500), c.DailyExpenseAmount);
-            Assert.AreEqual(6, c.InitialShelfCapacity);
+            Assert.AreEqual(15, c.InitialShelfCapacity);
         }
 
         [Test]

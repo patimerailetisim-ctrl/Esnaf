@@ -161,7 +161,7 @@ namespace Esnaf.Tests.Content
             Assert.AreEqual(Money.FromTl(250000), c.OpeningCapital, "GDD karar 2: 250.000 TL");
             Assert.AreEqual(3, c.DailyExpenseFromDay, "GDD: gider Gün 3'ten");
             Assert.AreEqual(Money.FromTl(500), c.DailyExpenseAmount, "GDD: günlük gider 500 TL");
-            Assert.AreEqual(6, c.InitialShelfCapacity, "GDD: başlangıç raf kapasitesi 6");
+            Assert.AreEqual(15, c.InitialShelfCapacity, "başlangıç raf kapasitesi 15 (Gün 12.6; GDD taslağındaki 6 yerine)");
         }
 
         [Test]

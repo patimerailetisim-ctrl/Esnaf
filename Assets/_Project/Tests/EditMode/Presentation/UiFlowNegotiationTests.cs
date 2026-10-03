@@ -355,7 +355,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.IsNull(flow.NegotiationScreen);
                 Assert.IsNull(session.Api.GetNegotiation());
                 Assert.AreEqual(
-                    "Satın alındı: " + session.Content.GetProduct(listing.DefinitionId).Name + " — " + MoneyFormatter.Format(price) + ". Rafa eklendi (1/6).",
+                    "Satın alındı: " + session.Content.GetProduct(listing.DefinitionId).Name + " — " + MoneyFormatter.Format(price) + ". Rafa eklendi (1/15).",
                     flow.StatusMessage);
             }
         }
@@ -406,7 +406,7 @@ namespace Esnaf.Tests.Presentation
                 Assert.AreEqual(1, session.Api.GetInventory().Count);
                 Assert.AreEqual(UiScreen.Listings, flow.CurrentScreen);
                 StringAssert.StartsWith("Satın alındı: ", flow.StatusMessage);
-                StringAssert.EndsWith("Rafa eklendi (1/6).", flow.StatusMessage);
+                StringAssert.EndsWith("Rafa eklendi (1/15).", flow.StatusMessage);
             }
         }
 
