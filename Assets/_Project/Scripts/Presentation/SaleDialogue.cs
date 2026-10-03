@@ -79,8 +79,27 @@ namespace Esnaf.Presentation
             return text.Length == 0 ? text : text.Substring(0, 1).ToUpperInvariant() + text.Substring(1);
         }
 
+        /// <summary>Müşteri geldiğinde global bildirimde gösterilen kısa karşılama cümlesi (Gün 13.1). SAF metindir.</summary>
+        public static string ArrivalNotice(string personalityId)
+        {
+            switch (personalityId)
+            {
+                case "hurried":
+                case "budget_limited":
+                    return "Abi acelem var, bir bakabilir miyim?";
+                case "haggler":
+                    return "Selam abi, pazarl\u0131k yapar\u0131z de\u011Fil mi?";
+                case "indecisive":
+                    return "Merhaba\u2026 bir bakabilir miyim acaba?";
+                case "showoff":
+                    return "Selam abi, en iyi telefonlar sende mi?";
+                default:
+                    return "Selam abi, bir bakabilir miyim?";
+            }
+        }
+
         /// <summary>
-        /// Sırada beklerken sabrı tükenen müşterinin çıkış sözü (Gün 12.6; 60 oyun dakikası = 60 gerçek saniye bekledi). Kişiliğe göre ton değişir; SAF metindir.
+        /// Sırada beklerken sabrı tükenen müşterinin çıkış sözü (Gün 12.6; 60 oyun dakikası = 20 gerçek saniye bekledi). Kişiliğe göre ton değişir; SAF metindir.
         /// <paramref name="storeClosed"/> true ise mağaza kapandığı için çıkıyordur.
         /// </summary>
         public static string WaitingLeave(string personalityId, bool storeClosed)

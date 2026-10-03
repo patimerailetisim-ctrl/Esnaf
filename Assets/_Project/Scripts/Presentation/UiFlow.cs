@@ -27,6 +27,7 @@ namespace Esnaf.Presentation
         private readonly ContentPresentation _content;
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private double _clockRemainder;
+        private readonly List<NoticeState> _notices = new List<NoticeState>();
         private long? _shelfSelectedId;
         private long _shelfPriceTl;
         private string _lastSignature = string.Empty;
@@ -62,7 +63,8 @@ namespace Esnaf.Presentation
             if (events != null)
             {
                 _subscriptions.Add(events.Subscribe<CashChanged>(e => Refresh()));
-                _subscriptions.Add(events.Subscribe<DayStarted>(e => Refresh()));
+                _subscriptions.Add(events.Subscribe<DayStarted>(e => { _notices.Clear(); Refresh(); }));
+                _subscriptions.Add(events.Subscribe<CustomerArrived>(OnCustomerArrived));
                 _subscriptions.Add(events.Subscribe<ListingsGenerated>(e => Refresh()));
                 _subscriptions.Add(events.Subscribe<ListingExpired>(e => Refresh()));
                 _subscriptions.Add(events.Subscribe<ListingPurchased>(e => Refresh()));
@@ -91,6 +93,18 @@ namespace Esnaf.Presentation
 
         /// <summary>Raf ekranı (yalnızca CurrentScreen == Shelf iken dolu; aksi halde null). Salt okunurdur.</summary>
         public ShelfScreenViewModel ShelfScreen { get; private set; }
+
+        /// <summary>
+        /// Global müşteri bildirimleri (Gün 13.1): hangi ekranda olunursa olunsun gösterilir (en yeni <see cref="MaxNotices"/>). CustomerArrived ile doğar, müşteri
+        /// satışa girer/tamamlanır/ayrılırsa güncellenir; ayrılanlar <see cref="LeftNoticeMinutes"/> oyun dakikası görünür kalır. Ekranı değiştirmez.
+        /// </summary>
+        public IReadOnlyList<CustomerNoticeViewModel> Notices { get; private set; } = new CustomerNoticeViewModel[0];
+
+        /// <summary>Aynı anda gösterilen en çok bildirim sayısı.</summary>
+        public const int MaxNotices = 3;
+
+        /// <summary>Ayrılan müşterinin bildirimi bu kadar oyun dakikası görünür kalır (gerçek zamanda 15 sn).</summary>
+        public const int LeftNoticeMinutes = 45;
 
         /// <summary>İlanlar ekranındaki Raf düğmesinin yazısı: "Raf (n/kapasite)" (IGameApi.GetInventory).</summary>
         public string ShelfButtonText { get; private set; }
@@ -1051,7 +1065,150 @@ namespace Esnaf.Presentation
         private string Signature()
         {
             string queue = SaleScreen != null && SaleScreen.Queue != null ? SaleScreen.Queue.Signature() : string.Empty;
-            return QueueButtonText + "\u0001" + StatusMessage + "\u0001" + queue + "\u0001" + (int)CurrentScreen;
+            var notices = new System.Text.StringBuilder();
+            foreach (CustomerNoticeViewModel notice in Notices)
+            {
+                notices.Append(notice.CustomerId).Append(notice.IsLeft ? 'L' : 'A').Append(',');
+            }
+
+            return QueueButtonText + "\u0001" + StatusMessage + "\u0001" + queue + "\u0001" + (int)CurrentScreen + "\u0001" + notices;
+        }
+
+        private sealed class NoticeState
+        {
+            public long CustomerId;
+            public string NpcId;
+            public bool Left;
+            public bool StoreClosed;
+            public int LeftAtMinute;
+        }
+
+        // Müşteri geldi (Gün 13.1): her müşteri için YALNIZCA bir bildirim doğar (aynı kimlik tekrar eklenmez). Ekran Tick/Refresh ile yeniden kurulur.
+        private void OnCustomerArrived(CustomerArrived e)
+        {
+            foreach (NoticeState existing in _notices)
+            {
+                if (existing.CustomerId == e.CustomerId)
+                {
+                    return;
+                }
+            }
+
+            _notices.Add(new NoticeState { CustomerId = e.CustomerId, NpcId = e.NpcId });
+        }
+
+        /// <summary>
+        /// "Müşteriye Git": bildirimdeki müşteriye gider. Müşteri aktifse ve ilgilendiği ürün varsa konuşma doğrudan açılır (mevcut StartSale); aksi halde Müşteriler lobisi açılır.
+        /// Oyuncu bunu kendisi seçer; bildirimin kendisi ekranı hiç değiştirmez. Bildirim yoksa ya da müşteri ayrıldıysa ekran değişmez.
+        /// </summary>
+        public Result GoToCustomer(long customerId)
+        {
+            NoticeState notice = null;
+            foreach (NoticeState n in _notices)
+            {
+                if (n.CustomerId == customerId)
+                {
+                    notice = n;
+                }
+            }
+
+            if (notice == null || notice.Left)
+            {
+                return Result.Fail("ui.notice_unknown", "There is no notice for this customer.");
+            }
+
+            CurrentScreen = UiScreen.Sale;
+            StatusMessage = null;
+            SaleView running = _api.GetSale();
+            if (running != null && !_sale.Initialized)
+            {
+                ResumeSale(running);
+            }
+
+            Rebuild();
+            CustomerView active = _api.GetActiveCustomer();
+            if (running == null && active != null && active.CustomerId == customerId && active.InstanceId != 0)
+            {
+                Result<SaleView> started = StartSale(customerId);
+                return started.IsSuccess ? Result.Ok() : Result.Fail(started.ErrorCode, started.Message);
+            }
+
+            RaiseChanged();
+            return Result.Ok();
+        }
+
+        /// <summary>Bildirimi kapatır (müşteri beklemeye devam eder; bildirim bir daha çıkmaz).</summary>
+        public bool DismissNotice(long customerId)
+        {
+            int removed = _notices.RemoveAll(n => n.CustomerId == customerId);
+            if (removed == 0)
+            {
+                return false;
+            }
+
+            Refresh();
+            return true;
+        }
+
+        // Bildirim listesini oyunun şu anki kuyruk durumundan üretir; bitmiş/satıştaki müşterilerin bildirimini ve süresi dolan "ayrıldı" bildirimlerini temizler.
+        private void BuildNotices()
+        {
+            var result = new List<CustomerNoticeViewModel>();
+            if (_notices.Count > 0)
+            {
+                IReadOnlyList<QueueEntryView> entries = _api.GetCustomerQueue().Entries;
+                int minute = _api.GetClock().MinuteOfDay;
+                SaleView sale = _api.GetSale();
+                for (int i = _notices.Count - 1; i >= 0; i--)
+                {
+                    NoticeState n = _notices[i];
+                    QueueEntryView entry = null;
+                    foreach (QueueEntryView candidate in entries)
+                    {
+                        if (candidate.Customer.CustomerId == n.CustomerId)
+                        {
+                            entry = candidate;
+                        }
+                    }
+
+                    string personality = entry != null && entry.Customer.Profile != null ? entry.Customer.Profile.PersonalityId : null;
+                    string name = _content.CustomerName(n.CustomerId, n.NpcId);
+                    if (n.Left)
+                    {
+                        if (minute - n.LeftAtMinute >= LeftNoticeMinutes)
+                        {
+                            _notices.RemoveAt(i);
+                            continue;
+                        }
+
+                        result.Add(new CustomerNoticeViewModel(
+                            n.CustomerId, n.NpcId, name, TurkishTexts.NoticeLeft(name), TurkishTexts.NoticeSpeech(SaleDialogue.WaitingLeave(personality, n.StoreClosed)), true));
+                        continue;
+                    }
+
+                    if (entry == null || (entry.Status != QueueStatus.Active && entry.Status != QueueStatus.Waiting))
+                    {
+                        _notices.RemoveAt(i); // satış bitti/tamamlandı: bildirime gerek kalmadı
+                        continue;
+                    }
+
+                    if (sale != null && sale.CustomerId == n.CustomerId)
+                    {
+                        continue; // şu an konuşulan müşterinin bildirimi gösterilmez (saklanır, satış sürerken)
+                    }
+
+                    result.Add(new CustomerNoticeViewModel(
+                        n.CustomerId, n.NpcId, name, TurkishTexts.NoticeArrived(name), TurkishTexts.NoticeSpeech(SaleDialogue.ArrivalNotice(personality)), false));
+                }
+            }
+
+            // result en yeniden eskiye; en yeni MaxNotices tanesi gösterilir
+            if (result.Count > MaxNotices)
+            {
+                result.RemoveRange(MaxNotices, result.Count - MaxNotices);
+            }
+
+            Notices = new ReadOnlyCollection<CustomerNoticeViewModel>(result);
         }
 
         // Bekleyen müşteri sabrı bitip çıktığında (Gün 12.6) doğal Türkçe sözünü durum mesajı olarak bırakır; ekranı Tick yeniden kurar.
@@ -1063,6 +1220,16 @@ namespace Esnaf.Presentation
                 if (entry.Customer.CustomerId == e.CustomerId && entry.Customer.Profile != null)
                 {
                     personality = entry.Customer.Profile.PersonalityId;
+                }
+            }
+
+            foreach (NoticeState n in _notices)
+            {
+                if (n.CustomerId == e.CustomerId && !n.Left)
+                {
+                    n.Left = true; // bildirim "Müşteri ayrıldı"ya döner
+                    n.StoreClosed = e.Reason == QueueLeaveReason.StoreClosed;
+                    n.LeftAtMinute = _api.GetClock().MinuteOfDay;
                 }
             }
 
@@ -1287,6 +1454,7 @@ namespace Esnaf.Presentation
             WholesaleScreen = CurrentScreen == UiScreen.Wholesale ? WholesaleScreenBuilder.BuildWholesale(_api) : null;
             AccessoryStockScreen = CurrentScreen == UiScreen.AccessoryStock ? WholesaleScreenBuilder.BuildStock(_api) : null;
             SaleScreen = CurrentScreen == UiScreen.Sale ? SaleScreenBuilder.Build(_api, _content, _sale) : null;
+            BuildNotices();
         }
 
         private ShelfScreenViewModel BuildShelf(IReadOnlyList<StockLine> stock)

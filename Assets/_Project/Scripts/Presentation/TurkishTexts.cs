@@ -764,6 +764,25 @@ namespace Esnaf.Presentation
             return "Doluluk: " + count.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture);
         }
 
+        // ---- Global müşteri bildirimi (Gün 13.1) ----
+        public const string GoToCustomerButton = "M\u00FC\u015Fteriye Git";
+        public const string NoticeDismissButton = "Kapat";
+
+        public static string NoticeArrived(string name)
+        {
+            return "M\u00FC\u015Fteri geldi: " + name;
+        }
+
+        public static string NoticeLeft(string name)
+        {
+            return "M\u00FC\u015Fteri ayr\u0131ld\u0131: " + name;
+        }
+
+        public static string NoticeSpeech(string line)
+        {
+            return "\u201C" + line + "\u201D";
+        }
+
         // ---- Raf fiyatlandırma (Gün 12.7) ----
         public const string ShelfNoPriceLine = "Fiyat girilmedi \u2014 sat\u0131\u015Fta de\u011Fil";
         public const string ShelfPriceButtonHint = "Fiyat belirlemek i\u00E7in \u00FCr\u00FCne dokun";

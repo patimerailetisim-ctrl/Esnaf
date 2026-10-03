@@ -39,6 +39,7 @@ namespace Esnaf.App
         private SalePanelView _sale;
         private WholesalePanelView _wholesale;
         private AccessoryStockPanelView _accessoryStock;
+        private CustomerNoticeView _notices;
 
         private void Awake()
         {
@@ -110,6 +111,7 @@ namespace Esnaf.App
             _wholesale = new WholesalePanelView(canvas.transform, _flow);
             _accessoryStock = new AccessoryStockPanelView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
+            _notices = new CustomerNoticeView(canvas.transform, _flow); // en üstte: her ekranda görünen müşteri bildirimi (Gün 13.1)
             _flow.Changed += ShowScreen;
             _flow.ClockTicked += ShowClock;
             ShowScreen();
@@ -188,6 +190,7 @@ namespace Esnaf.App
             _sale.Show();
             _wholesale.Show();
             _accessoryStock.Show();
+            _notices.Show();
         }
     }
 }
