@@ -5,6 +5,7 @@ using System.Globalization;
 using Esnaf.Core;
 using Esnaf.Domain.Accessories;
 using Esnaf.Domain.Appraisal;
+using Esnaf.Domain.Business;
 using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
 using Esnaf.Domain.Inventory;
@@ -91,6 +92,12 @@ namespace Esnaf.Presentation
 
         /// <summary>İlanlar ekranındaki Müşteriler düğmesinin yazısı: "Müşteriler (n)" (IGameApi.GetCustomers).</summary>
         public string CustomersButtonText { get; private set; }
+
+        /// <summary>
+        /// İlanlar ekranındaki Müşteriler düğmesinin yazısı (Gün 12.5): günlük müşteri akışının durumu ("Müşteri geldi: Kemal Abi", "Sıradaki: 10:35", "Mağaza kapalı"…).
+        /// Ana arayüz bunu kullanır; <see cref="CustomersButtonText"/> eski yuva sayısını verir ve korunur.
+        /// </summary>
+        public string QueueButtonText { get; private set; }
 
         /// <summary>Toptancı ekranı (yalnızca CurrentScreen == Wholesale iken dolu; aksi halde null).</summary>
         public WholesaleScreenViewModel WholesaleScreen { get; private set; }
@@ -536,6 +543,68 @@ namespace Esnaf.Presentation
             Rebuild();
             RaiseChanged();
             return true;
+        }
+
+        /// <summary>
+        /// "Bekle" (Gün 12.5): saati DOĞRUDAN sıradaki müşterinin geliş saatine ilerletir (IGameApi.AdvanceTime; 21:00'i hiçbir zaman aşmaz). Satış sürerken, mağaza kapalıyken,
+        /// bekleyecek müşteri yokken ya da satış ekranında değilken kullanılamaz; başarısızlıkta Türkçe neden StatusMessage'dadır ve saat değişmez.
+        /// </summary>
+        public Result<ClockView> WaitForNextCustomer()
+        {
+            if (CurrentScreen != UiScreen.Sale)
+            {
+                return Result<ClockView>.Fail("ui.not_on_sale_screen", "The sale screen is not open.");
+            }
+
+            Result<ClockView> result = WaitCore();
+            StatusMessage = result.IsFailure ? TurkishTexts.QueueError(result.ErrorCode) : null;
+            Refresh();
+            return result;
+        }
+
+        private Result<ClockView> WaitCore()
+        {
+            if (_api.GetSale() != null)
+            {
+                return Result<ClockView>.Fail("ui.sale_in_progress", "A sale is in progress.");
+            }
+
+            ClockView clock = _api.GetClock();
+            if (!clock.IsOpen)
+            {
+                return Result<ClockView>.Fail("time.store_closed", "The store is closed.");
+            }
+
+            CustomerQueueView queue = _api.GetCustomerQueue();
+            if (!queue.NextArrivalMinute.HasValue)
+            {
+                return Result<ClockView>.Fail("ui.nobody_to_wait_for", "There is no customer to wait for.");
+            }
+
+            int minutes = Math.Min(queue.NextArrivalMinute.Value, StoreHours.CloseMinute) - clock.MinuteOfDay;
+            if (minutes <= 0)
+            {
+                return Result<ClockView>.Fail("ui.nobody_to_wait_for", "The next customer has already arrived.");
+            }
+
+            return _api.AdvanceTime(minutes);
+        }
+
+        /// <summary>
+        /// Aktif kuyruk müşterisini gönderir (IGameApi.CompleteCurrentCustomer; ürünü olmayan müşteri için). Satış ekranında değilse hiçbir şey yapmaz;
+        /// başarısızlıkta Türkçe neden StatusMessage'dadır.
+        /// </summary>
+        public Result<CustomerQueueView> DismissActiveCustomer()
+        {
+            if (CurrentScreen != UiScreen.Sale)
+            {
+                return Result<CustomerQueueView>.Fail("ui.not_on_sale_screen", "The sale screen is not open.");
+            }
+
+            Result<CustomerQueueView> result = _api.CompleteCurrentCustomer();
+            StatusMessage = result.IsFailure ? TurkishTexts.QueueError(result.ErrorCode) : null;
+            Refresh();
+            return result;
         }
 
         /// <summary>Müşteriyle konuşmaya başlar (IGameApi.StartSale). Hata olursa StatusMessage Türkçe nedeni söyler. Satış ekranında değilse hiçbir şey yapmaz.</summary>
@@ -1033,6 +1102,7 @@ namespace Esnaf.Presentation
             ShelfButtonText = TurkishTexts.ShelfButton(stock.Count, _content.ShelfCapacity);
             ShelfScreen = CurrentScreen == UiScreen.Shelf ? BuildShelf(stock) : null;
             CustomersButtonText = TurkishTexts.CustomersButton(_api.GetCustomers().Count);
+            QueueButtonText = QueueLobbyBuilder.ButtonText(_api, _content);
             AccessoryStockView accessories = _api.GetAccessoryStock();
             AccessoryButtonText = TurkishTexts.AccessoryStockButton(accessories.TotalUnits, accessories.Capacity);
             WholesaleScreen = CurrentScreen == UiScreen.Wholesale ? WholesaleScreenBuilder.BuildWholesale(_api) : null;
@@ -1057,7 +1127,7 @@ namespace Esnaf.Presentation
 
         private TopBarViewModel BuildTopBar()
         {
-            return new TopBarViewModel(TurkishTexts.Day(_api.GetDay()), TurkishTexts.Cash(_api.GetCash()));
+            return new TopBarViewModel(TurkishTexts.Day(_api.GetDay()), TurkishTexts.Cash(_api.GetCash()), _api.GetClock().Text);
         }
     }
 }

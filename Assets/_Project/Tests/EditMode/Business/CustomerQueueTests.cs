@@ -177,7 +177,7 @@ namespace Esnaf.Tests.Business
         public void CompletingTheCurrentCustomer_MovesToTheNextOneInOrder()
         {
             GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute - 1);
+            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
             IReadOnlyList<QueuedCustomer> plan = Plan(s, 1);
 
             var served = new List<string>();
@@ -264,7 +264,7 @@ namespace Esnaf.Tests.Business
         public void EndingTheDay_StartsANewQueueForTheNewDay_FromTheBeginning()
         {
             GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute - 1);
+            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
             s.Api.CompleteCurrentCustomer();
             Assert.AreEqual(1, s.Api.GetCustomerQueue().Served);
 
@@ -283,7 +283,7 @@ namespace Esnaf.Tests.Business
         public void TheQueueProgress_SurvivesSaveAndLoad_AndTheQueueIsTheSame()
         {
             GameSession s = New(4UL);
-            GoTo(s, StoreHours.CloseMinute - 1);
+            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
             s.Api.CompleteCurrentCustomer();
             s.Api.CompleteCurrentCustomer();
 
@@ -315,7 +315,7 @@ namespace Esnaf.Tests.Business
         public void AnAdvancedQueue_ShowsUpInTheDigestAndTheSave()
         {
             GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute - 1);
+            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
             string before = s.Api.GetStateDigest();
 
             s.Api.CompleteCurrentCustomer();

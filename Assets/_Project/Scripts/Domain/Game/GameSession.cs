@@ -125,11 +125,11 @@ namespace Esnaf.Domain.Game
             Demand = new DemandModel(content.Demand, DemandState);
             CustomerIds = new IdGenerator();
             Customers = new CustomerService(content, new CustomerState(), CustomerIds, Store, InventoryState, Npcs, Demand, Time, Rng);
-            CustomerQueue = new CustomerQueueService(content, Customers.State, Customers, Time, Rng);
+            CustomerQueue = new CustomerQueueService(content, Customers.State, Customers, Time, Rng, Clock);
             TradeState = new TradeState();
             Trade = new TradeService(
                 content, Market, Store, InventoryState, InventoryService, EconomyService, Knowledge, Npcs, Rng, Time, TradeState, bus, Customers);
-            Sell = new SellService(content, Customers, TradeState, InventoryService, Store, Npcs, Demand, Knowledge, Time, bus);
+            Sell = new SellService(content, Customers, TradeState, InventoryService, Store, Npcs, Demand, Knowledge, Time, bus, CustomerQueue, Clock);
 
             ListingGenerator = new ListingGenerator(content, Store, InstanceIds, ListingIds);
             var newDay = new NewDayStep(Time, Market, ListingGenerator, Rng, bus, new INewDayHook[] { Customers });

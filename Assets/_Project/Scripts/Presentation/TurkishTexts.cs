@@ -182,6 +182,59 @@ namespace Esnaf.Presentation
 
         // ---- müşteri satış ekranı ----
         public const string CustomersTitle = "M\u00FC\u015Fteriler";
+
+        // ---- günlük müşteri akışı (Gün 12.5) ----
+        public const string WaitButton = "Bekle";
+        public const string DismissButton = "G\u00F6nder";
+        public const string StoreClosedLine = "Ma\u011Faza kapand\u0131. G\u00FCn\u00FC bitirebilirsin.";
+        public const string QueueDoneLine = "Bug\u00FCnk\u00FC m\u00FC\u015Fteriler bitti. G\u00FCn\u00FC bitirebilirsin.";
+        public const string NoInterestLine = "\u0130lgilendi\u011Fi bir \u00FCr\u00FCn\u00FCn\u00FC raftada bulamad\u0131.";
+        public const string StoreClosedButton = "Ma\u011Faza kapal\u0131";
+        public const string QueueDoneButton = "M\u00FC\u015Fteri kalmad\u0131";
+        public const string SaleInProgressButton = "Sat\u0131\u015F s\u00FCr\u00FCyor";
+
+        /// <summary>Günlük müşteri akışı hatası (Türkçe): Bekle / Gönder. Bilinmeyen kod genel mesaja düşer.</summary>
+        public static string QueueError(string code)
+        {
+            switch (code)
+            {
+                case "queue.no_active_customer":
+                    return "\u015Eu an d\u00FCkk\u00E2nda bekleyen m\u00FC\u015Fteri yok.";
+                case "queue.sale_in_progress":
+                case "ui.sale_in_progress":
+                    return "\u00D6nce s\u00FCren sat\u0131\u015F\u0131 bitir.";
+                case "time.store_closed":
+                    return "Ma\u011Faza kapand\u0131.";
+                case "ui.nobody_to_wait_for":
+                    return "Beklenecek m\u00FC\u015Fteri yok.";
+                default:
+                    return Error(code);
+            }
+        }
+
+        /// <summary>"Sıradaki müşteri: 10:35"</summary>
+        public static string NextCustomerLine(string time)
+        {
+            return "S\u0131radaki m\u00FC\u015Fteri: " + time;
+        }
+
+        /// <summary>"Sıradaki: 10:35" (İlanlar ekranındaki düğme).</summary>
+        public static string NextCustomerButton(string time)
+        {
+            return "S\u0131radaki: " + time;
+        }
+
+        /// <summary>"Müşteri geldi: Kemal Abi"</summary>
+        public static string CustomerArrivedButton(string name)
+        {
+            return "M\u00FC\u015Fteri geldi: " + name;
+        }
+
+        /// <summary>"Bugün: 3/10 müşteri"</summary>
+        public static string QueueProgress(int served, int total)
+        {
+            return "Bug\u00FCn: " + served.ToString(CultureInfo.InvariantCulture) + "/" + total.ToString(CultureInfo.InvariantCulture) + " m\u00FC\u015Fteri";
+        }
         public const string NoCustomers = "\u015Eu an d\u00FCkk\u00E2nda ilgilenen m\u00FC\u015Fteri yok. Rafa etiket fiyat\u0131 konulmu\u015F \u00FCr\u00FCnlere m\u00FC\u015Fteri bakar.";
         public const string SaleDoneButton = "Ba\u015Fka m\u00FC\u015Fteriye bakal\u0131m.";
         public const string ReplyGreet = "Tabii abi, buyur.";

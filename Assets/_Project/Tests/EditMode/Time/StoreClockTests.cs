@@ -272,9 +272,9 @@ namespace Esnaf.Tests.Time
         }
 
         [Test]
-        public void ExistingActions_DoNotMoveTheClockYet_AndTheClockDoesNotChangeThem()
+        public void BuySideActions_DoNotMoveTheClock_AndTheClockDoesNotChangeThem()
         {
-            // 12.1: saat yalnızca açıkça ilerletilir; mevcut satın alma / satış / günü bitir davranışı saatten bağımsızdır (bağlama 12.2'de).
+            // Alış tarafı (ilan satın alma, pazarlık, ekspertiz, toptan) saat harcamaz ve saatten bağımsızdır; müşteri/satış aksiyonlarının süreleri Gün 12.4'tedir (InteractionTimeTests).
             GameSession a = New(5UL);
             GameSession b = New(5UL);
             b.Api.AdvanceTime(5000); // b: mağaza kapalı

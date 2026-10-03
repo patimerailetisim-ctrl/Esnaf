@@ -88,7 +88,7 @@ namespace Esnaf.App.Ui
             _empty.gameObject.SetActive(_flow.Listings.Count == 0);
             _status.text = _flow.StatusMessage ?? string.Empty;
             _shelfLabel.text = _flow.ShelfButtonText;
-            _customersLabel.text = _flow.CustomersButtonText;
+            _customersLabel.text = _flow.QueueButtonText; // Gün 12.5: günlük müşteri akışının durumu
             _accessoriesLabel.text = _flow.AccessoryButtonText;
         }
 

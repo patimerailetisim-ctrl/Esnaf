@@ -109,6 +109,13 @@ namespace Esnaf.Domain.Game
         CustomerQueueView GetCustomerQueue();
 
         /// <summary>
+        /// Günlük kuyruğun şu an aktif müşterisi (Gün 12.3), mevcut müşteri görünümüyle (kimlik, NPC, ilgilendiği ürün, kişilik profili): geliş saati geldiyse ve mağaza açıksa;
+        /// yoksa null. <c>InstanceId</c> 0 ise ilgilendiği ürün yoktur (<see cref="CompleteCurrentCustomer"/> ile gönderilir). Satış <see cref="StartSale"/> ile (kimliğiyle)
+        /// başlar; satış bitince (anlaşma ya da ayrılma) müşteri kuyrukta kendiliğinden tamamlanır. Eski lobiden (<see cref="GetCustomers"/>) bağımsızdır; durumu değiştirmez.
+        /// </summary>
+        CustomerView GetActiveCustomer();
+
+        /// <summary>
         /// Aktif müşteriyi tamamlar ve sıradakine geçer (mağaza kapalıysa kalanlar gönderilir). Süren bir satış/pazarlık varken tamamlanamaz.
         /// Hatalar: queue.no_active_customer, queue.sale_in_progress. Zaman maliyeti bu adımda yoktur.
         /// </summary>

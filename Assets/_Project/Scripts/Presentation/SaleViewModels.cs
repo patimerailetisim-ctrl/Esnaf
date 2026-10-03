@@ -150,6 +150,71 @@ namespace Esnaf.Presentation
         }
     }
 
+    /// <summary>Günlük müşteri akışının satış ekranı lobisindeki durumu (Gün 12.5).</summary>
+    public enum QueueLobbyState
+    {
+        /// <summary>Sıradaki müşterinin geliş saati gelmedi ("Sıradaki müşteri: HH:mm", Bekle).</summary>
+        Waiting = 0,
+
+        /// <summary>Aktif müşteri geldi ve ilgilendiği ürün var (kartına dokununca satış başlar).</summary>
+        Arrived = 1,
+
+        /// <summary>Aktif müşteri geldi ama ilgilendiği ürün yok (Gönder).</summary>
+        NoInterest = 2,
+
+        /// <summary>Bugünün müşterileri bitti.</summary>
+        Done = 3,
+
+        /// <summary>Mağaza kapalı (21:00).</summary>
+        Closed = 4
+    }
+
+    /// <summary>
+    /// Günlük müşteri kuyruğunun lobi görünümü (Gün 12.5): yalnızca ŞU AN AKTİF müşteri (en çok 1 kart), saat, ilerleme ve Bekle/Gönder eylemleri.
+    /// IGameApi.GetClock / GetCustomerQueue / GetActiveCustomer'dan kurulur; kural içermez.
+    /// </summary>
+    public sealed class QueueLobbyViewModel
+    {
+        public QueueLobbyState State { get; }
+        public string ClockText { get; }
+
+        /// <summary>"Bugün: 3/10 müşteri"</summary>
+        public string ProgressLine { get; }
+
+        /// <summary>Duruma göre kısa açıklama ("Sıradaki müşteri: 10:35", "Mağaza kapandı…"); aktif müşteri varken null.</summary>
+        public string StatusLine { get; }
+
+        /// <summary>Aktif müşteri (kimlik, NPC, ad, kişilik, ilgilendiği ürün); yoksa null.</summary>
+        public SaleCustomerCardViewModel Customer { get; }
+
+        /// <summary>Sıradaki müşterinin geliş saati ("10:35"); beklemiyorsa null.</summary>
+        public string NextArrivalText { get; }
+
+        /// <summary>Bekle düğmesi görünür/kullanılabilir mi (yalnızca <see cref="QueueLobbyState.Waiting"/>).</summary>
+        public bool CanWait { get; }
+
+        /// <summary>Gönder düğmesi (yalnızca <see cref="QueueLobbyState.NoInterest"/>).</summary>
+        public bool CanDismiss { get; }
+
+        public string WaitButtonText { get; }
+        public string DismissButtonText { get; }
+
+        public QueueLobbyViewModel(
+            QueueLobbyState state, string clockText, string progressLine, string statusLine, SaleCustomerCardViewModel customer, string nextArrivalText)
+        {
+            State = state;
+            ClockText = clockText;
+            ProgressLine = progressLine;
+            StatusLine = statusLine;
+            Customer = customer;
+            NextArrivalText = nextArrivalText;
+            CanWait = state == QueueLobbyState.Waiting;
+            CanDismiss = state == QueueLobbyState.NoInterest;
+            WaitButtonText = TurkishTexts.WaitButton;
+            DismissButtonText = TurkishTexts.DismissButton;
+        }
+    }
+
     /// <summary>Dükkândaki bir müşterinin kartı (lobi).</summary>
     public sealed class SaleCustomerCardViewModel
     {
@@ -203,6 +268,12 @@ namespace Esnaf.Presentation
         public Money AskPrice { get; }
         public string AskPriceText { get; }
 
+        /// <summary>
+        /// Lobi modunda günlük müşteri kuyruğunun durumu (Gün 12.5); ana arayüz müşteri kartlarını BUNDAN çizer. Eski 5-yuva kartları (<see cref="Customers"/>) görünüm modelinde korunur
+        /// ama ana arayüzde gösterilmez. Lobi dışında null.
+        /// </summary>
+        public QueueLobbyViewModel Queue { get; }
+
         /// <summary>Anlaşmayla biten telefon satışından sonra aksesuar paneli; başka her durumda null.</summary>
         public AddOnPanelViewModel AddOn { get; }
 
@@ -224,7 +295,8 @@ namespace Esnaf.Presentation
             bool showsPriceStepper,
             Money askPrice,
             string askPriceText,
-            AddOnPanelViewModel addOn = null)
+            AddOnPanelViewModel addOn = null,
+            QueueLobbyViewModel queue = null)
         {
             Mode = mode;
             Title = title;
@@ -244,6 +316,7 @@ namespace Esnaf.Presentation
             AskPrice = askPrice;
             AskPriceText = askPriceText;
             AddOn = addOn;
+            Queue = queue;
         }
     }
 }

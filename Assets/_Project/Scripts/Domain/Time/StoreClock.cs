@@ -30,6 +30,26 @@ namespace Esnaf.Domain.Time
         }
 
         /// <summary>
+        /// Bir aksiyonun süresini harcar (Gün 12.4): saati <paramref name="minutes"/> dakika ilerletir, kapanışta (21:00) kırpar; HATA DÖNDÜRMEZ ve aksiyonun sonucunu etkilemez.
+        /// Saat zaten kapanıştaysa ya da dakika ≤ 0 ise 0 harcar. Gerçekten harcanan dakikayı döndürür. Kapanışa ulaşılırsa <see cref="StoreClosed"/> bir kez yayınlanır.
+        /// </summary>
+        public int Spend(int minutes)
+        {
+            if (minutes <= 0 || _time.MinuteOfDay >= StoreHours.CloseMinute)
+            {
+                return 0;
+            }
+
+            int advanced = _time.AdvanceClock(minutes);
+            if (_time.MinuteOfDay >= StoreHours.CloseMinute && _events != null)
+            {
+                _events.Publish(new StoreClosed(_time.Day));
+            }
+
+            return advanced;
+        }
+
+        /// <summary>
         /// Saati <paramref name="minutes"/> dakika ilerletir; kapanışı aşacak kadarsa kapanışta durur (<see cref="ClockView.IsOpen"/> false olur ve
         /// <see cref="StoreClosed"/> bir kez yayınlanır). Gerçekten ilerleyen dakikayı döndürür.
         /// </summary>

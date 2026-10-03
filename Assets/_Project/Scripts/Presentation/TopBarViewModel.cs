@@ -8,7 +8,10 @@ namespace Esnaf.Presentation
         public string DayText { get; }
         public string CashText { get; }
 
-        public TopBarViewModel(string dayText, string cashText)
+        /// <summary>Günün saati ("09:00", Gün 12.5); boşsa gösterilmez.</summary>
+        public string ClockText { get; }
+
+        public TopBarViewModel(string dayText, string cashText, string clockText = "")
         {
             if (dayText == null)
             {
@@ -22,11 +25,12 @@ namespace Esnaf.Presentation
 
             DayText = dayText;
             CashText = cashText;
+            ClockText = clockText ?? string.Empty;
         }
 
         public bool Equals(TopBarViewModel other)
         {
-            return other != null && DayText == other.DayText && CashText == other.CashText;
+            return other != null && DayText == other.DayText && CashText == other.CashText && ClockText == other.ClockText;
         }
 
         public override bool Equals(object obj)
@@ -36,7 +40,7 @@ namespace Esnaf.Presentation
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(DayText, CashText);
+            return HashCode.Combine(DayText, CashText, ClockText);
         }
     }
 }

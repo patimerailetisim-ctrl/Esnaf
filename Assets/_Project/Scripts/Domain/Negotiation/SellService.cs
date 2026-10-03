@@ -33,6 +33,8 @@ namespace Esnaf.Domain.Negotiation
         private readonly TimeState _time;
         private readonly IEventBus _events;
         private readonly SaleEngine _engine;
+        private readonly CustomerQueueService _queue;
+        private readonly StoreClock _clock;
 
         public SellService(
             ContentDatabase content,
@@ -44,10 +46,12 @@ namespace Esnaf.Domain.Negotiation
             DemandModel demand,
             KnowledgeState knowledge,
             TimeState time,
-            IEventBus events)
+            IEventBus events,
+            CustomerQueueService queue,
+            StoreClock clock)
         {
             if (content == null || customers == null || state == null || inventory == null || store == null
-                || npcs == null || demand == null || knowledge == null || time == null)
+                || npcs == null || demand == null || knowledge == null || time == null || queue == null || clock == null)
             {
                 throw new ArgumentNullException(nameof(content), "SellService needs all of its collaborators.");
             }
@@ -62,6 +66,8 @@ namespace Esnaf.Domain.Negotiation
             _knowledge = knowledge;
             _time = time;
             _events = events;
+            _queue = queue;
+            _clock = clock;
             _engine = new SaleEngine(content.Negotiation);
         }
 
@@ -75,6 +81,22 @@ namespace Esnaf.Domain.Negotiation
             }
 
             return views;
+        }
+
+        /// <summary>
+        /// Günlük kuyruğun şu an aktif müşterisi (Gün 12.3): geliş saati geldiyse ve mağaza açıksa; yoksa null. İlgilendiği ürün yoksa <c>InstanceId</c> 0'dır (oyuncu
+        /// <c>CompleteCurrentCustomer</c> ile gönderir). Eski yuva lobisinden (<see cref="GetCustomers"/>) bağımsız paralel yoldur; durumu değiştirmez.
+        /// </summary>
+        public CustomerView GetActiveCustomer()
+        {
+            QueuedCustomer customer;
+            CustomerSlot slot;
+            if (!_queue.TryGetActive(out customer, out slot))
+            {
+                return null;
+            }
+
+            return new CustomerView(customer.CustomerId, customer.NpcId, _customers.FindInterest(slot), _customers.ProfileFor(slot));
         }
 
         public SaleView GetCurrent()
@@ -91,7 +113,16 @@ namespace Esnaf.Domain.Negotiation
             }
 
             CustomerSlot slot;
-            if (!_customers.TryGetWaiting(customerId, out slot))
+            if (QueueCustomerId.IsQueueId(customerId))
+            {
+                // Kuyruk müşterisi (Gün 12.3): yalnızca şu an aktif olan başlatılabilir (geliş saati geldi, mağaza açık, aynı gün).
+                QueuedCustomer queued;
+                if (!_queue.TryGetActive(out queued, out slot) || queued.CustomerId != customerId)
+                {
+                    return Result<SaleView>.Fail("customer.unknown", "Unknown, not yet arrived or gone queue customer " + customerId + ".");
+                }
+            }
+            else if (!_customers.TryGetWaiting(customerId, out slot))
             {
                 return Result<SaleView>.Fail("customer.unknown", "Unknown or gone customer " + customerId + ".");
             }
@@ -105,6 +136,7 @@ namespace Esnaf.Domain.Negotiation
             ProductInstance instance = _store.Get(instanceId);
             var active = new ActiveSale(slot.CustomerId, slot.NpcId, instanceId, _engine.Begin(_customers.BuildSetup(slot, instance)));
             _state.CurrentSale = active;
+            _clock.Spend(InteractionTime.StartSale); // Gün 12.4: başarılı başlangıç süre harcar
 
             if (_events != null)
             {
@@ -132,11 +164,12 @@ namespace Esnaf.Domain.Negotiation
             SaleRound result = round.Value;
             if (work.Phase == NegotiationPhase.Deal)
             {
-                return Sell(active, work, result);
+                return Sell(active, work, result, InteractionTime.AskPrice);
             }
 
             active.State = work;
             active.LastAskTooExpensive = result.TooExpensive;
+            _clock.Spend(InteractionTime.AskPrice); // Gün 12.4: başarılı her pazarlık turu süre harcar
             PublishOffer(active, result);
             return Result<SaleView>.Ok(ViewOf(active, work, result.TooExpensive));
         }
@@ -161,7 +194,7 @@ namespace Esnaf.Domain.Negotiation
                 return Result<SaleView>.Fail("report.not_eligible", "Only level " + string.Join("/", _content.Negotiation.SellReportLevelIds) + " reports can be shown.");
             }
 
-            CustomerSlot slot = FindSlot(active.CustomerId);
+            CustomerSlot slot = SlotOfActive(active);
             NpcCustomerRole customer = _content.GetNpc(active.NpcId).Customer;
             int gain = customer.ReportTrustGain ?? _content.Negotiation.SellReportTrustGain;
             double newMax = _customers.MaxFor(slot, _store.Get(active.InstanceId), true);
@@ -174,6 +207,7 @@ namespace Esnaf.Domain.Negotiation
             }
 
             active.State = work;
+            _clock.Spend(InteractionTime.ShowReport);
             return Result<SaleView>.Ok(ViewOf(active, work, active.LastAskTooExpensive));
         }
 
@@ -192,7 +226,7 @@ namespace Esnaf.Domain.Negotiation
                 return Result<SaleView>.Fail(accepted.ErrorCode, accepted.Message);
             }
 
-            return Sell(active, work, null);
+            return Sell(active, work, null, InteractionTime.AcceptOffer);
         }
 
         /// <summary>Müşterinin şu anki teklifini aynen kabul eder (bkz. <see cref="SaleEngine.AcceptOffer"/>); satış normal akıştan tamamlanır.</summary>
@@ -211,7 +245,7 @@ namespace Esnaf.Domain.Negotiation
                 return Result<SaleView>.Fail(accepted.ErrorCode, accepted.Message);
             }
 
-            return Sell(active, work, null);
+            return Sell(active, work, null, InteractionTime.AcceptOffer);
         }
 
         public Result<SaleView> Leave()
@@ -230,7 +264,8 @@ namespace Esnaf.Domain.Negotiation
             }
 
             SaleView view = ViewOf(active, work, active.LastAskTooExpensive);
-            _customers.MarkLeft(FindSlot(active.CustomerId));
+            _clock.Spend(InteractionTime.LetCustomerGo); // süre, kuyruk müşterisi tamamlanmadan önce harcanır (kapanış kuralı güncel saate göre)
+            FinishCustomer(active, false);
             _state.CurrentSale = null;
             if (_events != null)
             {
@@ -240,7 +275,7 @@ namespace Esnaf.Domain.Negotiation
             return Result<SaleView>.Ok(view);
         }
 
-        private Result<SaleView> Sell(ActiveSale active, SaleState work, SaleRound result)
+        private Result<SaleView> Sell(ActiveSale active, SaleState work, SaleRound result, int minutes)
         {
             Money price = work.DealPrice;
             ProductInstance instance = _store.Get(active.InstanceId);
@@ -251,11 +286,13 @@ namespace Esnaf.Domain.Negotiation
                 return Result<SaleView>.Fail(sold.ErrorCode, sold.Message);
             }
 
+            // Gün 12.4: satış gerçekleştikten sonra aksiyonun süresi (istek ya da kabul) harcanır; ödeme/devir için ayrıca süre yoktur.
+            _clock.Spend(minutes);
             bool tooExpensive = result != null ? result.TooExpensive : active.LastAskTooExpensive;
             SaleView view = ViewOf(active, work, tooExpensive);
             _npcs.RecordBoughtFromPlayer(active.NpcId, active.InstanceId);
             _demand.RecordSale(modelId, _time.Day);
-            _customers.MarkSold(FindSlot(active.CustomerId));
+            FinishCustomer(active, true);
             _state.CurrentSale = null;
 
             if (_events != null)
@@ -280,6 +317,44 @@ namespace Esnaf.Domain.Negotiation
             }
         }
 
+        // Satışı biten müşteri: yuva müşterisi işaretlenir (Sold/Left); kuyruk müşterisi kuyrukta tamamlanır (sıradakine geçilir).
+        private void FinishCustomer(ActiveSale active, bool sold)
+        {
+            if (QueueCustomerId.IsQueueId(active.CustomerId))
+            {
+                _queue.CompleteForSale(active.CustomerId);
+                return;
+            }
+
+            CustomerSlot slot = FindSlot(active.CustomerId);
+            if (sold)
+            {
+                _customers.MarkSold(slot);
+            }
+            else
+            {
+                _customers.MarkLeft(slot);
+            }
+        }
+
+        // Satıştaki müşterinin yuvası: gün yuvası ya da (kuyruk kimliğiyse) türetilmiş kuyruk yuvası.
+        private CustomerSlot SlotOfActive(ActiveSale active)
+        {
+            if (QueueCustomerId.IsQueueId(active.CustomerId))
+            {
+                QueuedCustomer queued;
+                CustomerSlot slot;
+                if (!_queue.TryResolve(active.CustomerId, out queued, out slot))
+                {
+                    throw new InvalidOperationException("The queue customer " + active.CustomerId + " is not in today's queue.");
+                }
+
+                return slot;
+            }
+
+            return FindSlot(active.CustomerId);
+        }
+
         private CustomerSlot FindSlot(long customerId)
         {
             foreach (CustomerSlot slot in _customers.State.Slots)
@@ -295,6 +370,11 @@ namespace Esnaf.Domain.Negotiation
 
         private CustomerProfile ProfileOfSale(ActiveSale active)
         {
+            if (QueueCustomerId.IsQueueId(active.CustomerId))
+            {
+                return _customers.ProfileFor(SlotOfActive(active));
+            }
+
             foreach (CustomerSlot slot in _customers.State.Slots)
             {
                 if (slot.CustomerId == active.CustomerId)

@@ -9,6 +9,9 @@ namespace Esnaf.Domain.Business
         /// <summary>Günün kuyruğundaki sıra (0'dan).</summary>
         public int Index { get; }
 
+        /// <summary>Müşterinin kimliği (gün + sıradan türetilir; bkz. <see cref="QueueCustomerId"/>). Satışın <c>CustomerId</c>'si budur.</summary>
+        public long CustomerId { get; }
+
         public string NpcId { get; }
 
         /// <summary>Geliş saati: gece yarısından beri dakika (açılış ≤ geliş &lt; kapanış).</summary>
@@ -22,9 +25,10 @@ namespace Esnaf.Domain.Business
             get { return StoreHours.Format(ArrivalMinute); }
         }
 
-        public QueuedCustomer(int index, string npcId, int arrivalMinute, CustomerProfile profile)
+        public QueuedCustomer(int index, long customerId, string npcId, int arrivalMinute, CustomerProfile profile)
         {
             Index = index;
+            CustomerId = customerId;
             NpcId = npcId;
             ArrivalMinute = arrivalMinute;
             Profile = profile;

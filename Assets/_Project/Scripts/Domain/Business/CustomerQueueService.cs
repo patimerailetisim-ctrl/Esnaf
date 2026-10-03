@@ -25,13 +25,16 @@ namespace Esnaf.Domain.Business
         private readonly CustomerService _customers;
         private readonly TimeState _time;
         private readonly RngStreams _rng;
+        private readonly StoreClock _clock;
 
-        public CustomerQueueService(ContentDatabase content, CustomerState state, CustomerService customers, TimeState time, RngStreams rng)
+        public CustomerQueueService(ContentDatabase content, CustomerState state, CustomerService customers, TimeState time, RngStreams rng, StoreClock clock)
         {
-            if (content == null || state == null || customers == null || time == null || rng == null)
+            if (content == null || state == null || customers == null || time == null || rng == null || clock == null)
             {
                 throw new ArgumentNullException(nameof(content), "CustomerQueueService needs all of its collaborators.");
             }
+
+            _clock = clock;
 
             _content = content;
             _state = state;
@@ -87,10 +90,114 @@ namespace Esnaf.Domain.Business
                     rich++;
                 }
 
-                plan.Add(new QueuedCustomer(i, chosen.Id, arrival, _customers.ProfileOf(chosen.Id)));
+                plan.Add(new QueuedCustomer(i, QueueCustomerId.For(day, i), chosen.Id, arrival, _customers.ProfileOf(chosen.Id)));
             }
 
             return plan;
+        }
+
+        /// <summary>Bugünün kuyruğunun görünümü, mağaza saatine göre (durumu değiştirmez).</summary>
+        public CustomerQueueView GetView()
+        {
+            return GetView(_clock.View);
+        }
+
+        /// <summary><see cref="CompleteCurrent(ClockView)"/>, mağaza saatine göre.</summary>
+        public Result<CustomerQueueView> CompleteCurrent()
+        {
+            return CompleteCurrent(_clock.View);
+        }
+
+        /// <summary>
+        /// Aktif müşteriyi tamamlar ve bu aksiyonun süresini (<paramref name="minutes"/>) mağaza saatinden harcar (Gün 12.4). Süre YALNIZCA tamamlama başarılıysa harcanır;
+        /// kapanış kuralı (mağaza kapalıysa kalanlar gönderilir) süre harcandıktan sonraki saate göre uygulanır. Görünüm güncel saatle döner.
+        /// </summary>
+        public Result<CustomerQueueView> CompleteCurrent(int minutes)
+        {
+            IReadOnlyList<QueuedCustomer> plan = PlanFor(_time.Day);
+            int cursor = Math.Min(_state.QueueCursor, plan.Count);
+            if (CurrentOf(plan, cursor, _clock.View) == null)
+            {
+                return Result<CustomerQueueView>.Fail("queue.no_active_customer", "There is no active customer to complete.");
+            }
+
+            _clock.Spend(minutes);
+            return CompleteCurrent(_clock.View);
+        }
+
+        /// <summary>
+        /// Müşterinin mevcut müşteri sistemindeki (satış/pazarlık) yuvası: gün + sıra bu günün kuyruğuna aitse, müşterinin çekimleri (değer hatası, güven, ürün seçimi)
+        /// ana tohumdan ve günden türetilen İKİNCİ bir kayıtsız akıştan gelir ("customer_queue_draws:gün"). Plan ve kayıtlı akışlar değişmez; yuva SAKLANMAZ.
+        /// Satış, Max, güven, kişilik ve ürün seçimi bu yuva üzerinden mevcut <see cref="CustomerService"/> yöntemleriyle çalışır.
+        /// </summary>
+        public bool TryResolve(long customerId, out QueuedCustomer customer, out CustomerSlot slot)
+        {
+            customer = null;
+            slot = null;
+            int day;
+            int index;
+            if (!QueueCustomerId.TryDecode(customerId, out day, out index) || day != _time.Day)
+            {
+                return false;
+            }
+
+            IReadOnlyList<QueuedCustomer> plan = PlanFor(day);
+            if (index >= plan.Count)
+            {
+                return false;
+            }
+
+            IRandom draws = _rng.Derive("customer_queue_draws:" + day.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            for (int i = 0; i <= index; i++)
+            {
+                double valueDraw = draws.NextDouble();
+                double trustDraw = draws.NextDouble();
+                double pickDraw = draws.NextDouble();
+                if (i == index)
+                {
+                    customer = plan[i];
+                    slot = new CustomerSlot(plan[i].CustomerId, plan[i].NpcId, valueDraw, trustDraw, pickDraw);
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Şu an aktif kuyruk müşterisi ve yuvası (geliş saati geldiyse ve MAĞAZA AÇIKSA); yoksa false. Mağaza kapanınca yeni müşteri başlatılmaz
+        /// (kapanıştan önce başlamış bir satış sürer; bekleyen müşteri <see cref="CompleteCurrent()"/> ile gönderilir).
+        /// </summary>
+        public bool TryGetActive(out QueuedCustomer customer, out CustomerSlot slot)
+        {
+            customer = null;
+            slot = null;
+            ClockView clock = _clock.View;
+            if (!clock.IsOpen)
+            {
+                return false;
+            }
+
+            IReadOnlyList<QueuedCustomer> plan = PlanFor(_time.Day);
+            int cursor = Math.Min(_state.QueueCursor, plan.Count);
+            QueuedCustomer current = CurrentOf(plan, cursor, clock);
+            return current != null && TryResolve(current.CustomerId, out customer, out slot);
+        }
+
+        /// <summary>Kuyruk müşterisinin satışı bitti (anlaşma ya da ayrıldı): müşteriyi tamamlar ve sıradakine geçer (kapalıysa kalanlar gönderilir).</summary>
+        internal void CompleteForSale(long customerId)
+        {
+            QueuedCustomer customer;
+            CustomerSlot slot;
+            if (!TryResolve(customerId, out customer, out slot) || customer.Index != _state.QueueCursor)
+            {
+                throw new InvalidOperationException("The customer " + customerId + " is not the active queue customer.");
+            }
+
+            Result<CustomerQueueView> done = CompleteCurrent();
+            if (done.IsFailure)
+            {
+                throw new InvalidOperationException("The active queue customer could not be completed: " + done.Message);
+            }
         }
 
         /// <summary>Bugünün kuyruğunun görünümü (durumu değiştirmez).</summary>

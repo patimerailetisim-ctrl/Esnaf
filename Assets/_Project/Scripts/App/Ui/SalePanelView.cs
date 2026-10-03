@@ -98,6 +98,13 @@ namespace Esnaf.App.Ui
 
         private void AddLobby(SaleScreenViewModel screen)
         {
+            if (screen.Queue != null)
+            {
+                AddQueueLobby(screen.Queue);
+                return;
+            }
+
+            // Kuyruk görünümü yoksa eski yuva kartları (yalnızca görünüm modelinde kalan eski yol).
             if (screen.EmptyNote != null)
             {
                 RectTransform note = UiKit.AutoCard(_content, "EmptyCard", UiTheme.Card, 8f, 40);
@@ -106,24 +113,73 @@ namespace Esnaf.App.Ui
 
             foreach (SaleCustomerCardViewModel customer in screen.Customers)
             {
-                long customerId = customer.CustomerId;
+                AddCustomerCard(customer, true);
+            }
+        }
+
+        // Günlük müşteri akışı (Gün 12.5): durum kartı + (varsa) ŞU AN AKTİF tek müşteri + Bekle / Gönder. Eski 5-yuva kartları burada çizilmez.
+        private void AddQueueLobby(QueueLobbyViewModel queue)
+        {
+            RectTransform status = UiKit.AutoCard(_content, "QueueStatus", UiTheme.Card, 8f, 32);
+            UiKit.Label(status, "Clock", queue.ClockText, 64, UiTheme.Ink, true, TextAnchor.MiddleCenter);
+            UiKit.Label(status, "Progress", queue.ProgressLine, 36, UiTheme.Muted, false, TextAnchor.MiddleCenter);
+            if (!string.IsNullOrEmpty(queue.StatusLine))
+            {
+                UiKit.Label(status, "StatusLine", queue.StatusLine, 42, UiTheme.Ink, false, TextAnchor.MiddleCenter);
+            }
+
+            if (queue.Customer != null)
+            {
+                AddCustomerCard(queue.Customer, queue.State == QueueLobbyState.Arrived);
+            }
+
+            if (queue.CanWait)
+            {
+                Button wait = UiKit.RoundedButton(_content, "WaitButton", queue.WaitButtonText, 44, UiTheme.Gold, UiTheme.Ink, () => _flow.WaitForNextCustomer());
+                UiKit.AddShadow(wait.gameObject, 0.18f, 8f);
+                UiKit.Size2(wait.GetComponent<RectTransform>(), 0f, ButtonHeight);
+                wait.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            }
+
+            if (queue.CanDismiss)
+            {
+                Button dismiss = UiKit.RoundedButton(_content, "DismissButton", queue.DismissButtonText, 44, UiTheme.Gold, UiTheme.Ink, () => _flow.DismissActiveCustomer());
+                UiKit.AddShadow(dismiss.gameObject, 0.18f, 8f);
+                UiKit.Size2(dismiss.GetComponent<RectTransform>(), 0f, ButtonHeight);
+                dismiss.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            }
+        }
+
+        // Müşteri kartı (portre + ad + kişilik/ilgi): tıklanabilirse StartSale'e (mevcut satış akışı) bağlanır.
+        private void AddCustomerCard(SaleCustomerCardViewModel customer, bool clickable)
+        {
+            long customerId = customer.CustomerId;
+            RectTransform rect;
+            if (clickable)
+            {
                 Button card = UiKit.RoundedButton(_content, "Customer_" + customerId, string.Empty, 30, UiTheme.Card, UiTheme.Ink, () => _flow.StartSale(customerId));
                 UiKit.AddShadow(card.gameObject, 0.07f, 10f);
-                RectTransform rect = card.GetComponent<RectTransform>();
+                rect = card.GetComponent<RectTransform>();
                 card.GetComponentInChildren<Text>().gameObject.SetActive(false);
-                UiKit.Size2(rect, 0f, 200f);
-
-                RectTransform portrait = UiKit.Rounded(rect, "Portrait", UiTheme.CardSoft);
-                portrait.GetComponent<Image>().raycastTarget = false;
-                UiBuilder.Stretch(portrait, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(28f, -72f), new Vector2(172f, 72f));
-                portrait.gameObject.AddComponent<RectMask2D>();
-                CustomerPortraitView.Draw(portrait, customer.Name, customer.NpcId);
-
-                Text name = UiKit.Label(rect, "Name", customer.Name, 46, UiTheme.Ink, true);
-                UiBuilder.Stretch(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(204f, 8f), new Vector2(-28f, 84f));
-                Text interest = UiKit.Label(rect, "Interest", customer.PersonalityName + "  •  " + customer.InterestLine, 32, UiTheme.Muted);
-                UiBuilder.Stretch(interest.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(204f, -84f), new Vector2(-28f, 4f));
             }
+            else
+            {
+                rect = UiKit.Rounded(_content, "Customer_" + customerId, UiTheme.Card);
+                rect.GetComponent<Image>().raycastTarget = false;
+            }
+
+            UiKit.Size2(rect, 0f, 200f);
+
+            RectTransform portrait = UiKit.Rounded(rect, "Portrait", UiTheme.CardSoft);
+            portrait.GetComponent<Image>().raycastTarget = false;
+            UiBuilder.Stretch(portrait, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(28f, -72f), new Vector2(172f, 72f));
+            portrait.gameObject.AddComponent<RectMask2D>();
+            CustomerPortraitView.Draw(portrait, customer.Name, customer.NpcId);
+
+            Text name = UiKit.Label(rect, "Name", customer.Name, 46, UiTheme.Ink, true);
+            UiBuilder.Stretch(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(204f, 8f), new Vector2(-28f, 84f));
+            Text interest = UiKit.Label(rect, "Interest", customer.PersonalityName + "  \u2022  " + customer.InterestLine, 32, UiTheme.Muted);
+            UiBuilder.Stretch(interest.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(204f, -84f), new Vector2(-28f, 4f));
         }
 
         // ---------- konuşma ----------

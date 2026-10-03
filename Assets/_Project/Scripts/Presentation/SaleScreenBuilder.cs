@@ -69,7 +69,8 @@ namespace Esnaf.Presentation
 
             return new SaleScreenViewModel(
                 SaleMode.Lobby, TurkishTexts.CustomersTitle, cards, cards.Count == 0 ? TurkishTexts.NoCustomers : null,
-                null, null, null, null, null, null, null, null, null, new SaleReplyViewModel[0], false, Money.Zero, null);
+                null, null, null, null, null, null, null, null, null, new SaleReplyViewModel[0], false, Money.Zero, null, null,
+                QueueLobbyBuilder.Build(api, content));
         }
 
         private static SaleScreenViewModel BuildTalking(IGameApi api, ContentPresentation content, SaleUiState ui, SaleView sale)

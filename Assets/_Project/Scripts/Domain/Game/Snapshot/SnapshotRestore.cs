@@ -598,18 +598,31 @@ namespace Esnaf.Domain.Game
             if (a != null && !unknownIds.Contains(a.InstanceId))
             {
                 Need(a.Setup, "activeSale.setup");
-                CustomerSlot slot = null;
-                foreach (CustomerSlot candidate in s.Customers.State.Slots)
+                if (QueueCustomerId.IsQueueId(a.CustomerId))
                 {
-                    if (candidate.CustomerId == a.CustomerId)
+                    // Kuyruk müşterisi (Gün 12.3): bugünün kuyruğundaki AKTİF müşteri olmalı (imleç = sırası) ve NPC'si plandakiyle aynı olmalı.
+                    QueuedCustomer queued;
+                    CustomerSlot queuedSlot;
+                    Bad(!s.CustomerQueue.TryResolve(a.CustomerId, out queued, out queuedSlot), "activeSale customer (not in today's queue)");
+                    Bad(queued.Index != s.Customers.State.QueueCursor, "activeSale customer (not the active queue customer)");
+                    Bad(queued.NpcId != a.NpcId, "activeSale customer (a different NPC)");
+                }
+                else
+                {
+                    CustomerSlot slot = null;
+                    foreach (CustomerSlot candidate in s.Customers.State.Slots)
                     {
-                        slot = candidate;
+                        if (candidate.CustomerId == a.CustomerId)
+                        {
+                            slot = candidate;
+                        }
                     }
+
+                    Bad(slot == null, "activeSale customer (not in the roster)");
+                    Bad(slot.Status != CustomerStatus.Waiting, "activeSale customer (not waiting)");
+                    Bad(slot.NpcId != a.NpcId, "activeSale customer (a different NPC)");
                 }
 
-                Bad(slot == null, "activeSale customer (not in the roster)");
-                Bad(slot.Status != CustomerStatus.Waiting, "activeSale customer (not waiting)");
-                Bad(slot.NpcId != a.NpcId, "activeSale customer (a different NPC)");
                 ProductInstance item;
                 Bad(!s.Store.TryGet(a.InstanceId, out item), "activeSale item (not stored)");
                 Bad(item.Location != ProductLocation.Inventory, "activeSale item (not on the shelf)");

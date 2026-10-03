@@ -63,6 +63,11 @@ namespace Esnaf.Domain.Game
             return _session.CustomerQueue.GetView(_session.Clock.View);
         }
 
+        public CustomerView GetActiveCustomer()
+        {
+            return _session.Sell.GetActiveCustomer();
+        }
+
         public Result<CustomerQueueView> CompleteCurrentCustomer()
         {
             if (_session.TradeState.CurrentSale != null)
@@ -70,7 +75,8 @@ namespace Esnaf.Domain.Game
                 return Result<CustomerQueueView>.Fail("queue.sale_in_progress", "Finish or leave the sale before completing the customer.");
             }
 
-            return _session.CustomerQueue.CompleteCurrent(_session.Clock.View);
+            // Gün 12.4: başarılı gönderme CompleteCustomer süresi harcar (görünüm güncel saatle döner).
+            return _session.CustomerQueue.CompleteCurrent(InteractionTime.CompleteCustomer);
         }
 
         public ClockView GetClock()
@@ -306,7 +312,13 @@ namespace Esnaf.Domain.Game
                 return Result<AccessorySaleReceipt>.Fail("addon.no_sale", "There is no completed phone sale today to add an accessory to.");
             }
 
-            return _session.AccessoryAddOns.SellAddOn(sale.Id, accessoryId, _session.Time.Day);
+            Result<AccessorySaleReceipt> sold = _session.AccessoryAddOns.SellAddOn(sale.Id, accessoryId, _session.Time.Day);
+            if (sold.IsSuccess)
+            {
+                _session.Clock.Spend(InteractionTime.AccessorySale); // Gün 12.4: yalnızca başarılı aksesuar satışı süre harcar
+            }
+
+            return sold;
         }
 
         public IReadOnlyList<WholesaleOfferView> GetWholesaleOffers()
