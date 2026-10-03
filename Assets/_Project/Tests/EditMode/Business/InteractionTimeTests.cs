@@ -26,13 +26,13 @@ namespace Esnaf.Tests.Business
             return GameSession.NewGame(MarketHarness.RealContent(), seed, bus);
         }
 
-        private static GameSession WithShelf(ulong seed, IEventBus bus = null)
+        private static GameSession WithShelf(ulong seed, IEventBus bus = null, long listPriceTl = 5900)
         {
             GameSession s = New(seed, bus);
             var guided = s.Market.Listings.Single(l => l.IsGuided);
             Assert.IsTrue(s.Api.StartNegotiation(guided.ListingId).IsSuccess);
             Assert.IsTrue(s.Api.MakeOffer(Money.FromTl(5800)).IsSuccess);
-            Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(5900)).IsSuccess);
+            Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(listPriceTl)).IsSuccess);
             return s;
         }
 
@@ -336,14 +336,12 @@ namespace Esnaf.Tests.Business
         [Test]
         public void DismissingAnActiveCustomer_CostsTwoMinutes_AndWithoutOneNothing()
         {
-            GameSession s = New(5UL);
+            // Gün 12.6: raf boşsa müşteri gelmez; ürünü olmayan müşteri için fiyatlı ama çok pahalı bir ürün rafta.
+            GameSession s = WithShelf(5UL, null, 90000);
             QueuedCustomer first = Plan(s)[0];
-            if (first.ArrivalMinute > StoreHours.OpenMinute)
-            {
-                int t0 = Now(s);
-                Assert.AreEqual("queue.no_active_customer", s.Api.CompleteCurrentCustomer().ErrorCode);
-                Assert.AreEqual(t0, Now(s), "başarısız çağrı 0 dk");
-            }
+            int t0 = Now(s);
+            Assert.AreEqual("queue.no_active_customer", s.Api.CompleteCurrentCustomer().ErrorCode);
+            Assert.AreEqual(t0, Now(s), "başarısız çağrı 0 dk");
 
             GoTo(s, first.ArrivalMinute);
             int t = Now(s);
@@ -395,12 +393,11 @@ namespace Esnaf.Tests.Business
             bus.Subscribe<StoreClosed>(closed.Add);
             CustomerView active;
             GameSession s = WithActive(out active, null, bus);
-            GoTo(s, 1258); // 20:58
-            Assert.IsNotNull(s.Api.GetActiveCustomer(), "20:58'de mağaza hâlâ açık");
-
+            // Gün 12.6: bekleyen müşteri 60 dk sonra çıkar; bu yüzden satış gelişte başlar, sürerken saat 20:58'e gelir (satıştaki müşteri çıkmaz).
             Assert.IsTrue(s.Api.StartSale(active.CustomerId).IsSuccess);
-            Assert.AreEqual(StoreHours.CloseMinute, Now(s), "5 dk'nın 2'si harcandı; 21:00'e kırpıldı");
-            Assert.AreEqual(1, closed.Count);
+            GoTo(s, 1258); // 20:58
+            Assert.IsNotNull(s.Api.GetSale(), "20:58'de satış sürüyor");
+            Assert.AreEqual(0, closed.Count);
 
             Result<SaleView> deal = s.Api.AskPrice(Money.FromTl(10));
 
@@ -409,7 +406,7 @@ namespace Esnaf.Tests.Business
             Assert.AreEqual(StoreHours.CloseMinute, Now(s), "saat 21:00'i geçmez");
             Assert.AreEqual(1, closed.Count, "StoreClosed bir kez");
             CustomerQueueView view = s.Api.GetCustomerQueue();
-            Assert.AreEqual(view.Total, view.Served, "kapalı: kalanlar gönderildi");
+            Assert.AreEqual(0, view.Waiting, "kapalı: bekleyen yok");
             Assert.IsNull(s.Api.GetActiveCustomer());
         }
 

@@ -281,6 +281,12 @@ namespace Esnaf.Domain.Game
         [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? QueueCursor { get; set; }
 
+        /// <summary>
+        /// Geliş anında rafta ürün olmadığı için hiç gelmeyen kuyruk müşterilerinin bit maskesi (Gün 12.6). İSTEĞE BAĞLI; yalnızca 0'dan büyükse yazılır, yoksa 0.
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? QueueSkipped { get; set; }
+
         public List<CustomerSlotSnapshot> Slots { get; set; }
     }
 

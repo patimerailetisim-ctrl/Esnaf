@@ -29,6 +29,12 @@ namespace Esnaf.Domain.Business
         /// </summary>
         public int QueueCursor { get; internal set; }
 
+        /// <summary>
+        /// Günlük kuyrukta (Gün 12.6) geliş anında rafta satılabilir ürün olmadığı için HİÇ GELMEYEN müşterilerin bit maskesi (bit i = kuyruktaki i. müşteri). Diğer her şey
+        /// (geliş saati, bekleme süresi) plan + saat + imleçten türetilir. Yeni gün sıfırlar.
+        /// </summary>
+        public int QueueSkipped { get; internal set; }
+
         /// <summary>Şimdiye kadar kaçan (satın almadan giden) müşteri toplamı.</summary>
         public int MissedTotal { get; internal set; }
 

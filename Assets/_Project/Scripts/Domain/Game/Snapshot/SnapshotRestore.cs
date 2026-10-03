@@ -482,6 +482,7 @@ namespace Esnaf.Domain.Game
             Bad(c.Arrived > c.Slots.Count, "customers.arrived (more than the roster)");
             Bad(c.MissedTotal < 0, "customers.missedTotal");
             Bad(c.QueueCursor.HasValue && (c.QueueCursor.Value < 0 || c.QueueCursor.Value > QueuePolicy.MaxCustomersPerDay), "customers.queueCursor");
+            Bad(c.QueueSkipped.HasValue && (c.QueueSkipped.Value < 0 || c.QueueSkipped.Value >= (1 << QueuePolicy.MaxCustomersPerDay)), "customers.queueSkipped");
 
             var ids = new HashSet<long>();
             var slots = new List<CustomerSlot>(c.Slots.Count);
@@ -503,6 +504,7 @@ namespace Esnaf.Domain.Game
             s.Customers.State.Arrived = c.Arrived;
             s.Customers.State.MissedTotal = c.MissedTotal;
             s.Customers.State.QueueCursor = c.QueueCursor ?? 0;
+            s.Customers.State.QueueSkipped = c.QueueSkipped ?? 0;
         }
 
         private static void RestoreCounters(GameSession s, GameSnapshot snap)

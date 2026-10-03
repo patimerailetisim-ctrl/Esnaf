@@ -13,6 +13,12 @@ namespace Esnaf.Domain.Time
         private readonly TimeState _time;
         private readonly IEventBus _events;
 
+        /// <summary>
+        /// Saat ilerledikten sonra (gün, önceki dakika, yeni dakika) bildirir (Gün 12.6). Müşteri kuyruğu geliş ve bekleme çıkışlarını bunun üzerinden işler.
+        /// Yalnızca gerçekten ilerlenen dakikalar için tetiklenir; gün sonu sıfırlaması tetiklemez.
+        /// </summary>
+        public event System.Action<int, int, int> Advanced;
+
         public StoreClock(TimeState time, IEventBus events)
         {
             if (time == null)
@@ -40,12 +46,14 @@ namespace Esnaf.Domain.Time
                 return 0;
             }
 
+            int from = _time.MinuteOfDay;
             int advanced = _time.AdvanceClock(minutes);
             if (_time.MinuteOfDay >= StoreHours.CloseMinute && _events != null)
             {
                 _events.Publish(new StoreClosed(_time.Day));
             }
 
+            Notify(from);
             return advanced;
         }
 
@@ -65,13 +73,24 @@ namespace Esnaf.Domain.Time
                 return Result<int>.Fail("time.store_closed", "The store is already closed for the day.");
             }
 
+            int from = _time.MinuteOfDay;
             int advanced = _time.AdvanceClock(minutes);
             if (_time.MinuteOfDay >= StoreHours.CloseMinute && _events != null)
             {
                 _events.Publish(new StoreClosed(_time.Day));
             }
 
+            Notify(from);
             return Result<int>.Ok(advanced);
+        }
+
+        private void Notify(int from)
+        {
+            System.Action<int, int, int> handler = Advanced;
+            if (handler != null && _time.MinuteOfDay > from)
+            {
+                handler(_time.Day, from, _time.MinuteOfDay);
+            }
         }
     }
 }

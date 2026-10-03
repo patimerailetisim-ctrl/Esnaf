@@ -112,6 +112,21 @@ namespace Esnaf.Domain.Business
             _state.Replace(slots);
             _state.Arrived = constants.ArrivalCount(_inventory.Count);
             _state.QueueCursor = 0; // günlük müşteri kuyruğu yeni günle baştan başlar (Gün 12.2)
+            _state.QueueSkipped = 0;
+        }
+
+        /// <summary>Rafta en az bir SATILABİLİR (etiketli) ürün var mı? Yoksa müşteri gelmez (Gün 12.6).</summary>
+        public bool HasSellableStock()
+        {
+            foreach (long id in _inventory.ItemIds)
+            {
+                if (_store.Get(id).ListPrice.IsPositive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Raf arttıysa gelen müşteri sayısını yükseltir (alıştan sonra çağrılır); asla düşürmez.</summary>

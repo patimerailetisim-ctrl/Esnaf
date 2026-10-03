@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Esnaf.Core;
 using Esnaf.Domain.Business;
+using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
 using Esnaf.Domain.Time;
 using Esnaf.Tests.Support;
@@ -38,6 +39,33 @@ namespace Esnaf.Tests.Business
             {
                 Assert.IsTrue(s.Api.AdvanceTime(minute - now).IsSuccess);
             }
+        }
+
+        // Rafta etiketli bir telefon olan oturum: müşteriler yalnızca rafta satılabilir stok varken gelir (Gün 12.6).
+        private static GameSession Stocked(ulong seed = 1UL)
+        {
+            GameSession s = New(seed);
+            var guided = s.Market.Listings.Single(l => l.IsGuided);
+            Assert.IsTrue(s.Api.StartNegotiation(guided.ListingId).IsSuccess);
+            Assert.IsTrue(s.Api.MakeOffer(Money.FromTl(5800)).IsSuccess);
+            Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(5900)).IsSuccess);
+            return s;
+        }
+
+        // İlk iki müşteri 45 dakikadan kısa arayla gelir (ikincisi birincinin 60 dk sabrı bitmeden kuyruğa girer).
+        private static GameSession StockedWithTwoCloseCustomers()
+        {
+            for (ulong seed = 1; seed <= 1500; seed++)
+            {
+                GameSession s = Stocked(seed);
+                IReadOnlyList<QueuedCustomer> plan = Plan(s, 1);
+                if (plan[1].ArrivalMinute - plan[0].ArrivalMinute <= 45 && plan[1].ArrivalMinute - plan[0].ArrivalMinute >= 5)
+                {
+                    return s;
+                }
+            }
+
+            throw new System.InvalidOperationException("No seed.");
         }
 
         // ---------- plan ----------
@@ -141,48 +169,48 @@ namespace Esnaf.Tests.Business
         [Test]
         public void OnlyOneCustomerIsActiveAtATime_AndTheOthersWait()
         {
-            GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute); // herkesin geliş saati geçti
+            GameSession s = StockedWithTwoCloseCustomers();
+            IReadOnlyList<QueuedCustomer> plan = Plan(s, 1);
+            GoTo(s, plan[1].ArrivalMinute); // Gün 12.6: yalnızca gelmiş ve sabrı bitmemiş müşteriler dükkândadır
 
             CustomerQueueView view = s.Api.GetCustomerQueue();
 
             Assert.IsNotNull(view.Current);
             Assert.AreEqual(0, view.Current.Index, "ilk sıradaki");
             Assert.AreEqual(1, view.Entries.Count(e => e.Status == QueueStatus.Active), "aynı anda yalnızca 1 aktif");
-            Assert.AreEqual(view.Total - 1, view.Waiting);
+            Assert.AreEqual(1, view.Waiting, "ikinci müşteri kuyrukta bekler");
+            Assert.AreEqual(1, view.Line.Count);
+            Assert.AreEqual(1, view.Line[0].Index);
             Assert.AreEqual(0, view.Served);
         }
 
         [Test]
         public void NoCustomerIsActive_BeforeTheirArrivalTime_AndTheyBecomeActiveWhenTheClockReachesIt()
         {
-            GameSession s = New();
+            GameSession s = Stocked();
             QueuedCustomer first = Plan(s, 1)[0];
-            if (first.ArrivalMinute > StoreHours.OpenMinute)
-            {
-                CustomerQueueView before = s.Api.GetCustomerQueue();
-                Assert.IsNull(before.Current, "açılışta henüz kimse gelmedi");
-                Assert.AreEqual(first.ArrivalMinute, before.NextArrivalMinute);
-                GoTo(s, first.ArrivalMinute - 1);
-                Assert.IsNull(s.Api.GetCustomerQueue().Current);
-            }
+            Assert.Greater(first.ArrivalMinute, StoreHours.OpenMinute, "Gün 12.6: kimse tam açılışta gelmez");
+            CustomerQueueView before = s.Api.GetCustomerQueue();
+            Assert.IsNull(before.Current, "açılışta henüz kimse gelmedi");
+            Assert.AreEqual(first.ArrivalMinute, before.NextArrivalMinute);
+            GoTo(s, first.ArrivalMinute - 1);
+            Assert.IsNull(s.Api.GetCustomerQueue().Current);
 
             GoTo(s, first.ArrivalMinute);
 
             Assert.AreEqual(first.NpcId, s.Api.GetCustomerQueue().Current.NpcId);
-            Assert.IsNull(s.Api.GetCustomerQueue().NextArrivalMinute);
         }
 
         [Test]
         public void CompletingTheCurrentCustomer_MovesToTheNextOneInOrder()
         {
-            GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
+            GameSession s = Stocked();
             IReadOnlyList<QueuedCustomer> plan = Plan(s, 1);
 
             var served = new List<string>();
             for (int i = 0; i < 4; i++)
             {
+                GoTo(s, plan[i].ArrivalMinute); // Gün 12.6: her müşteri kendi saatinde gelir; öncekiler tamamlandı
                 CustomerQueueView view = s.Api.GetCustomerQueue();
                 Assert.AreEqual(plan[i].Index, view.Current.Index, "sırayla");
                 served.Add(view.Current.NpcId);
@@ -197,15 +225,19 @@ namespace Esnaf.Tests.Business
         [Test]
         public void TheNextCustomerWaits_UntilTheirArrivalTime_AfterTheCurrentOneIsDone()
         {
-            GameSession s = New();
+            GameSession s = StockedWithTwoCloseCustomers();
             IReadOnlyList<QueuedCustomer> plan = Plan(s, 1);
             GoTo(s, plan[0].ArrivalMinute);
             Assert.IsNotNull(s.Api.GetCustomerQueue().Current);
 
             CustomerQueueView after = s.Api.CompleteCurrentCustomer().Value;
 
-            Assert.IsNull(after.Current, "ikinci müşterinin saati gelmedi");
-            Assert.AreEqual(plan[1].ArrivalMinute, after.NextArrivalMinute);
+            if (plan[1].ArrivalMinute > s.Api.GetClock().MinuteOfDay)
+            {
+                Assert.IsNull(after.Current, "ikinci müşterinin saati gelmedi");
+                Assert.AreEqual(plan[1].ArrivalMinute, after.NextArrivalMinute);
+            }
+
             GoTo(s, plan[1].ArrivalMinute);
             Assert.AreEqual(1, s.Api.GetCustomerQueue().Current.Index);
         }
@@ -213,14 +245,7 @@ namespace Esnaf.Tests.Business
         [Test]
         public void CompletingWithoutAnActiveCustomer_IsRefused_AndNothingChanges()
         {
-            GameSession s = New();
-            QueuedCustomer first = Plan(s, 1)[0];
-            if (first.ArrivalMinute == StoreHours.OpenMinute)
-            {
-                // ilk müşteri açılışta gelir: aktif; önce tamamla, ikincinin saati gelmeden tekrar dene
-                s.Api.CompleteCurrentCustomer();
-            }
-
+            GameSession s = Stocked(); // ilk müşteri henüz gelmedi (09:00'da kimse yok)
             string digest = s.Api.GetStateDigest();
 
             Result<CustomerQueueView> r = s.Api.CompleteCurrentCustomer();
@@ -232,19 +257,19 @@ namespace Esnaf.Tests.Business
         // ---------- mağaza kapalı ----------
 
         [Test]
-        public void WhenTheStoreIsClosed_CompletingSendsTheWaitingCustomersAway_AndNoNewCustomerIsCalled()
+        public void WhenTheStoreIsClosed_NobodyIsInTheShop_AndNoNewCustomerIsCalled()
         {
-            GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute);
+            GameSession s = Stocked();
+            GoTo(s, StoreHours.CloseMinute); // Gün 12.6: kimse işlem yapmadı; kuyrukta bekleyenler sabırsızlanıp çıktı, kapanışta kalanlar gönderildi
             Assert.IsFalse(s.Api.GetClock().IsOpen);
 
-            CustomerQueueView after = s.Api.CompleteCurrentCustomer().Value;
+            CustomerQueueView view = s.Api.GetCustomerQueue();
 
-            Assert.IsNull(after.Current, "kapalıyken yeni müşteri yok");
-            Assert.AreEqual(after.Total, after.Served, "kalanlar gönderildi");
-            Assert.AreEqual(0, after.Waiting);
-            Assert.IsFalse(after.StoreOpen);
-            Assert.IsTrue(after.Entries.All(e => e.Status == QueueStatus.Done));
+            Assert.IsNull(view.Current, "kapalıyken yeni müşteri yok");
+            Assert.AreEqual(0, view.Waiting);
+            Assert.AreEqual(0, view.Line.Count);
+            Assert.IsFalse(view.StoreOpen);
+            Assert.IsTrue(view.Entries.All(e => e.Status == QueueStatus.Left), "gelen herkes çıktı (satış yok)");
             Assert.AreEqual("queue.no_active_customer", s.Api.CompleteCurrentCustomer().ErrorCode);
         }
 
@@ -263,8 +288,8 @@ namespace Esnaf.Tests.Business
         [Test]
         public void EndingTheDay_StartsANewQueueForTheNewDay_FromTheBeginning()
         {
-            GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
+            GameSession s = Stocked();
+            GoTo(s, Plan(s, 1)[0].ArrivalMinute);
             s.Api.CompleteCurrentCustomer();
             Assert.AreEqual(1, s.Api.GetCustomerQueue().Served);
 
@@ -282,10 +307,13 @@ namespace Esnaf.Tests.Business
         [Test]
         public void TheQueueProgress_SurvivesSaveAndLoad_AndTheQueueIsTheSame()
         {
-            GameSession s = New(4UL);
-            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
+            GameSession s = Stocked(4UL);
+            IReadOnlyList<QueuedCustomer> plan = Plan(s, 1);
+            GoTo(s, plan[0].ArrivalMinute);
             s.Api.CompleteCurrentCustomer();
+            GoTo(s, plan[1].ArrivalMinute);
             s.Api.CompleteCurrentCustomer();
+            GoTo(s, plan[2].ArrivalMinute);
 
             Result<GameSession> back = GameSession.Restore(MarketHarness.RealContent(), s.Capture());
 
@@ -294,6 +322,7 @@ namespace Esnaf.Tests.Business
             CustomerQueueView b = back.Value.Api.GetCustomerQueue();
             Assert.AreEqual(2, b.Served);
             Assert.AreEqual(a.Current.Index, b.Current.Index);
+            Assert.AreEqual(2, b.Current.Index);
             Assert.AreEqual(Fingerprint(a.Entries.Select(e => e.Customer).ToList()), Fingerprint(b.Entries.Select(e => e.Customer).ToList()));
             Assert.AreEqual(s.Api.GetStateDigest(), back.Value.Api.GetStateDigest());
         }
@@ -314,8 +343,8 @@ namespace Esnaf.Tests.Business
         [Test]
         public void AnAdvancedQueue_ShowsUpInTheDigestAndTheSave()
         {
-            GameSession s = New();
-            GoTo(s, StoreHours.CloseMinute - 30); // Gün 12.4: tamamlama 2 dk harcar; mağaza açık kalsın diye kapanıştan 30 dk önce
+            GameSession s = Stocked();
+            GoTo(s, Plan(s, 1)[0].ArrivalMinute);
             string before = s.Api.GetStateDigest();
 
             s.Api.CompleteCurrentCustomer();

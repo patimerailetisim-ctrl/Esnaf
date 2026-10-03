@@ -1,12 +1,15 @@
+using System.Collections.Generic;
 using Esnaf.Domain.Business;
+using Esnaf.Domain.Economy;
 using Esnaf.Domain.Game;
 using Esnaf.Domain.Time;
 
 namespace Esnaf.Presentation
 {
     /// <summary>
-    /// Günlük müşteri akışının görünümünü (Gün 12.5) IGameApi'nin saat, kuyruk ve aktif müşteri görünümlerinden kurar: satış ekranı lobisi ve İlanlar ekranındaki düğme yazısı.
-    /// Kural yoktur; yalnızca domain'in söylediğini metne ve düğmelere çevirir.
+    /// Günlük müşteri akışının görünümünü (Gün 12.5, 12.6) IGameApi'nin saat, kuyruk ve aktif müşteri görünümlerinden kurar: satış ekranı lobisi ve İlanlar ekranındaki düğme yazısı.
+    /// Kural yoktur; yalnızca domain'in söylediğini metne ve düğmelere çevirir. Toplam/günlük müşteri sayısı ya da sıradaki geliş saati ASLA gösterilmez; yalnızca şu an
+    /// mağazada olanlar (aktif müşteri ve sıradakiler) görünür.
     /// </summary>
     internal static class QueueLobbyBuilder
     {
@@ -14,11 +17,16 @@ namespace Esnaf.Presentation
         {
             ClockView clock = api.GetClock();
             CustomerQueueView queue = api.GetCustomerQueue();
-            string progress = TurkishTexts.QueueProgress(queue.Served, queue.Total);
+            var waiting = new List<QueueWaitingRowViewModel>();
+            foreach (QueuedCustomer c in queue.Line)
+            {
+                waiting.Add(new QueueWaitingRowViewModel(
+                    c.CustomerId, c.NpcId, content.CustomerName(c.CustomerId, c.NpcId), TurkishTexts.ArrivedAt(c.ArrivalText)));
+            }
 
             if (!clock.IsOpen)
             {
-                return new QueueLobbyViewModel(QueueLobbyState.Closed, clock.Text, progress, TurkishTexts.StoreClosedLine, null, null);
+                return new QueueLobbyViewModel(QueueLobbyState.Closed, TurkishTexts.StoreClosedLine, null, new QueueWaitingRowViewModel[0]);
             }
 
             CustomerView active = api.GetActiveCustomer();
@@ -26,17 +34,11 @@ namespace Esnaf.Presentation
             {
                 SaleCustomerCardViewModel card = CardOf(api, content, active);
                 return active.InstanceId != 0
-                    ? new QueueLobbyViewModel(QueueLobbyState.Arrived, clock.Text, progress, null, card, null)
-                    : new QueueLobbyViewModel(QueueLobbyState.NoInterest, clock.Text, progress, TurkishTexts.NoInterestLine, card, null);
+                    ? new QueueLobbyViewModel(QueueLobbyState.Arrived, null, card, waiting)
+                    : new QueueLobbyViewModel(QueueLobbyState.NoInterest, TurkishTexts.NoInterestLine, card, waiting);
             }
 
-            if (queue.NextArrivalMinute.HasValue)
-            {
-                string time = StoreHours.Format(queue.NextArrivalMinute.Value);
-                return new QueueLobbyViewModel(QueueLobbyState.Waiting, clock.Text, progress, TurkishTexts.NextCustomerLine(time), null, time);
-            }
-
-            return new QueueLobbyViewModel(QueueLobbyState.Done, clock.Text, progress, TurkishTexts.QueueDoneLine, null, null);
+            return new QueueLobbyViewModel(QueueLobbyState.Empty, TurkishTexts.NoCustomersLine, null, new QueueWaitingRowViewModel[0]);
         }
 
         /// <summary>İlanlar ekranındaki Müşteriler düğmesinin yazısı: durum özeti.</summary>
@@ -52,20 +54,18 @@ namespace Esnaf.Presentation
             {
                 case QueueLobbyState.Arrived:
                 case QueueLobbyState.NoInterest:
-                    return TurkishTexts.CustomerArrivedButton(lobby.Customer.Name);
-                case QueueLobbyState.Waiting:
-                    return TurkishTexts.NextCustomerButton(lobby.NextArrivalText);
+                    return TurkishTexts.CustomerArrivedButton(lobby.Customer.Name, lobby.Waiting.Count);
                 case QueueLobbyState.Closed:
                     return TurkishTexts.StoreClosedButton;
                 default:
-                    return TurkishTexts.QueueDoneButton;
+                    return TurkishTexts.NoCustomersButton;
             }
         }
 
         private static SaleCustomerCardViewModel CardOf(IGameApi api, ContentPresentation content, CustomerView customer)
         {
             string model = string.Empty;
-            foreach (Esnaf.Domain.Economy.StockLine line in api.GetInventory())
+            foreach (StockLine line in api.GetInventory())
             {
                 if (line.InstanceId == customer.InstanceId)
                 {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Esnaf.App.Ui;
@@ -15,8 +16,8 @@ using UnityEngine.UI;
 namespace Esnaf.App.Tests
 {
     /// <summary>
-    /// Unity-only (Test Runner > EditMode): günlük müşteri akışı arayüzü (Gün 12.5) gerçek UI nesneleriyle. Satış ekranı lobisi yalnızca kuyruğun şu an aktif müşterisini gösterir
-    /// (eski 5-yuva kartları çizilmez); "Bekle" saati sıradaki geliş saatine ilerletir; ürünü olmayan müşteri için "Gönder"; üst çubukta saat; İlanlar düğmesinde durum yazısı.
+    /// Unity-only (Test Runner > EditMode): gerçek zamanlı mağaza arayüzü (Gün 12.6) gerçek UI nesneleriyle. Saat Tick ile akar (1 sn = 1 dk), müşteriler kendiliğinden gelir,
+    /// bekleyenler listelenir; "Bekle", toplam müşteri sayacı ve sıradaki geliş saati yoktur; ürünü olmayan müşteri için "Gönder"; üst çubukta saat; İlanlar düğmesinde durum yazısı.
     /// Her testin alanları baştan kurulur (fixture örneği testler arasında paylaşılır; TearDown alanları sıfırlar).
     /// </summary>
     public class SaleQueueLobbyPanelTests
@@ -66,45 +67,56 @@ namespace Esnaf.App.Tests
             _content = loaded.Database;
         }
 
-        private GameSession WithShelf(ulong seed)
+        private GameSession WithShelf(ulong seed, long listPriceTl = 5900)
         {
             GameSession s = GameSession.NewGame(_content, seed);
             var guided = s.Market.Listings.Single(l => l.IsGuided);
             Assert.IsTrue(s.Api.StartNegotiation(guided.ListingId).IsSuccess);
             Assert.IsTrue(s.Api.MakeOffer(Money.FromTl(5800)).IsSuccess);
-            Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(5900)).IsSuccess);
+            Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(listPriceTl)).IsSuccess);
             return s;
         }
 
-        // Oturum: raflı (ilk müşterisi açılıştan sonra gelir ve ilgilendiği ürün vardır) ya da rafsız (ilk müşteri ilgilenecek ürün bulamaz).
-        private void Build(bool shelf)
+        // Oturum: raflı (ilk müşterisi geldiğinde ilgilendiği ürün vardır) ya da fiyatı çok yüksek ürünlü (ilk müşteri gelir ama hiçbir ürüne ilgi duymaz).
+        private void Build(bool interested)
         {
             LoadContent();
             _session = null;
+            if (!interested)
+            {
+                _session = WithShelf(1UL, 90000);
+                Attach();
+                return;
+            }
+
             for (ulong seed = 1; seed <= 400 && _session == null; seed++)
             {
-                GameSession probe = shelf ? WithShelf(seed) : GameSession.NewGame(_content, seed);
+                GameSession probe = WithShelf(seed);
                 QueuedCustomer first = probe.CustomerQueue.PlanFor(probe.Time.Day)[0];
-                if (first.ArrivalMinute <= StoreHours.OpenMinute)
+                probe.Api.AdvanceTime(first.ArrivalMinute - probe.Api.GetClock().MinuteOfDay);
+                CustomerView v = probe.Api.GetActiveCustomer();
+                if (v != null && v.InstanceId != 0)
                 {
-                    continue;
+                    _session = WithShelf(seed);
                 }
-
-                if (shelf)
-                {
-                    probe.Api.AdvanceTime(first.ArrivalMinute - probe.Api.GetClock().MinuteOfDay);
-                    CustomerView v = probe.Api.GetActiveCustomer();
-                    if (v == null || v.InstanceId == 0)
-                    {
-                        continue;
-                    }
-                }
-
-                _session = shelf ? WithShelf(seed) : GameSession.NewGame(_content, seed);
             }
 
             Assert.IsNotNull(_session, "Uygun oturum bulunamadı.");
             Attach();
+        }
+
+        // Gerçek zamanlı saati n gerçek saniye boyunca akıtır.
+        private void TickSeconds(int seconds)
+        {
+            for (int i = 0; i < seconds; i++)
+            {
+                _flow.Tick(1.0);
+            }
+        }
+
+        private void TickToArrival(QueuedCustomer customer)
+        {
+            TickSeconds(customer.ArrivalMinute - Now());
         }
 
         private void Attach()
@@ -149,59 +161,81 @@ namespace Esnaf.App.Tests
         }
 
         [Test]
-        public void TheTopBar_ShowsTheClock_AndFollowsIt()
+        public void TheTopBar_ShowsTheClock_AndFollowsTheRealTimeTick()
         {
             Build(true);
+            _flow.ClockTicked += Refresh;
 
             Assert.AreEqual("09:00", TextOf("ClockText"));
-            Assert.IsTrue(_flow.OpenCustomers());
-            Find("WaitButton").GetComponent<Button>().onClick.Invoke();
+            TickSeconds(75);
 
-            Assert.AreEqual(StoreHours.Format(Now()), TextOf("ClockText"));
+            Assert.AreEqual("10:15", TextOf("ClockText"), "75 saniye = 75 dakika");
             StringAssert.Contains("Gün", TextOf("DayText"));
         }
 
         [Test]
-        public void BeforeTheNextCustomer_TheLobbyShowsTheNextTimeAndAWaitButton_NoCustomerCard()
+        public void BeforeAnyoneArrives_TheLobbyShowsNoCountNoNextTimeAndNoWaitButton()
         {
             Build(true);
-            QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
 
             _flow.OpenCustomers();
 
-            Assert.IsNotNull(Find("QueueStatus"));
-            Assert.AreEqual("09:00", TextOf("Clock"));
-            Assert.AreEqual(TurkishTexts.NextCustomerLine(first.ArrivalText), TextOf("StatusLine"));
-            Assert.IsNotNull(Find("WaitButton"));
-            Assert.AreEqual("Bekle", Find("WaitButton").GetComponentInChildren<Text>().text);
-            Assert.AreEqual(0, CountNamed("Customer_"), "geliş saati gelmeden müşteri kartı yok");
+            Assert.AreEqual(TurkishTexts.NoCustomersLine, TextOf("StatusLine"));
+            Assert.IsNull(Find("WaitButton"), "Bekle düğmesi kaldırıldı");
+            Assert.IsNull(Find("Clock"), "lobide saat/ilerleme kartı yok (saat üst çubukta)");
+            Assert.IsNull(Find("Progress"), "toplam müşteri sayacı yok");
+            Assert.AreEqual(0, CountNamed("Customer_"));
+            Assert.AreEqual(0, CountNamed("Waiting_"));
             Assert.IsNull(Find("DismissButton"));
         }
 
         [Test]
-        public void ThePlayersMainButton_ShowsTheQueueState_NotTheOldSlotCount()
+        public void ThePlayersMainButton_ShowsTheQueueState_NotTheOldSlotCountNorATime()
         {
             Build(true);
-            QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
+            Assert.AreEqual(TurkishTexts.NoCustomersButton, Find("CustomersButton").GetComponentInChildren<Text>().text);
 
-            Assert.AreEqual(TurkishTexts.NextCustomerButton(first.ArrivalText), Find("CustomersButton").GetComponentInChildren<Text>().text);
+            QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
+            _flow.OpenCustomers();
+            TickToArrival(first);
+
+            string expected = TurkishTexts.CustomerArrivedButton(_flow.Content.CustomerName(first.CustomerId, first.NpcId));
+            Assert.AreEqual(expected, Find("CustomersButton").GetComponentInChildren<Text>().text);
         }
 
         [Test]
-        public void ClickingWait_MovesToTheArrivalTime_AndExactlyOneCustomerCardAppears()
+        public void ACustomerAppearsOnTheirOwn_AsExactlyOneCard_WithNoWaitButton()
         {
             Build(true);
             QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
             _flow.OpenCustomers();
 
-            Find("WaitButton").GetComponent<Button>().onClick.Invoke();
+            TickToArrival(first);
 
-            Assert.AreEqual(first.ArrivalMinute, Now(), "tam geliş saatine");
-            Assert.IsNull(Find("WaitButton"), "müşteri geldi: Bekle yok");
-            Assert.AreEqual(1, CountNamed("Customer_"), "aynı anda tek müşteri kartı");
+            Assert.AreEqual(first.ArrivalMinute, Now(), "tam geliş saatinde");
+            Assert.IsNull(Find("WaitButton"));
+            Assert.AreEqual(1, CountNamed("Customer_"), "aynı anda tek aktif müşteri kartı");
             Assert.IsNotNull(Find("Customer_" + first.CustomerId));
             Assert.AreEqual(_flow.Content.CustomerName(first.CustomerId, first.NpcId), TextOf("Name"));
             Assert.IsNotNull(Find("Portrait"), "mevcut portre sistemi");
+        }
+
+        [Test]
+        public void AQueuedCustomer_IsListedLive_WithTheirEntryTime()
+        {
+            Build(true);
+            IReadOnlyList<QueuedCustomer> plan = _session.CustomerQueue.PlanFor(1);
+            if (plan[1].ArrivalMinute - plan[0].ArrivalMinute > 55)
+            {
+                Assert.Inconclusive("Bu tohumda ilk iki müşteri 55 dakikadan uzak aralıkla geliyor.");
+            }
+
+            _flow.OpenCustomers();
+            TickToArrival(plan[1]);
+
+            Assert.AreEqual(1, CountNamed("Customer_"), "aktif müşteri tek kart");
+            Assert.IsNotNull(Find("Waiting_" + plan[1].CustomerId), "sıradaki müşteri listede");
+            StringAssert.Contains(plan[1].ArrivalText, TextOf("Arrived"), "giriş saati");
         }
 
         [Test]
@@ -210,7 +244,7 @@ namespace Esnaf.App.Tests
             Build(true);
             long[] oldIds = _session.Api.GetCustomers().Select(c => c.CustomerId).ToArray();
             _flow.OpenCustomers();
-            Find("WaitButton").GetComponent<Button>().onClick.Invoke();
+            TickToArrival(_session.CustomerQueue.PlanFor(1)[0]);
 
             foreach (long id in oldIds)
             {
@@ -225,7 +259,7 @@ namespace Esnaf.App.Tests
         {
             Build(true);
             _flow.OpenCustomers();
-            Find("WaitButton").GetComponent<Button>().onClick.Invoke();
+            TickToArrival(_session.CustomerQueue.PlanFor(1)[0]);
             long id = _flow.SaleScreen.Queue.Customer.CustomerId;
 
             Find("Customer_" + id).GetComponent<Button>().onClick.Invoke();
@@ -234,7 +268,6 @@ namespace Esnaf.App.Tests
             Assert.AreEqual(id, _session.Api.GetSale().CustomerId);
             Assert.IsNull(Find("QueueStatus"), "lobi gizlendi");
             Assert.IsNotNull(Find("Reply_" + SaleReplyKind.Greet), "mevcut konuşma ekranı");
-            Assert.IsNull(Find("WaitButton"));
         }
 
         [Test]
@@ -242,15 +275,32 @@ namespace Esnaf.App.Tests
         {
             Build(true);
             _flow.OpenCustomers();
-            Find("WaitButton").GetComponent<Button>().onClick.Invoke();
+            TickToArrival(_session.CustomerQueue.PlanFor(1)[0]);
             Find("Customer_" + _flow.SaleScreen.Queue.Customer.CustomerId).GetComponent<Button>().onClick.Invoke();
             Find("Reply_" + SaleReplyKind.LetGo).GetComponent<Button>().onClick.Invoke();
 
             Find("Reply_" + SaleReplyKind.Continue).GetComponent<Button>().onClick.Invoke();
 
-            Assert.IsNotNull(Find("QueueStatus"));
-            StringAssert.Contains("1/", TextOf("Progress"), "müşteri tamamlandı");
+            Assert.AreEqual(SaleMode.Lobby, _flow.SaleScreen.Mode);
+            Assert.AreEqual(1, _session.Api.GetCustomerQueue().Served, "müşteri tamamlandı");
+            Assert.IsNull(Find("Progress"));
             Assert.LessOrEqual(CountNamed("Customer_"), 1);
+        }
+
+        [Test]
+        public void ACustomerWhoWaitsAnHour_LeavesWithANaturalLine_AndTheCardDisappears()
+        {
+            Build(true);
+            QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
+            _flow.OpenCustomers();
+            TickToArrival(first);
+            Assert.IsNotNull(Find("Customer_" + first.CustomerId));
+
+            TickSeconds(QueuePolicy.MaxWaitMinutes);
+
+            Assert.IsNull(Find("Customer_" + first.CustomerId), "sabrı bitti, çıktı");
+            Assert.IsNotNull(_flow.StatusMessage);
+            StringAssert.Contains(_flow.Content.CustomerName(first.CustomerId, first.NpcId), _flow.StatusMessage);
         }
 
         [Test]
@@ -258,11 +308,10 @@ namespace Esnaf.App.Tests
         {
             Build(false);
             _flow.OpenCustomers();
-            Find("WaitButton").GetComponent<Button>().onClick.Invoke();
             QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
+            TickToArrival(first);
 
             Assert.IsNotNull(Find("DismissButton"));
-            Assert.IsNull(Find("WaitButton"));
             Transform card = Find("Customer_" + first.CustomerId);
             Assert.IsNotNull(card);
             Assert.IsNull(card.GetComponent<Button>(), "ürünü yok: kart satışa başlatmaz");
@@ -272,19 +321,17 @@ namespace Esnaf.App.Tests
 
             Assert.AreEqual(t + InteractionTime.CompleteCustomer, Now());
             Assert.IsNull(Find("DismissButton"));
-            StringAssert.Contains("1/", TextOf("Progress"));
         }
 
         [Test]
-        public void WhenTheStoreIsClosed_NoCustomerCardAndNoWaitButtonAreShown()
+        public void WhenTheStoreIsClosed_NoCustomerCardIsShown_AndTheClockStopsAtTwentyOne()
         {
             Build(true);
-            _session.Api.AdvanceTime(5000);
-            _flow.Refresh();
+            _flow.ClockTicked += Refresh;
+            TickSeconds(12 * 60 + 30);
             _flow.OpenCustomers();
 
             Assert.AreEqual(0, CountNamed("Customer_"));
-            Assert.IsNull(Find("WaitButton"));
             Assert.AreEqual(TurkishTexts.StoreClosedLine, TextOf("StatusLine"));
             Assert.AreEqual("21:00", TextOf("ClockText"));
             Assert.AreEqual(TurkishTexts.StoreClosedButton, _flow.QueueButtonText);

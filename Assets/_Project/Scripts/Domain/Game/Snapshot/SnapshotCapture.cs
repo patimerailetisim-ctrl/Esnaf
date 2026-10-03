@@ -235,6 +235,7 @@ namespace Esnaf.Domain.Game
                 Arrived = c.Arrived,
                 MissedTotal = c.MissedTotal,
                 QueueCursor = c.QueueCursor > 0 ? c.QueueCursor : (int?)null,
+                QueueSkipped = c.QueueSkipped > 0 ? c.QueueSkipped : (int?)null,
                 Slots = c.Slots.Select(x => new CustomerSlotSnapshot
                 {
                     CustomerId = x.CustomerId,

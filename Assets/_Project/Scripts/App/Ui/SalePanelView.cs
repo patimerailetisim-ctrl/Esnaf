@@ -117,28 +117,19 @@ namespace Esnaf.App.Ui
             }
         }
 
-        // Günlük müşteri akışı (Gün 12.5): durum kartı + (varsa) ŞU AN AKTİF tek müşteri + Bekle / Gönder. Eski 5-yuva kartları burada çizilmez.
+        // Gerçek zamanlı müşteri akışı (Gün 12.6): (varsa) şu an aktif tek müşteri kartı + sırada bekleyenler (giriş saatleriyle) + Gönder. Saat üst çubukta;
+        // toplam müşteri sayısı, ilerleme, Bekle düğmesi ve sıradaki geliş saati gösterilmez. Durum satırı yalnızca kimse yokken/kapalıyken/ilgisiz müşteriyle çıkar.
         private void AddQueueLobby(QueueLobbyViewModel queue)
         {
-            RectTransform status = UiKit.AutoCard(_content, "QueueStatus", UiTheme.Card, 8f, 32);
-            UiKit.Label(status, "Clock", queue.ClockText, 64, UiTheme.Ink, true, TextAnchor.MiddleCenter);
-            UiKit.Label(status, "Progress", queue.ProgressLine, 36, UiTheme.Muted, false, TextAnchor.MiddleCenter);
             if (!string.IsNullOrEmpty(queue.StatusLine))
             {
+                RectTransform status = UiKit.AutoCard(_content, "QueueStatus", UiTheme.Card, 8f, 32);
                 UiKit.Label(status, "StatusLine", queue.StatusLine, 42, UiTheme.Ink, false, TextAnchor.MiddleCenter);
             }
 
             if (queue.Customer != null)
             {
                 AddCustomerCard(queue.Customer, queue.State == QueueLobbyState.Arrived);
-            }
-
-            if (queue.CanWait)
-            {
-                Button wait = UiKit.RoundedButton(_content, "WaitButton", queue.WaitButtonText, 44, UiTheme.Gold, UiTheme.Ink, () => _flow.WaitForNextCustomer());
-                UiKit.AddShadow(wait.gameObject, 0.18f, 8f);
-                UiKit.Size2(wait.GetComponent<RectTransform>(), 0f, ButtonHeight);
-                wait.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
             }
 
             if (queue.CanDismiss)
@@ -148,6 +139,30 @@ namespace Esnaf.App.Ui
                 UiKit.Size2(dismiss.GetComponent<RectTransform>(), 0f, ButtonHeight);
                 dismiss.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
             }
+
+            foreach (QueueWaitingRowViewModel row in queue.Waiting)
+            {
+                AddWaitingRow(row);
+            }
+        }
+
+        // Sırada bekleyen müşteri: küçük portre + ad + "10:35'de geldi" (tıklanamaz; sırası gelince aktif olur).
+        private void AddWaitingRow(QueueWaitingRowViewModel row)
+        {
+            RectTransform rect = UiKit.Rounded(_content, "Waiting_" + row.CustomerId, UiTheme.CardSoft);
+            rect.GetComponent<Image>().raycastTarget = false;
+            UiKit.Size2(rect, 0f, 120f);
+
+            RectTransform portrait = UiKit.Rounded(rect, "Portrait", UiTheme.Card);
+            portrait.GetComponent<Image>().raycastTarget = false;
+            UiBuilder.Stretch(portrait, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(20f, -44f), new Vector2(108f, 44f));
+            portrait.gameObject.AddComponent<RectMask2D>();
+            CustomerPortraitView.Draw(portrait, row.Name, row.NpcId);
+
+            Text name = UiKit.Label(rect, "Name", row.Name, 38, UiTheme.Ink, true);
+            UiBuilder.Stretch(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(128f, 4f), new Vector2(-20f, 56f));
+            Text arrived = UiKit.Label(rect, "Arrived", row.ArrivedText, 30, UiTheme.Muted);
+            UiBuilder.Stretch(arrived.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(128f, -56f), new Vector2(-20f, -2f));
         }
 
         // Müşteri kartı (portre + ad + kişilik/ilgi): tıklanabilirse StartSale'e (mevcut satış akışı) bağlanır.

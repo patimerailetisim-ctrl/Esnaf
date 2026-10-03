@@ -25,13 +25,13 @@ namespace Esnaf.Tests.Business
         }
 
         // Raftaki etiketli bir telefon (kuyruk müşterisi ilgilenebilsin).
-        private static GameSession WithShelf(ulong seed)
+        private static GameSession WithShelf(ulong seed, long listPriceTl = 5900)
         {
             GameSession s = New(seed);
             var guided = s.Market.Listings.Single(l => l.IsGuided);
             Assert.IsTrue(s.Api.StartNegotiation(guided.ListingId).IsSuccess);
             Assert.IsTrue(s.Api.MakeOffer(Money.FromTl(5800)).IsSuccess);
-            Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(5900)).IsSuccess);
+            Assert.IsTrue(s.Api.SetPrice(guided.InstanceId, Money.FromTl(listPriceTl)).IsSuccess);
             return s;
         }
 
@@ -162,7 +162,7 @@ namespace Esnaf.Tests.Business
         public void OnlyOneCustomerIsActive_EvenWhenManyHaveArrived()
         {
             GameSession s = WithShelf(3UL);
-            GoTo(s, StoreHours.CloseMinute - 1);
+            GoTo(s, Plan(s)[0].ArrivalMinute + QueuePolicy.MaxWaitMinutes - 1); // Gün 12.6: ilk müşterinin sabrı bitmeden, birden çok müşteri gelmiş olabilir
 
             CustomerQueueView view = s.Api.GetCustomerQueue();
             CustomerView active = s.Api.GetActiveCustomer();
@@ -246,8 +246,7 @@ namespace Esnaf.Tests.Business
             CustomerView active;
             GameSession s = WithActive(v => true, out active);
             IReadOnlyList<QueuedCustomer> plan = Plan(s);
-            GoTo(s, StoreHours.CloseMinute - 1); // sırası gelmeyenlerin saati de geçti
-
+            // Gün 12.6: saat ilerletilmez (aktif müşterinin sabrı bitip çıkardı); ikinci müşteri aktif olmadığı için başlatılamaz.
             Assert.AreEqual("customer.unknown", s.Api.StartSale(plan[1].CustomerId).ErrorCode, "ikinci müşteri aktif değil");
             Assert.AreEqual("customer.unknown", s.Api.StartSale(QueueCustomerId.For(s.Time.Day + 1, 0)).ErrorCode, "başka günün müşterisi");
             Assert.AreEqual("customer.unknown", s.Api.StartSale(QueueCustomerId.For(s.Time.Day, 50)).ErrorCode);
@@ -268,9 +267,9 @@ namespace Esnaf.Tests.Business
             Assert.IsNull(s.Api.GetActiveCustomer(), "kapalıyken yeni müşteri aktif olmaz");
             Assert.AreEqual("customer.unknown", s.Api.StartSale(active.CustomerId).ErrorCode);
 
-            CustomerQueueView after = s.Api.CompleteCurrentCustomer().Value;
-
-            Assert.AreEqual(after.Total, after.Served, "bekleyenler gönderildi");
+            // Gün 12.6: bekleyenler sabrı bitince/kapanışta kendiliğinden çıkar; gönderilecek kimse kalmaz.
+            Assert.AreEqual("queue.no_active_customer", s.Api.CompleteCurrentCustomer().ErrorCode);
+            Assert.AreEqual(0, s.Api.GetCustomerQueue().Waiting);
             Assert.IsNull(s.Api.GetActiveCustomer());
         }
 
@@ -296,7 +295,7 @@ namespace Esnaf.Tests.Business
         [Test]
         public void ACustomerWithNoProductOnTheShelf_IsActiveButNotSellable_AndCompleteCurrentCustomerSendsThemAway()
         {
-            GameSession s = New(5UL); // raf boş
+            GameSession s = WithShelf(5UL, 90000); // Gün 12.6: raf boşsa müşteri gelmez; fiyatlı ama hiç kimsenin ilgilenmeyeceği kadar pahalı ürün
             GoTo(s, Plan(s)[0].ArrivalMinute);
 
             CustomerView active = s.Api.GetActiveCustomer();
@@ -424,7 +423,9 @@ namespace Esnaf.Tests.Business
             GameSession r = GameSession.Restore(MarketHarness.RealContent(), s.Capture()).Value;
 
             Assert.AreEqual(1, r.Api.GetCustomerQueue().Served);
-            Assert.AreEqual(plan[1].CustomerId, r.Api.GetActiveCustomer() == null ? 0L : r.Api.GetActiveCustomer().CustomerId, "sıradaki müşteri aynı");
+            // Gün 12.6: satılan telefonla raf boşaldı; rafta satılabilir ürün yokken sıradaki müşteri gelmez (kayıtta da aynı).
+            Assert.IsNull(r.Api.GetActiveCustomer(), "raf boş: sıradaki müşteri gelmedi");
+            Assert.AreEqual(s.Api.GetCustomerQueue().Entries.Count(e => e.Status == QueueStatus.Active), r.Api.GetCustomerQueue().Entries.Count(e => e.Status == QueueStatus.Active));
             Assert.AreEqual(s.Api.GetStateDigest(), r.Api.GetStateDigest());
         }
 

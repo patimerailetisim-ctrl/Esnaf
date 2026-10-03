@@ -125,8 +125,8 @@ namespace Esnaf.Domain.Game
             Demand = new DemandModel(content.Demand, DemandState);
             CustomerIds = new IdGenerator();
             Customers = new CustomerService(content, new CustomerState(), CustomerIds, Store, InventoryState, Npcs, Demand, Time, Rng);
-            CustomerQueue = new CustomerQueueService(content, Customers.State, Customers, Time, Rng, Clock);
             TradeState = new TradeState();
+            CustomerQueue = new CustomerQueueService(content, Customers.State, Customers, Time, Rng, Clock, TradeState, bus);
             Trade = new TradeService(
                 content, Market, Store, InventoryState, InventoryService, EconomyService, Knowledge, Npcs, Rng, Time, TradeState, bus, Customers);
             Sell = new SellService(content, Customers, TradeState, InventoryService, Store, Npcs, Demand, Knowledge, Time, bus, CustomerQueue, Clock);

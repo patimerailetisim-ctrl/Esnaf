@@ -12,8 +12,14 @@ namespace Esnaf.Domain.Business
         /// <summary>Şu an mağazada aktif müşteri (aynı anda en çok 1).</summary>
         Active = 1,
 
-        /// <summary>Henüz sırası gelmedi (geliş saati gelmedi ya da önünde müşteri var).</summary>
-        Waiting = 2
+        /// <summary>Mağazada, sırada bekliyor (önünde aktif müşteri var).</summary>
+        Waiting = 2,
+
+        /// <summary>Henüz gelmedi (geliş saati gelmedi).</summary>
+        Upcoming = 3,
+
+        /// <summary>Hiç gelmedi (geliş anında rafta ürün yoktu) ya da satış yapmadan çıktı (60 dk doldu / mağaza kapandı).</summary>
+        Left = 4
     }
 
     /// <summary>Kuyruktaki bir müşteri ve bugünkü durumu.</summary>
@@ -45,18 +51,22 @@ namespace Esnaf.Domain.Business
         /// <summary>Şu an aktif müşteri; yoksa null (sıradakinin saati gelmedi, kuyruk bitti ya da mağaza kapandı).</summary>
         public QueuedCustomer Current { get; }
 
-        /// <summary>Sırası gelmemiş müşteri sayısı (aktif hariç).</summary>
+        /// <summary>Şu an mağazada sırada bekleyen müşteri sayısı (aktif hariç).</summary>
         public int Waiting { get; }
+
+        /// <summary>Sırada bekleyen müşteriler, geliş sırasıyla (aktif hariç).</summary>
+        public IReadOnlyList<QueuedCustomer> Line { get; }
 
         public bool StoreOpen { get; }
 
-        /// <summary>Sıradaki müşterinin geliş saati (henüz gelmediyse); aksi halde null.</summary>
+        /// <summary>Henüz gelmemiş ilk müşterinin geliş saati (mağaza açıkken); yoksa null. Arayüz bunu göstermez.</summary>
         public int? NextArrivalMinute { get; }
 
         public IReadOnlyList<QueueEntryView> Entries { get; }
 
         public CustomerQueueView(
-            int day, int total, int served, QueuedCustomer current, int waiting, bool storeOpen, int? nextArrivalMinute, IEnumerable<QueueEntryView> entries)
+            int day, int total, int served, QueuedCustomer current, int waiting, bool storeOpen, int? nextArrivalMinute,
+            IEnumerable<QueueEntryView> entries, IEnumerable<QueuedCustomer> line)
         {
             Day = day;
             Total = total;
@@ -66,6 +76,7 @@ namespace Esnaf.Domain.Business
             StoreOpen = storeOpen;
             NextArrivalMinute = nextArrivalMinute;
             Entries = new ReadOnlyCollection<QueueEntryView>(new List<QueueEntryView>(entries));
+            Line = new ReadOnlyCollection<QueuedCustomer>(new List<QueuedCustomer>(line));
         }
     }
 }

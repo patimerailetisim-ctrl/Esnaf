@@ -137,6 +137,11 @@ namespace Esnaf.Domain.Game
                 sb.Append("customers.queueCursor=").Append(N(customers.QueueCursor)).Append('\n');
             }
 
+            if (customers.QueueSkipped > 0)
+            {
+                sb.Append("customers.queueSkipped=").Append(N(customers.QueueSkipped)).Append('\n');
+            }
+
             foreach (CustomerSlot slot in customers.Slots)
             {
                 sb.Append("K|").Append(N(slot.CustomerId))

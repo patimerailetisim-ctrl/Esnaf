@@ -111,7 +111,23 @@ namespace Esnaf.App
             _accessoryStock = new AccessoryStockPanelView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
             _flow.Changed += ShowScreen;
+            _flow.ClockTicked += ShowClock;
             ShowScreen();
+        }
+
+        // Gün 12.6: saat kendiliğinden akar (1 gerçek saniye = 1 oyun dakikası). Gerçek zaman yalnızca burada okunur; kural UiFlow/IGameApi'dedir.
+        private void Update()
+        {
+            if (_flow != null)
+            {
+                _flow.Tick(UnityEngine.Time.unscaledDeltaTime);
+            }
+        }
+
+        // Ekran yeniden kurulmadan yalnızca üst çubuktaki saat güncellenir.
+        private void ShowClock()
+        {
+            _topBar.Show(_flow.TopBar);
         }
 
         /// <summary>
@@ -156,6 +172,7 @@ namespace Esnaf.App
             if (_flow != null)
             {
                 _flow.Changed -= ShowScreen;
+                _flow.ClockTicked -= ShowClock;
                 _flow.Dispose();
             }
         }

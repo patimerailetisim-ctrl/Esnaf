@@ -26,6 +26,8 @@ namespace Esnaf.Presentation
         private readonly IGameApi _api;
         private readonly ContentPresentation _content;
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
+        private double _clockRemainder;
+        private string _lastSignature = string.Empty;
         private long? _selectedListingId;
         private string _selectedLevelId;
         private string _offerText = string.Empty;
@@ -64,11 +66,15 @@ namespace Esnaf.Presentation
                 _subscriptions.Add(events.Subscribe<ListingPurchased>(e => Refresh()));
                 _subscriptions.Add(events.Subscribe<NegotiationEnded>(e => Refresh()));
                 _subscriptions.Add(events.Subscribe<ItemAddedToShelf>(e => Refresh()));
+                _subscriptions.Add(events.Subscribe<CustomerLeftWaiting>(OnCustomerLeftWaiting));
             }
         }
 
         /// <summary>Ekranın görünümü değişince çağrılır (ana iş parçacığında, olayı yayan çağrının içinde).</summary>
         public event Action Changed;
+
+        /// <summary>Gerçek zamanlı saat ilerledi ama ekranı yeniden kurmak gerekmedi (yalnızca üst çubuk saati değişti; Gün 12.6).</summary>
+        public event Action ClockTicked;
 
         public UiScreen CurrentScreen { get; private set; }
 
@@ -545,49 +551,61 @@ namespace Esnaf.Presentation
             return true;
         }
 
+        /// <summary>1 gerçek saniye = 1 oyun dakikası (Gün 12.6).</summary>
+        public const double GameMinutesPerRealSecond = 1.0;
+
+        /// <summary>Tek <see cref="Tick"/> çağrısında işlenecek en çok gerçek saniye (duraklama/takılma sonrası saatin sıçramasını önler).</summary>
+        public const double MaxTickSeconds = 5.0;
+
         /// <summary>
-        /// "Bekle" (Gün 12.5): saati DOĞRUDAN sıradaki müşterinin geliş saatine ilerletir (IGameApi.AdvanceTime; 21:00'i hiçbir zaman aşmaz). Satış sürerken, mağaza kapalıyken,
-        /// bekleyecek müşteri yokken ya da satış ekranında değilken kullanılamaz; başarısızlıkta Türkçe neden StatusMessage'dadır ve saat değişmez.
+        /// Gerçek zamanlı saat (Gün 12.6): geçen gerçek saniyeyi biriktirir (1 sn = 1 oyun dakikası) ve TAM dakikaları mevcut IGameApi.AdvanceTime ile işler. Domain gerçek zamandan
+        /// habersizdir; yalnızca AdvanceTime çağrılır, bu yüzden oyun deterministik ve kayıtla uyumlu kalır. Mağaza kapalıyken (21:00) saat durur. Aynı saniyede birden çok çağrı
+        /// ya da küçük kesirler birikir. İşlenen oyun dakikasını döndürür. Ekran YALNIZCA kuyruk (gelen/çıkan müşteri) ya da durum mesajı değişirse yeniden kurulur
+        /// (<see cref="Changed"/>); aksi halde yalnızca <see cref="ClockTicked"/> yayınlanır (üst çubuk saati).
         /// </summary>
-        public Result<ClockView> WaitForNextCustomer()
+        public int Tick(double realSeconds)
         {
-            if (CurrentScreen != UiScreen.Sale)
+            if (_disposed || !(realSeconds > 0.0))
             {
-                return Result<ClockView>.Fail("ui.not_on_sale_screen", "The sale screen is not open.");
+                return 0;
             }
 
-            Result<ClockView> result = WaitCore();
-            StatusMessage = result.IsFailure ? TurkishTexts.QueueError(result.ErrorCode) : null;
-            Refresh();
-            return result;
-        }
-
-        private Result<ClockView> WaitCore()
-        {
-            if (_api.GetSale() != null)
-            {
-                return Result<ClockView>.Fail("ui.sale_in_progress", "A sale is in progress.");
-            }
-
-            ClockView clock = _api.GetClock();
-            if (!clock.IsOpen)
-            {
-                return Result<ClockView>.Fail("time.store_closed", "The store is closed.");
-            }
-
-            CustomerQueueView queue = _api.GetCustomerQueue();
-            if (!queue.NextArrivalMinute.HasValue)
-            {
-                return Result<ClockView>.Fail("ui.nobody_to_wait_for", "There is no customer to wait for.");
-            }
-
-            int minutes = Math.Min(queue.NextArrivalMinute.Value, StoreHours.CloseMinute) - clock.MinuteOfDay;
+            _clockRemainder += Math.Min(realSeconds, MaxTickSeconds) * GameMinutesPerRealSecond;
+            int minutes = (int)Math.Floor(_clockRemainder);
             if (minutes <= 0)
             {
-                return Result<ClockView>.Fail("ui.nobody_to_wait_for", "The next customer has already arrived.");
+                return 0;
             }
 
-            return _api.AdvanceTime(minutes);
+            _clockRemainder -= minutes;
+            ClockView before = _api.GetClock();
+            if (!before.IsOpen)
+            {
+                _clockRemainder = 0.0;
+                return 0;
+            }
+
+            Result<ClockView> advanced = _api.AdvanceTime(minutes);
+            if (advanced.IsFailure)
+            {
+                return 0;
+            }
+
+            Rebuild();
+            if (Signature() != _lastSignature)
+            {
+                RaiseChanged();
+            }
+            else
+            {
+                Action ticked = ClockTicked;
+                if (ticked != null)
+                {
+                    ticked();
+                }
+            }
+
+            return advanced.Value.MinuteOfDay - before.MinuteOfDay;
         }
 
         /// <summary>
@@ -892,8 +910,32 @@ namespace Esnaf.Presentation
             return Math.Max(10L, up);
         }
 
+        // Ekranın yeniden kurulmasını gerektiren içerik imzası: kuyruk düğmesi + durum mesajı + lobi (gelen/çıkan müşteriler). Saat dakikaları imzaya girmez.
+        private string Signature()
+        {
+            string queue = SaleScreen != null && SaleScreen.Queue != null ? SaleScreen.Queue.Signature() : string.Empty;
+            return QueueButtonText + "\u0001" + StatusMessage + "\u0001" + queue + "\u0001" + (int)CurrentScreen;
+        }
+
+        // Bekleyen müşteri sabrı bitip çıktığında (Gün 12.6) doğal Türkçe sözünü durum mesajı olarak bırakır; ekranı Tick yeniden kurar.
+        private void OnCustomerLeftWaiting(CustomerLeftWaiting e)
+        {
+            string personality = null;
+            foreach (QueueEntryView entry in _api.GetCustomerQueue().Entries)
+            {
+                if (entry.Customer.CustomerId == e.CustomerId && entry.Customer.Profile != null)
+                {
+                    personality = entry.Customer.Profile.PersonalityId;
+                }
+            }
+
+            string name = _content.CustomerName(e.CustomerId, e.NpcId);
+            StatusMessage = name + ": \u201C" + SaleDialogue.WaitingLeave(personality, e.Reason == QueueLeaveReason.StoreClosed) + "\u201D";
+        }
+
         private void RaiseChanged()
         {
+            _lastSignature = Signature();
             Action handler = Changed;
             if (handler != null)
             {

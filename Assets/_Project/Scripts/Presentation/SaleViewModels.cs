@@ -150,68 +150,85 @@ namespace Esnaf.Presentation
         }
     }
 
-    /// <summary>Günlük müşteri akışının satış ekranı lobisindeki durumu (Gün 12.5).</summary>
+    /// <summary>Günlük müşteri akışının satış ekranı lobisindeki durumu (Gün 12.5, 12.6).</summary>
     public enum QueueLobbyState
     {
-        /// <summary>Sıradaki müşterinin geliş saati gelmedi ("Sıradaki müşteri: HH:mm", Bekle).</summary>
-        Waiting = 0,
+        /// <summary>Şu an dükkânda müşteri yok (yeni müşteri kendi saatinde kendiliğinden gelir).</summary>
+        Empty = 0,
 
-        /// <summary>Aktif müşteri geldi ve ilgilendiği ürün var (kartına dokununca satış başlar).</summary>
+        /// <summary>Aktif müşteri var ve ilgilendiği ürün var (kartına dokununca satış başlar).</summary>
         Arrived = 1,
 
-        /// <summary>Aktif müşteri geldi ama ilgilendiği ürün yok (Gönder).</summary>
+        /// <summary>Aktif müşteri var ama ilgilendiği ürün yok (Gönder).</summary>
         NoInterest = 2,
 
-        /// <summary>Bugünün müşterileri bitti.</summary>
-        Done = 3,
-
         /// <summary>Mağaza kapalı (21:00).</summary>
-        Closed = 4
+        Closed = 3
+    }
+
+    /// <summary>Sırada bekleyen bir müşteri (canlı liste satırı): ad, NPC ve geliş saati. Toplam/günlük müşteri sayısı hiçbir yerde gösterilmez.</summary>
+    public sealed class QueueWaitingRowViewModel
+    {
+        public long CustomerId { get; }
+        public string NpcId { get; }
+        public string Name { get; }
+
+        /// <summary>"09:41'de geldi"</summary>
+        public string ArrivedText { get; }
+
+        public QueueWaitingRowViewModel(long customerId, string npcId, string name, string arrivedText)
+        {
+            CustomerId = customerId;
+            NpcId = npcId;
+            Name = name;
+            ArrivedText = arrivedText;
+        }
     }
 
     /// <summary>
-    /// Günlük müşteri kuyruğunun lobi görünümü (Gün 12.5): yalnızca ŞU AN AKTİF müşteri (en çok 1 kart), saat, ilerleme ve Bekle/Gönder eylemleri.
-    /// IGameApi.GetClock / GetCustomerQueue / GetActiveCustomer'dan kurulur; kural içermez.
+    /// Günlük müşteri kuyruğunun lobi görünümü (Gün 12.5, 12.6): şu an aktif müşteri (en çok 1 kart) ve sırada bekleyenlerin canlı listesi. IGameApi'nin saat, kuyruk ve
+    /// aktif müşteri görünümlerinden kurulur; kural içermez. Gün içinde kaç müşterinin geleceği ya da toplam sayı bilgisi YOKTUR.
     /// </summary>
     public sealed class QueueLobbyViewModel
     {
         public QueueLobbyState State { get; }
-        public string ClockText { get; }
 
-        /// <summary>"Bugün: 3/10 müşteri"</summary>
-        public string ProgressLine { get; }
-
-        /// <summary>Duruma göre kısa açıklama ("Sıradaki müşteri: 10:35", "Mağaza kapandı…"); aktif müşteri varken null.</summary>
+        /// <summary>Duruma göre kısa açıklama ("Şu an dükkânda müşteri yok.", "Mağaza kapandı…"); aktif müşteri varken ürünü yoksa nedeni, aksi halde null.</summary>
         public string StatusLine { get; }
 
         /// <summary>Aktif müşteri (kimlik, NPC, ad, kişilik, ilgilendiği ürün); yoksa null.</summary>
         public SaleCustomerCardViewModel Customer { get; }
 
-        /// <summary>Sıradaki müşterinin geliş saati ("10:35"); beklemiyorsa null.</summary>
-        public string NextArrivalText { get; }
-
-        /// <summary>Bekle düğmesi görünür/kullanılabilir mi (yalnızca <see cref="QueueLobbyState.Waiting"/>).</summary>
-        public bool CanWait { get; }
+        /// <summary>Sırada bekleyenler, geliş sırasıyla (aktif hariç).</summary>
+        public IReadOnlyList<QueueWaitingRowViewModel> Waiting { get; }
 
         /// <summary>Gönder düğmesi (yalnızca <see cref="QueueLobbyState.NoInterest"/>).</summary>
         public bool CanDismiss { get; }
 
-        public string WaitButtonText { get; }
         public string DismissButtonText { get; }
 
         public QueueLobbyViewModel(
-            QueueLobbyState state, string clockText, string progressLine, string statusLine, SaleCustomerCardViewModel customer, string nextArrivalText)
+            QueueLobbyState state, string statusLine, SaleCustomerCardViewModel customer, IEnumerable<QueueWaitingRowViewModel> waiting)
         {
             State = state;
-            ClockText = clockText;
-            ProgressLine = progressLine;
             StatusLine = statusLine;
             Customer = customer;
-            NextArrivalText = nextArrivalText;
-            CanWait = state == QueueLobbyState.Waiting;
+            Waiting = new ReadOnlyCollection<QueueWaitingRowViewModel>(new List<QueueWaitingRowViewModel>(waiting));
             CanDismiss = state == QueueLobbyState.NoInterest;
-            WaitButtonText = TurkishTexts.WaitButton;
             DismissButtonText = TurkishTexts.DismissButton;
+        }
+
+        /// <summary>Ekranın yeniden kurulması gerekip gerekmediğini anlamak için içerik imzası (durum + aktif müşteri + bekleyenler).</summary>
+        public string Signature()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append((int)State).Append('|').Append(Customer == null ? 0L : Customer.CustomerId);
+            foreach (QueueWaitingRowViewModel row in Waiting)
+            {
+                sb.Append('|').Append(row.CustomerId);
+            }
+
+            return sb.ToString();
         }
     }
 

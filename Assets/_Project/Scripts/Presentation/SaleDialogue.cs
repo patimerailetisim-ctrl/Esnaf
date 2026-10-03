@@ -79,6 +79,33 @@ namespace Esnaf.Presentation
             return text.Length == 0 ? text : text.Substring(0, 1).ToUpperInvariant() + text.Substring(1);
         }
 
+        /// <summary>
+        /// Sırada beklerken sabrı tükenen müşterinin çıkış sözü (Gün 12.6; 60 oyun dakikası = 60 gerçek saniye bekledi). Kişiliğe göre ton değişir; SAF metindir.
+        /// <paramref name="storeClosed"/> true ise mağaza kapandığı için çıkıyordur.
+        /// </summary>
+        public static string WaitingLeave(string personalityId, bool storeClosed)
+        {
+            if (storeClosed)
+            {
+                return "Ma\u011Faza kapan\u0131yor galiba abi, yar\u0131n yine u\u011Frar\u0131m.";
+            }
+
+            switch (personalityId)
+            {
+                case "hurried":
+                case "budget_limited":
+                    return "Vaktim yok abi, daha fazla bekleyemem, \u00E7\u0131k\u0131yorum.";
+                case "haggler":
+                    return "Bir saattir bekliyorum abi, ben ba\u015Fka yere bakay\u0131m.";
+                case "indecisive":
+                    return "Hmm\u2026 bu kadar beklenmez, ben bir \u00E7\u0131kay\u0131m.";
+                case "showoff":
+                    return "Ben beklemeye al\u0131\u015F\u0131k de\u011Filim abi, \u00E7\u0131k\u0131yorum.";
+                default:
+                    return "Bir saattir bekliyorum abi, ben \u00E7\u0131kay\u0131m.";
+            }
+        }
+
         public static string Greeting(string personalityId, string model)
         {
             switch (personalityId)
