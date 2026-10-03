@@ -764,6 +764,53 @@ namespace Esnaf.Presentation
             return "Doluluk: " + count.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture);
         }
 
+        // ---- İlanlar pazarı (Gün 13.3) ----
+        public const string InspectButton = "\u0130ncele";
+        public const string DoAppraisalButton = "Ekspertiz Yap";
+        public const string DoNegotiationButton = "Pazarl\u0131k Yap";
+        public const string NoListingsHint = "Yeni ilanlar i\u00E7in g\u00FCn\u00FC bitirebilirsin.";
+        public const string EstimatedHint = "Tahmin, ekspertiz sonucundan gelir; ilan hakk\u0131nda kar\u0131 vermez.";
+        public const string AppraisalNotDone = "Ekspertiz: yap\u0131lmad\u0131";
+
+        public static string ListingsEmptyNote
+        {
+            get { return NoListings + " " + NoListingsHint; }
+        }
+
+        /// <summary>"Kondisyon: 14 ay kullanılmış • Kutu var • Fatura yok [• Acil satış]": yalnızca herkese açık ilan bilgisi (gizli pil/ekran/kasa durumu ekspertizle görülür).</summary>
+        public static string Condition(int ageMonths, bool hasBox, bool hasInvoice, bool urgent)
+        {
+            string text = "Kondisyon: " + ageMonths.ToString(CultureInfo.InvariantCulture) + " ay kullan\u0131lm\u0131\u015F \u2022 "
+                + (hasBox ? "Kutu var" : "Kutu yok") + " \u2022 " + (hasInvoice ? "Fatura var" : "Fatura yok");
+            return urgent ? text + " \u2022 Acil sat\u0131\u015F" : text;
+        }
+
+        public static string AskingFull(Money price)
+        {
+            return "\u0130stenen fiyat: " + MoneyFormatter.Format(price);
+        }
+
+        /// <summary>
+        /// Tahmini değer (Gün 13.3): R (referans fiyat) ve gerçek değer oyuncudan gizli kalır (ListingView gizli bilgi taşımaz); tahmin yalnızca mevcut ekspertiz sisteminin
+        /// değer aralığından gelir. Ekspertiz yoksa "ekspertizle öğrenilir".
+        /// </summary>
+        public static string EstimatedFromAppraisal(Money min, Money max)
+        {
+            return "Tahmini de\u011Fer: " + MoneyFormatter.Format(min) + " \u2013 " + MoneyFormatter.Format(max);
+        }
+
+        public const string EstimatedUnknown = "Tahmini de\u011Fer: ekspertizle \u00F6\u011Frenilir";
+
+        public static string AppraisalDone(string levelName)
+        {
+            return "Ekspertiz: yap\u0131ld\u0131 (" + levelName + ")";
+        }
+
+        public static string AppraisalValueRange(Money min, Money max)
+        {
+            return "Ekspertiz de\u011Fer aral\u0131\u011F\u0131: " + MoneyFormatter.Format(min) + " \u2013 " + MoneyFormatter.Format(max);
+        }
+
         // ---- Global müşteri bildirimi (Gün 13.1) ----
         public const string GoToCustomerButton = "M\u00FC\u015Fteriye Git";
         public const string NoticeDismissButton = "Kapat";

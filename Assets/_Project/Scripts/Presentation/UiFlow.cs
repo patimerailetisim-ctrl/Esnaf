@@ -94,6 +94,9 @@ namespace Esnaf.Presentation
         /// <summary>Raf ekranı (yalnızca CurrentScreen == Shelf iken dolu; aksi halde null). Salt okunurdur.</summary>
         public ShelfScreenViewModel ShelfScreen { get; private set; }
 
+        /// <summary>İlan yoksa gösterilen nazik açıklama (Gün 13.3); ilan varsa null.</summary>
+        public string ListingsEmptyNote { get; private set; }
+
         /// <summary>
         /// Global müşteri bildirimleri (Gün 13.1): hangi ekranda olunursa olunsun gösterilir (en yeni <see cref="MaxNotices"/>). CustomerArrived ile doğar, müşteri
         /// satışa girer/tamamlanır/ayrılırsa güncellenir; ayrılanlar <see cref="LeftNoticeMinutes"/> oyun dakikası görünür kalır. Ekranı değiştirmez.
@@ -1448,7 +1451,7 @@ namespace Esnaf.Presentation
                     selectedListing = listing;
                 }
 
-                rows.Add(ListingRowViewModel.From(listing, _content, selected));
+                rows.Add(ListingRowViewModel.From(listing, _content, selected, _api.GetAppraisals(listing.ListingId)));
             }
 
             if (selectedListing == null)
@@ -1467,7 +1470,7 @@ namespace Esnaf.Presentation
             }
             else
             {
-                Detail = ListingDetailViewModel.From(selectedListing, _content);
+                Detail = ListingDetailViewModel.From(selectedListing, _content, _api.GetAppraisals(selectedListing.ListingId));
                 AppraisalScreen = CurrentScreen == UiScreen.Appraisal
                     ? AppraisalScreenBuilder.Build(selectedListing, _api.GetAppraisals(selectedListing.ListingId), _api.GetDay(), _selectedLevelId, _content, _api)
                     : null;
@@ -1487,6 +1490,7 @@ namespace Esnaf.Presentation
             }
 
             Listings = new ReadOnlyCollection<ListingRowViewModel>(rows);
+            ListingsEmptyNote = rows.Count == 0 ? TurkishTexts.ListingsEmptyNote : null;
 
             IReadOnlyList<StockLine> stock = _api.GetInventory();
             ShelfButtonText = TurkishTexts.ShelfButton(stock.Count, _content.ShelfCapacity);
