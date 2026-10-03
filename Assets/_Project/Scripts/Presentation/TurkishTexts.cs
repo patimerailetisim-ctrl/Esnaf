@@ -764,6 +764,39 @@ namespace Esnaf.Presentation
             return "Doluluk: " + count.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture);
         }
 
+        // ---- Dükkan ana ekranı ve alt navigasyon (Gün 13.4) ----
+        public const string NavShop = "D\u00FCkkan";
+        public const string NavWholesale = "Toptanc\u0131";
+        public const string NavListings = "\u0130lanlar";
+        public const string NavProfile = "Profil";
+        public const string ShopOffSale = "Sat\u0131\u015Fta de\u011Fil";
+        public const string ShopOffSaleHeader = "SATI\u015E D\u0130\u015EI / F\u0130YATSIZ";
+        public const string ShopShelfEmpty = "Rafta telefon yok. \u0130lanlar'dan telefon alabilirsin.";
+        public const string ShopAccessoriesEmpty = "Aksesuar stoku bo\u015F. Toptanc\u0131'dan alabilirsin.";
+        public const string ShopCustomerHeader = "M\u00DC\u015ETER\u0130";
+        public const string ShopNoCustomer = "\u015Eu an ma\u011Fazada m\u00FC\u015Fteri yok.";
+        public const string ProfilePlaceholder = "Profil ekran\u0131 yak\u0131nda.";
+
+        public static string ShopShelfHeader(int count, int capacity)
+        {
+            return "RAF  " + count.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ShopAccessoryHeader(int units, int capacity)
+        {
+            return "AKSESUARLAR  " + units.ToString(CultureInfo.InvariantCulture) + "/" + capacity.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ShopCustomerTitle(string name)
+        {
+            return "M\u00FC\u015Fteri ma\u011Fazada: " + name;
+        }
+
+        public static string ShopWaiting(int count)
+        {
+            return "S\u0131rada " + count.ToString(CultureInfo.InvariantCulture) + " m\u00FC\u015Fteri daha var";
+        }
+
         // ---- İlanlar pazarı (Gün 13.3) ----
         public const string InspectButton = "\u0130ncele";
         public const string DoAppraisalButton = "Ekspertiz Yap";

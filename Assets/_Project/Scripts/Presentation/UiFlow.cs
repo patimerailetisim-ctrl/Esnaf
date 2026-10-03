@@ -28,6 +28,7 @@ namespace Esnaf.Presentation
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private double _clockRemainder;
         private readonly List<NoticeState> _notices = new List<NoticeState>();
+        private UiScreen _shelfBack = UiScreen.Listings;
         private long? _shelfSelectedId;
         private long _shelfPriceTl;
         private string _lastSignature = string.Empty;
@@ -93,6 +94,12 @@ namespace Esnaf.Presentation
 
         /// <summary>Raf ekranı (yalnızca CurrentScreen == Shelf iken dolu; aksi halde null). Salt okunurdur.</summary>
         public ShelfScreenViewModel ShelfScreen { get; private set; }
+
+        /// <summary>Dükkan ana ekranı (Gün 13.4); yalnızca Dükkan ekranındayken dolu, aksi halde null.</summary>
+        public ShopScreenViewModel ShopScreen { get; private set; }
+
+        /// <summary>Kalıcı alt navigasyon (Gün 13.4): Dükkan | Toptancı | İlanlar | Profil; aktif sekme şu anki ekrandan türer.</summary>
+        public NavBarViewModel Nav { get; private set; } = new NavBarViewModel(NavTab.Listings);
 
         /// <summary>İlan yoksa gösterilen nazik açıklama (Gün 13.3); ilan varsa null.</summary>
         public string ListingsEmptyNote { get; private set; }
@@ -233,7 +240,11 @@ namespace Esnaf.Presentation
             {
                 _shelfSelectedId = null; // fiyat paneli açıksa önce o kapanır
             }
-            else if (CurrentScreen == UiScreen.Detail || CurrentScreen == UiScreen.Shelf)
+            else if (CurrentScreen == UiScreen.Shelf)
+            {
+                CurrentScreen = _shelfBack; // Dükkan'dan açıldıysa Dükkan'a, İlanlar'dan açıldıysa İlanlar'a
+            }
+            else if (CurrentScreen == UiScreen.Detail)
             {
                 CurrentScreen = UiScreen.Listings;
             }
@@ -484,6 +495,7 @@ namespace Esnaf.Presentation
             }
 
             CurrentScreen = UiScreen.Shelf;
+            _shelfBack = UiScreen.Listings;
             _shelfSelectedId = null;
             StatusMessage = null;
             Rebuild();
@@ -1118,7 +1130,120 @@ namespace Esnaf.Presentation
                 notices.Append(notice.CustomerId).Append(notice.IsLeft ? 'L' : 'A').Append(',');
             }
 
-            return QueueButtonText + "\u0001" + StatusMessage + "\u0001" + queue + "\u0001" + (int)CurrentScreen + "\u0001" + notices;
+            string shop = ShopScreen == null ? string.Empty : ShopScreen.Signature();
+            return shop + "\u0002" + QueueButtonText + "\u0001" + StatusMessage + "\u0001" + queue + "\u0001" + (int)CurrentScreen + "\u0001" + notices;
+        }
+
+        // ---------- Dükkan ve kalıcı alt navigasyon (Gün 13.4) ----------
+
+        // Şu anki ekranın ait olduğu sekme: Dükkan (raf, satış/müşteri), Toptancı (aksesuar stoğu dahil), İlanlar (detay/ekspertiz/pazarlık dahil), Profil.
+        private static NavTab ActiveTabOf(UiScreen screen)
+        {
+            switch (screen)
+            {
+                case UiScreen.Shop:
+                case UiScreen.Shelf:
+                case UiScreen.Sale:
+                    return NavTab.Shop;
+                case UiScreen.Wholesale:
+                case UiScreen.AccessoryStock:
+                    return NavTab.Wholesale;
+                case UiScreen.Profile:
+                    return NavTab.Profile;
+                default:
+                    return NavTab.Listings;
+            }
+        }
+
+        // Ekran değiştirir: süren bir satış yoksa satış ekranı durumu sıfırlanır; Raf seçimi bırakılır. Süren pazarlık/satış oyunda açık kalır (Geri'deki gibi).
+        private void NavigateTo(UiScreen target)
+        {
+            if (CurrentScreen == UiScreen.Sale && target != UiScreen.Sale && _api.GetSale() == null)
+            {
+                ResetSaleState();
+            }
+
+            _shelfSelectedId = null;
+            CurrentScreen = target;
+            StatusMessage = null;
+            Rebuild();
+            RaiseChanged();
+        }
+
+        /// <summary>Alt navigasyon: Dükkan ana ekranı. Her ekrandan çalışır.</summary>
+        public void GoToShop()
+        {
+            NavigateTo(UiScreen.Shop);
+        }
+
+        /// <summary>Alt navigasyon: mevcut Toptancı ekranı. Her ekrandan çalışır.</summary>
+        public void GoToWholesale()
+        {
+            NavigateTo(UiScreen.Wholesale);
+        }
+
+        /// <summary>Alt navigasyon: mevcut İlanlar ekranı. Her ekrandan çalışır.</summary>
+        public void GoToListings()
+        {
+            NavigateTo(UiScreen.Listings);
+        }
+
+        /// <summary>Alt navigasyon: Profil (Gün 13.4'te yer tutucu).</summary>
+        public void GoToProfile()
+        {
+            NavigateTo(UiScreen.Profile);
+        }
+
+        /// <summary>Alt navigasyon sekmesine gider.</summary>
+        public void GoToTab(NavTab tab)
+        {
+            switch (tab)
+            {
+                case NavTab.Shop:
+                    GoToShop();
+                    break;
+                case NavTab.Wholesale:
+                    GoToWholesale();
+                    break;
+                case NavTab.Listings:
+                    GoToListings();
+                    break;
+                default:
+                    GoToProfile();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Dükkan'da bir telefona dokunmak: mevcut Raf ekranının fiyat/satıştan çıkarma panelini o telefon seçili olarak açar (Geri Dükkan'a döner). Dükkan ekranında değilse ya da
+        /// ürün rafta yoksa hiçbir şey yapmaz (false).
+        /// </summary>
+        public bool OpenShelfItemFromShop(long instanceId)
+        {
+            if (CurrentScreen != UiScreen.Shop || FindStockLine(instanceId) == null)
+            {
+                return false;
+            }
+
+            CurrentScreen = UiScreen.Shelf;
+            _shelfBack = UiScreen.Shop;
+            _shelfSelectedId = null;
+            StatusMessage = null;
+            return SelectShelfItem(instanceId);
+        }
+
+        /// <summary>
+        /// Dükkan'daki aktif müşteriye gider ("Müşteriye Git"): mevcut satış akışı (ilgilendiği ürün varsa konuşma doğrudan açılır, değilse Müşteriler lobisi). Aktif müşteri yoksa ekran değişmez.
+        /// </summary>
+        public Result GoToActiveCustomer()
+        {
+            CustomerView active = _api.GetActiveCustomer();
+            if (active == null)
+            {
+                return Result.Fail("ui.no_active_customer", "There is no active customer.");
+            }
+
+            return OpenCustomerSale(active.CustomerId);
         }
 
         private sealed class NoticeState
@@ -1164,6 +1289,12 @@ namespace Esnaf.Presentation
                 return Result.Fail("ui.notice_unknown", "There is no notice for this customer.");
             }
 
+            return OpenCustomerSale(customerId);
+        }
+
+        // Müşteriyle mevcut satış akışını açar: süren satış varsa devam eder; müşteri aktif ve ilgili ise konuşma başlar, aksi halde Müşteriler lobisi.
+        private Result OpenCustomerSale(long customerId)
+        {
             CurrentScreen = UiScreen.Sale;
             StatusMessage = null;
             SaleView running = _api.GetSale();
@@ -1459,7 +1590,8 @@ namespace Esnaf.Presentation
                 _selectedListingId = null;
                 _selectedLevelId = null;
                 if (CurrentScreen != UiScreen.Shelf && CurrentScreen != UiScreen.Sale
-                    && CurrentScreen != UiScreen.Wholesale && CurrentScreen != UiScreen.AccessoryStock)
+                    && CurrentScreen != UiScreen.Wholesale && CurrentScreen != UiScreen.AccessoryStock
+                    && CurrentScreen != UiScreen.Shop && CurrentScreen != UiScreen.Profile)
                 {
                     CurrentScreen = UiScreen.Listings;
                 }
@@ -1503,6 +1635,8 @@ namespace Esnaf.Presentation
             AccessoryStockScreen = CurrentScreen == UiScreen.AccessoryStock ? WholesaleScreenBuilder.BuildStock(_api) : null;
             SaleScreen = CurrentScreen == UiScreen.Sale ? SaleScreenBuilder.Build(_api, _content, _sale) : null;
             BuildNotices();
+            ShopScreen = CurrentScreen == UiScreen.Shop ? ShopScreenBuilder.Build(_api, _content) : null;
+            Nav = new NavBarViewModel(ActiveTabOf(CurrentScreen));
         }
 
         private ShelfScreenViewModel BuildShelf(IReadOnlyList<StockLine> stock)

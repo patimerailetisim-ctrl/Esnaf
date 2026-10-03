@@ -10,6 +10,12 @@ namespace Esnaf.Presentation
         Shelf = 4,
         Sale = 5,
         Wholesale = 6,
-        AccessoryStock = 7
+        AccessoryStock = 7,
+
+        /// <summary>Dükkan ana ekranı (Gün 13.4): raf, aksesuarlar, aktif müşteri. Satış ekranı değildir.</summary>
+        Shop = 8,
+
+        /// <summary>Profil (Gün 13.4: yer tutucu; Gün 13.5'te yapılacak).</summary>
+        Profile = 9
     }
 }

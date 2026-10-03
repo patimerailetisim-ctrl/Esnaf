@@ -39,7 +39,7 @@ namespace Esnaf.App.Ui
 
             RectTransform root = UiBuilder.CreatePanel(canvas, "AppraisalScreen", UiTheme.Background);
             _root = root.gameObject;
-            UiBuilder.Stretch(root, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(0f, -TopBarView.Height));
+            UiBuilder.Stretch(root, Vector2.zero, Vector2.one, new Vector2(0f, NavBarView.Height), new Vector2(0f, -TopBarView.Height));
 
             // Gövde (kaydırılır): başlık ile eylem çubuğu arasında.
             _content = UiBuilder.CreateVerticalList(root, "Body", UiTheme.Background, 24f, Gutter);

@@ -40,6 +40,9 @@ namespace Esnaf.App
         private WholesalePanelView _wholesale;
         private AccessoryStockPanelView _accessoryStock;
         private CustomerNoticeView _notices;
+        private ShopView _shop;
+        private ProfileView _profile;
+        private NavBarView _nav;
 
         private void Awake()
         {
@@ -110,11 +113,14 @@ namespace Esnaf.App
             _sale = new SalePanelView(canvas.transform, _flow);
             _wholesale = new WholesalePanelView(canvas.transform, _flow);
             _accessoryStock = new AccessoryStockPanelView(canvas.transform, _flow);
+            _shop = new ShopView(canvas.transform, _flow);
+            _profile = new ProfileView(canvas.transform, _flow);
             _topBar = new TopBarView(canvas.transform);
+            _nav = new NavBarView(canvas.transform, _flow); // kalıcı alt navigasyon (Gün 13.4)
             _notices = new CustomerNoticeView(canvas.transform, _flow); // en üstte: her ekranda görünen müşteri bildirimi (Gün 13.1)
             _flow.Changed += ShowScreen;
             _flow.ClockTicked += ShowClock;
-            ShowScreen();
+            _flow.GoToShop(); // oyun ana Dükkan ekranıyla açılır (Gün 13.4); ShowScreen Changed ile çalışır
         }
 
         // Gün 12.6: saat kendiliğinden akar (1 gerçek saniye = 3 oyun dakikası). Gerçek zaman yalnızca burada okunur; kural UiFlow/IGameApi'dedir.
@@ -190,6 +196,9 @@ namespace Esnaf.App
             _sale.Show();
             _wholesale.Show();
             _accessoryStock.Show();
+            _shop.Show();
+            _profile.Show();
+            _nav.Show();
             _notices.Show();
         }
     }

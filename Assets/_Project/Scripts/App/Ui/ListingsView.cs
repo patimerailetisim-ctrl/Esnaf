@@ -33,7 +33,7 @@ namespace Esnaf.App.Ui
 
             RectTransform root = UiBuilder.CreatePanel(canvas, "ListingsScreen", new Color(0.09f, 0.1f, 0.13f, 1f));
             _root = root.gameObject;
-            UiBuilder.Stretch(root, Vector2.zero, Vector2.one, new Vector2(0f, 0f), new Vector2(0f, -TopBarView.Height));
+            UiBuilder.Stretch(root, Vector2.zero, Vector2.one, new Vector2(0f, NavBarView.Height), new Vector2(0f, -TopBarView.Height));
 
             Text title = UiBuilder.CreateText(root, "Title", 56, TextAnchor.MiddleLeft, Color.white);
             title.text = TurkishTexts.ListingsTitle;

@@ -35,7 +35,7 @@ namespace Esnaf.App.Ui
 
             RectTransform root = UiBuilder.CreatePanel(canvas, "NegotiationScreen", new Color(0.09f, 0.1f, 0.13f, 1f));
             _root = root.gameObject;
-            UiBuilder.Stretch(root, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(0f, -TopBarView.Height));
+            UiBuilder.Stretch(root, Vector2.zero, Vector2.one, new Vector2(0f, NavBarView.Height), new Vector2(0f, -TopBarView.Height));
 
             Button back = UiBuilder.CreateButton(root, "BackButton", TurkishTexts.BackButton, 44, new Color(0.3f, 0.33f, 0.42f, 1f), () => _flow.Back());
             UiBuilder.Stretch(back.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0.3f, 1f), new Vector2(40f, -BackHeight - 20f), new Vector2(0f, -20f));
