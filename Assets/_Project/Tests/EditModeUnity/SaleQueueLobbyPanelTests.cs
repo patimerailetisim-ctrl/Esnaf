@@ -78,7 +78,7 @@ namespace Esnaf.App.Tests
         }
 
         // Oturum: raflı (ilk müşterisi geldiğinde ilgilendiği ürün vardır) ya da fiyatı çok yüksek ürünlü (ilk müşteri gelir ama hiçbir ürüne ilgi duymaz).
-        private void Build(bool interested)
+        private void Build(bool interested, int maxGapToSecond = int.MaxValue)
         {
             LoadContent();
             _session = null;
@@ -89,10 +89,16 @@ namespace Esnaf.App.Tests
                 return;
             }
 
-            for (ulong seed = 1; seed <= 400 && _session == null; seed++)
+            for (ulong seed = 1; seed <= 1500 && _session == null; seed++)
             {
                 GameSession probe = WithShelf(seed);
-                QueuedCustomer first = probe.CustomerQueue.PlanFor(probe.Time.Day)[0];
+                IReadOnlyList<QueuedCustomer> plan = probe.CustomerQueue.PlanFor(probe.Time.Day);
+                QueuedCustomer first = plan[0];
+                if (plan[1].ArrivalMinute - first.ArrivalMinute > maxGapToSecond)
+                {
+                    continue;
+                }
+
                 probe.Api.AdvanceTime(first.ArrivalMinute - probe.Api.GetClock().MinuteOfDay);
                 CustomerView v = probe.Api.GetActiveCustomer();
                 if (v != null && v.InstanceId != 0)
@@ -196,11 +202,16 @@ namespace Esnaf.App.Tests
             Assert.AreEqual(TurkishTexts.NoCustomersButton, Find("CustomersButton").GetComponentInChildren<Text>().text);
 
             QueuedCustomer first = _session.CustomerQueue.PlanFor(1)[0];
-            _flow.OpenCustomers();
+            // İlanlar ekranında kalınır: düğme yalnızca bu ekranda görünür/aktiftir (OpenCustomers listeyi gizler, Find() de pasif nesneleri bulmaz).
             TickToArrival(first);
 
             string expected = TurkishTexts.CustomerArrivedButton(_flow.Content.CustomerName(first.CustomerId, first.NpcId));
-            Assert.AreEqual(expected, Find("CustomersButton").GetComponentInChildren<Text>().text);
+            string text = Find("CustomersButton").GetComponentInChildren<Text>().text;
+            Assert.AreEqual(expected, text, "ana buton kuyruk durumunu gösterir");
+            StringAssert.DoesNotContain(TurkishTexts.CustomersButton(_session.Api.GetCustomers().Count), text, "eski slot sayısı yok");
+            StringAssert.DoesNotContain(first.ArrivalText, text, "geliş saati yok");
+            StringAssert.DoesNotContain("Sıradaki", text);
+            StringAssert.DoesNotContain("Bekle", text);
         }
 
         [Test]
@@ -223,12 +234,8 @@ namespace Esnaf.App.Tests
         [Test]
         public void AQueuedCustomer_IsListedLive_WithTheirEntryTime()
         {
-            Build(true);
+            Build(true, 45); // ilk iki müşteri 45 dk'dan yakın gelen tohum: ikincisi birincinin sabrı bitmeden kuyruğa girer
             IReadOnlyList<QueuedCustomer> plan = _session.CustomerQueue.PlanFor(1);
-            if (plan[1].ArrivalMinute - plan[0].ArrivalMinute > 55)
-            {
-                Assert.Inconclusive("Bu tohumda ilk iki müşteri 55 dakikadan uzak aralıkla geliyor.");
-            }
 
             _flow.OpenCustomers();
             TickToArrival(plan[1]);
