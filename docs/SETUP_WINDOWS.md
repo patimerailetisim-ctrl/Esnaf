@@ -30,7 +30,7 @@ Bu repodaki kod ve testler bulut ortamında yazıldı ve **.NET ile çalıştır
    - **Newtonsoft Json:** `+` → *Add package by name* → `com.unity.nuget.newtonsoft-json`
    - **Test Framework** yüklü olmalı.
 5. Unity'de konsolda **kırmızı hata olmamalı.** Olursa hata metnini ilet.
-6. **Window → General → Test Runner → EditMode → Run All.** Beklenen: `Esnaf.Domain.Tests` altında **tüm testler geçer** (Core: 96, Day 9 sonrası toplam: 3125).
+6. **Window → General → Test Runner → EditMode → Run All.** Beklenen: `Esnaf.Domain.Tests` altında **tüm testler geçer** (Core: 96, Gün 14 sonrası toplam: 3152).
 7. Unity'nin oluşturduğu dosyaları commit'le (`.meta`, `Packages/manifest.json`, `ProjectSettings/`).
 
 ## 3. Testleri Unity'siz çalıştırma
@@ -39,4 +39,14 @@ Bu repodaki kod ve testler bulut ortamında yazıldı ve **.NET ile çalıştır
 cd D:\ESNAF\tools\dotnet-tests
 dotnet test Esnaf.sln
 ```
-Beklenen: `Passed! - Failed: 0, Passed: 3125`. Bu, Unity'deki testlerin **aynı dosyalarını** çalıştırır.
+Beklenen: `Passed! - Failed: 0, Passed: 3152`. Bu, Unity'deki testlerin **aynı dosyalarını** çalıştırır.
+
+## Yeni telefon modeli eklemek (kod değişikliği yok)
+
+Telefon toptancısı veri odaklıdır (`ProductDefinition → WholesaleOffer → Paket → Envanter`). Yeni telefon için yalnızca içerik:
+
+1. `Content/Data/phone_models.json` (+ `content_id_manifest.json` kimliği): modeli tanımla.
+2. `PhoneImageCatalog` / `Art/Phones/<ModelKey>`: görselini ekle.
+3. `Content/Data/wholesale.json`: `{ "productId": "...", "unitCost": ..., "packSize": ..., "availableFromDay": 1, "suggestedRetail": ... }` satırı ekle.
+
+Fiyat türetimi: `unitCost` = sıfır telefon değerinin %90'ı (10'a yuvarlı), `suggestedRetail` = sıfır telefon değeri; paket boyutu segmente göre (giriş 10, orta 5, üst 3).

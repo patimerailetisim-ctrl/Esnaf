@@ -48,6 +48,23 @@ namespace Esnaf.Tests.Game
 
                     text = root.ToString();
                 }
+                else if (name == ContentFileNames.Wholesale)
+                {
+                    // Gün 14: telefon toptan teklifleri model kimliğine başvurur; bir modeli içerikten kaldıran, onun toptan teklifini de kaldırır (aksi halde içerik doğrulaması reddeder).
+                    JObject root = JObject.Parse(text);
+                    foreach (JToken supplier in (JArray)root["suppliers"])
+                    {
+                        foreach (JToken offer in ((JArray)supplier["offers"]).ToList())
+                        {
+                            if ((string)offer["productId"] == modelId)
+                            {
+                                offer.Remove();
+                            }
+                        }
+                    }
+
+                    text = root.ToString();
+                }
 
                 source.Add(name, text);
             }

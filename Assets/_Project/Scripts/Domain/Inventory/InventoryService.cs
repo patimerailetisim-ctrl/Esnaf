@@ -89,6 +89,77 @@ namespace Esnaf.Domain.Inventory
             return Result.Ok();
         }
 
+        /// <summary>Envantere <paramref name="quantity"/> yeni birim sığar mı? Sığmazsa inventory.full; hiçbir şeyi değiştirmez (toptancı, para yazmadan önce sorar).</summary>
+        public Result<IReadOnlyList<long>> CanReceive(int quantity)
+        {
+            if (quantity <= 0)
+            {
+                return Result<IReadOnlyList<long>>.Fail("amount.invalid", "A pack needs a positive quantity.");
+            }
+
+            if (_state.Count + quantity > _state.Capacity)
+            {
+                return Result<IReadOnlyList<long>>.Fail("inventory.full", "The shelf has " + (_state.Capacity - _state.Count) + " free slots; the pack has " + quantity + ".");
+            }
+
+            return Result<IReadOnlyList<long>>.Ok(new ReadOnlyCollection<long>(new List<long>()));
+        }
+
+        /// <summary>
+        /// Toptancıdan gelen YENİ birimleri doğrudan envantere alır (Gün 14): her birim ayrı bir ProductInstance'tır (<paramref name="template"/>'ten kopya, kendi kimliği), maliyet tabanı = birim maliyet,
+        /// konum Inventory, etiket fiyatı 0 (oyuncu Raf'tan fiyatlar). Parayı/defteri YAZMAZ (çağıran, örneğin PhoneWholesaleService, tek defter satırını yazar). ATOMİKTİR: kapasite önceden doğrulanır;
+        /// yetmiyorsa hiçbir şey eklenmez (inventory.full). Başarıda yeni kimlikleri döner.
+        /// </summary>
+        public Result<IReadOnlyList<long>> Receive(ProductInstance template, int quantity, Money unitCost, int day, Esnaf.Core.IdGenerator instanceIds)
+        {
+            if (template == null || instanceIds == null || quantity <= 0 || unitCost.IsNegative)
+            {
+                return Result<IReadOnlyList<long>>.Fail("amount.invalid", "A received pack needs a template, a positive quantity and a non-negative unit cost.");
+            }
+
+            if (_state.Count + quantity > _state.Capacity)
+            {
+                return Result<IReadOnlyList<long>>.Fail("inventory.full", "The shelf has " + (_state.Capacity - _state.Count) + " free slots; the pack has " + quantity + ".");
+            }
+
+            var ids = new List<long>(quantity);
+            for (int i = 0; i < quantity; i++)
+            {
+                var unit = new ProductInstance
+                {
+                    InstanceId = instanceIds.Next(),
+                    DefinitionId = template.DefinitionId,
+                    StorageGb = template.StorageGb,
+                    AgeMonths = template.AgeMonths,
+                    SellerNpcId = template.SellerNpcId,
+                    ListingId = 0,
+                    AcquiredDay = day,
+                    PurchasePrice = unitCost,
+                    CostBasis = unitCost,
+                    ListPrice = Money.Zero,
+                    Location = ProductLocation.Inventory
+                };
+                foreach (KeyValuePair<string, AttributeValue> pair in template.Attributes)
+                {
+                    unit.Attributes[pair.Key] = pair.Value;
+                }
+
+                _store.Add(unit);
+                _state.Add(unit.InstanceId);
+                ids.Add(unit.InstanceId);
+            }
+
+            if (_events != null)
+            {
+                foreach (long id in ids)
+                {
+                    _events.Publish(new ItemAddedToShelf(id));
+                }
+            }
+
+            return Result<IReadOnlyList<long>>.Ok(new ReadOnlyCollection<long>(ids));
+        }
+
         /// <summary>Raftaki ürüne etiket fiyatı koyar/değiştirir (GDD v0.3 3.5 ItemPriced). Etiketsiz ürüne müşteri ilgilenmez.</summary>
         public Result SetPrice(long instanceId, Money price)
         {

@@ -363,6 +363,62 @@ namespace Esnaf.Presentation
             }
         }
 
+        // ---- Telefon toptancısı (Gün 14) ----
+        public const string PhonesHeader = "Telefonlar";
+        public const string PhoneConditionNew = "S\u0131f\u0131r";
+
+        public static string PhoneUnitCost(Money unitCost)
+        {
+            return MoneyFormatter.Format(unitCost) + " / adet";
+        }
+
+        public static string PhoneQuantity(int packSize)
+        {
+            return packSize.ToString(CultureInfo.InvariantCulture) + " adet";
+        }
+
+        public static string PhonePackPrice(Money packCost)
+        {
+            return "Paket: " + MoneyFormatter.Format(packCost);
+        }
+
+        public static string PhoneSuggestedRetail(Money retail)
+        {
+            return "\u00D6nerilen sat\u0131\u015F: " + MoneyFormatter.Format(retail);
+        }
+
+        public static string PhoneBuyButton(int packSize)
+        {
+            return packSize.ToString(CultureInfo.InvariantCulture) + " ADET AL";
+        }
+
+        public static string PhonePackAdded(int quantity, string model)
+        {
+            return quantity.ToString(CultureInfo.InvariantCulture) + " adet " + model + " rafa eklendi. Raf'tan fiyat belirleyebilirsin.";
+        }
+
+        /// <summary>Telefon paketi alış hatası (Türkçe). Bilinmeyen kod genel mesaja düşer.</summary>
+        public static string PhoneWholesaleError(string code, int opensOnDay)
+        {
+            switch (code)
+            {
+                case "cash.insufficient":
+                    return "Bu paketi almak i\u00E7in yeterli paran yok.";
+                case "inventory.full":
+                    return "Rafta yeterli yer yok; paket b\u00F6l\u00FCnemez.";
+                case "wholesale.not_available_yet":
+                    return OpensOnNote(opensOnDay);
+                case "supplier.unknown":
+                case "product.unknown":
+                case "offer.unknown":
+                    return "Bu teklif art\u0131k yok.";
+                case "amount.invalid":
+                    return "Bu paketin tutar\u0131 ge\u00E7ersiz.";
+                default:
+                    return Error(code);
+            }
+        }
+
         public static string StockCapacityLine(int units, int capacity)
         {
             return "Stok: " + units.ToString(CultureInfo.InvariantCulture) + " / " + capacity.ToString(CultureInfo.InvariantCulture) + " adet";

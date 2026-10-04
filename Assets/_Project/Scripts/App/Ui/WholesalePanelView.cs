@@ -75,9 +75,66 @@ namespace Esnaf.App.Ui
                 UiKit.Label(note, "Note", screen.EmptyNote, 40, UiTheme.Muted, false, TextAnchor.MiddleCenter);
             }
 
+            if (screen.PhonesHeader != null)
+            {
+                Text header = UiKit.Label(_content, "PhonesHeader", screen.PhonesHeader, 52, UiTheme.Ink, true);
+                UiKit.Size2(header.rectTransform, 0f, 90f);
+                foreach (PhoneOfferRowViewModel phone in screen.PhoneOffers)
+                {
+                    AddPhoneOffer(phone);
+                }
+            }
+
             foreach (WholesaleOfferRowViewModel offer in screen.Offers)
             {
                 AddOffer(offer);
+            }
+        }
+
+        /// <summary>Telefon teklifi kartı: tüm modeller aynı yapıdan gelir (görsel, ad, Sıfır, birim fiyat, adet, paket fiyatı, düğme).</summary>
+        private void AddPhoneOffer(PhoneOfferRowViewModel offer)
+        {
+            RectTransform card = UiKit.Card(_content, "PhoneOffer_" + offer.ProductId, UiTheme.Card);
+            UiKit.Size2(card, 0f, 330f);
+
+            RectTransform image = UiBuilder.CreatePanel(card, "Image", UiTheme.Card);
+            UiBuilder.Stretch(image, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(24f, 24f), new Vector2(204f, -24f));
+            image.gameObject.AddComponent<RectMask2D>();
+            var phone = new GameObject("Phone", typeof(RectTransform)).GetComponent<RectTransform>();
+            phone.SetParent(image, false);
+            phone.anchorMin = new Vector2(0.5f, 0.5f);
+            phone.anchorMax = new Vector2(0.5f, 0.5f);
+            phone.sizeDelta = new Vector2(700f, 700f);
+            phone.localScale = new Vector3(0.26f, 0.26f, 1f);
+            PhoneMockView.Draw(phone, offer.ProductId, PhoneAngle.Front);
+
+            Text name = UiKit.Label(card, "Name", offer.Name + "  \u2022  " + offer.ConditionLine, 44, UiTheme.Ink, true);
+            UiBuilder.Stretch(name.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(228f, -84f), new Vector2(-24f, -16f));
+
+            string retail = offer.RetailLine == null ? string.Empty : "\n" + offer.RetailLine;
+            Text lines = UiKit.Label(card, "Lines", offer.UnitCostLine + "\n" + offer.QuantityLine + "\n" + offer.PackPriceLine + retail, 32, UiTheme.Muted);
+            lines.lineSpacing = 1.1f;
+            UiBuilder.Stretch(lines.rectTransform, new Vector2(0f, 0f), new Vector2(0.58f, 1f), new Vector2(228f, 16f), new Vector2(-4f, -90f));
+
+            string supplierId = offer.SupplierId;
+            string productId = offer.ProductId;
+            bool enabled = offer.IsButtonEnabled;
+            Button button = UiKit.RoundedButton(
+                card, "BuyPhone_" + productId, "[" + offer.ButtonText + "]", 34, enabled ? UiTheme.Gold : UiTheme.Disabled, enabled ? UiTheme.Ink : UiTheme.Muted,
+                () => _flow.BuyPhonePack(supplierId, productId));
+            button.interactable = enabled;
+            button.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            if (enabled)
+            {
+                UiKit.AddShadow(button.gameObject, 0.18f, 6f);
+            }
+
+            UiBuilder.Stretch(button.GetComponent<RectTransform>(), new Vector2(0.59f, 0f), new Vector2(1f, 0f), new Vector2(4f, 24f), new Vector2(-24f, 130f));
+
+            if (offer.LockNote != null)
+            {
+                Text note = UiKit.Label(card, "LockNote", offer.LockNote, 28, UiTheme.Warn, false, TextAnchor.MiddleRight);
+                UiBuilder.Stretch(note.rectTransform, new Vector2(0.45f, 0f), new Vector2(1f, 0f), new Vector2(0f, 134f), new Vector2(-24f, 190f));
             }
         }
 

@@ -524,7 +524,14 @@ namespace Esnaf.Domain.Content
 
     internal sealed class WholesaleOfferDto
     {
+        /// <summary>Aksesuar teklifi için aksesuar kimliği (productId ile birlikte VERİLMEZ).</summary>
         public string AccessoryId { get; set; }
+
+        /// <summary>Ürün/telefon teklifi için ProductDefinition kimliği (accessoryId ile birlikte VERİLMEZ).</summary>
+        public string ProductId { get; set; }
+
+        /// <summary>İsteğe bağlı önerilen satış fiyatı (yalnızca ürün teklifleri; toptan maliyetten bağımsız).</summary>
+        public long? SuggestedRetail { get; set; }
         public long? UnitCost { get; set; }
         public int? PackSize { get; set; }
         public int? AvailableFromDay { get; set; }

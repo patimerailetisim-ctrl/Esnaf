@@ -628,15 +628,22 @@ namespace Esnaf.Domain.Content
             }
         }
 
-        /// <summary>Toptan tekliflerini denetler: toptancı kimliği/adı, aksesuar başvurusu, aynı toptancıda tekrar yok, pozitif birim maliyet, paket &gt; 0, açılış günü ≥ 1.</summary>
-        public static void ValidateWholesale(WholesaleCatalog wholesale, AccessoryCatalog accessories, string fileName, ICollection<ContentIssue> issues)
+        /// <summary>
+        /// Toptan tekliflerini denetler: toptancı kimliği/adı, kalem başvurusu (aksesuar: accessories.json; ürün: <paramref name="phoneProductIds"/> verilmişse telefon sektöründeki ürünler),
+        /// aynı toptancıda aynı kalemin tekrarı yok, pozitif birim maliyet, paket &gt; 0, açılış günü ≥ 1, önerilen satış negatif değil. Telefon teklifleri de aynı kurallardan geçer; modele özel kural yoktur.
+        /// </summary>
+        public static void ValidateWholesale(
+            WholesaleCatalog wholesale, AccessoryCatalog accessories, string fileName, ICollection<ContentIssue> issues, IReadOnlyCollection<string> phoneProductIds = null)
         {
             var supplierNames = new Dictionary<string, string>(StringComparer.Ordinal);
             var seenOffers = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < wholesale.Offers.Count; i++)
+            HashSet<string> products = phoneProductIds == null ? null : new HashSet<string>(phoneProductIds, StringComparer.Ordinal);
+            for (int i = 0; i < wholesale.AllOffers.Count; i++)
             {
-                WholesaleOffer o = wholesale.Offers[i];
-                string label = (o.SupplierId ?? "supplier") + " / " + (o.AccessoryId ?? "offers[" + i + "]");
+                WholesaleOffer o = wholesale.AllOffers[i];
+                bool isProduct = o.Kind == WholesaleItemKind.Product;
+                string itemId = o.ItemId;
+                string label = (o.SupplierId ?? "supplier") + " / " + (itemId ?? "offers[" + i + "]");
 
                 if (string.IsNullOrEmpty(o.SupplierId) || !SupplierIdFormat.IsMatch(o.SupplierId))
                 {
@@ -659,15 +666,32 @@ namespace Esnaf.Domain.Content
 
                 WholesaleField(issues, fileName, label, "supplier name", !string.IsNullOrWhiteSpace(o.SupplierName), "must not be empty.");
 
-                AccessoryDefinition definition;
-                if (!accessories.TryGet(o.AccessoryId, out definition))
+                if (isProduct)
                 {
-                    issues.Add(ContentIssue.Error(
-                        ContentIssueCodes.WholesaleReferenceMissing, fileName, label + ": accessoryId '" + o.AccessoryId + "' is not defined in " + ContentFileNames.Accessories + "."));
+                    if (products != null && !products.Contains(itemId))
+                    {
+                        issues.Add(ContentIssue.Error(
+                            ContentIssueCodes.WholesaleReferenceMissing, fileName, label + ": productId '" + itemId + "' is not a phone model defined in " + ContentFileNames.PhoneModels + "."));
+                    }
+                    else if (!seenOffers.Add("product|" + o.SupplierId + "|" + itemId))
+                    {
+                        issues.Add(ContentIssue.Error(ContentIssueCodes.WholesaleOfferDuplicate, fileName, label + ": this supplier already offers this phone model."));
+                    }
+
+                    WholesaleField(issues, fileName, label, "suggestedRetail", !o.SuggestedRetail.IsNegative, "must not be negative.");
                 }
-                else if (!seenOffers.Add(o.SupplierId + "|" + o.AccessoryId))
+                else
                 {
-                    issues.Add(ContentIssue.Error(ContentIssueCodes.WholesaleOfferDuplicate, fileName, label + ": this supplier already offers this accessory."));
+                    AccessoryDefinition definition;
+                    if (!accessories.TryGet(o.AccessoryId, out definition))
+                    {
+                        issues.Add(ContentIssue.Error(
+                            ContentIssueCodes.WholesaleReferenceMissing, fileName, label + ": accessoryId '" + o.AccessoryId + "' is not defined in " + ContentFileNames.Accessories + "."));
+                    }
+                    else if (!seenOffers.Add("accessory|" + o.SupplierId + "|" + o.AccessoryId))
+                    {
+                        issues.Add(ContentIssue.Error(ContentIssueCodes.WholesaleOfferDuplicate, fileName, label + ": this supplier already offers this accessory."));
+                    }
                 }
 
                 WholesaleField(issues, fileName, label, "unitCost", o.UnitCost.IsPositive, "must be positive.");

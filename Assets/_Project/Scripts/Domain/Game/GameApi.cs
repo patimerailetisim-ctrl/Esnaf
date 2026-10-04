@@ -353,6 +353,27 @@ namespace Esnaf.Domain.Game
             return views;
         }
 
+        public IReadOnlyList<PhoneWholesaleOfferView> GetPhoneWholesaleOffers()
+        {
+            int day = _session.Time.Day;
+            var views = new List<PhoneWholesaleOfferView>();
+            foreach (WholesaleOffer offer in _session.Content.Wholesale.ProductOffers)
+            {
+                ProductDefinition product;
+                string name = _session.Content.TryGetProduct(offer.ProductId, out product) ? product.Name : offer.ProductId;
+                views.Add(new PhoneWholesaleOfferView(
+                    offer.SupplierId, offer.SupplierName, offer.ProductId, name, offer.UnitCost, offer.PackSize, offer.PackCost, offer.SuggestedRetail,
+                    offer.AvailableFromDay, offer.AvailableFromDay <= day));
+            }
+
+            return views;
+        }
+
+        public Result<PhonePackReceipt> BuyPhonePack(string supplierId, string productId)
+        {
+            return _session.PhoneWholesaleService.BuyPack(supplierId, productId, _session.Time.Day);
+        }
+
         public Result<WholesalePurchaseReceipt> BuyWholesalePack(string supplierId, string accessoryId)
         {
             return _session.WholesaleService.BuyPack(supplierId, accessoryId, _session.Time.Day);

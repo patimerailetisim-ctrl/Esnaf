@@ -34,6 +34,30 @@ namespace Esnaf.Presentation
                     locked ? TurkishTexts.OpensOnNote(offer.AvailableFromDay) : null));
             }
 
+            // Telefon teklifleri: içerikten otomatik keşfedilir; her biri aynı satır yapısından gelir (modele özel kod yok).
+            var phoneRows = new List<PhoneOfferRowViewModel>();
+            foreach (PhoneWholesaleOfferView offer in api.GetPhoneWholesaleOffers())
+            {
+                if (supplier.Length == 0)
+                {
+                    supplier = offer.SupplierName;
+                }
+
+                bool locked = !offer.IsAvailableToday;
+                phoneRows.Add(new PhoneOfferRowViewModel(
+                    offer.SupplierId,
+                    offer.ProductId,
+                    offer.ProductName,
+                    TurkishTexts.PhoneConditionNew,
+                    TurkishTexts.PhoneUnitCost(offer.UnitCost),
+                    TurkishTexts.PhoneQuantity(offer.PackSize),
+                    TurkishTexts.PhonePackPrice(offer.PackCost),
+                    offer.SuggestedRetail.IsPositive ? TurkishTexts.PhoneSuggestedRetail(offer.SuggestedRetail) : null,
+                    locked,
+                    locked ? TurkishTexts.OpensOnButton(offer.AvailableFromDay) : TurkishTexts.PhoneBuyButton(offer.PackSize),
+                    locked ? TurkishTexts.OpensOnNote(offer.AvailableFromDay) : null));
+            }
+
             AccessoryStockView stock = api.GetAccessoryStock();
             return new WholesaleScreenViewModel(
                 TurkishTexts.WholesaleTitle,
@@ -41,7 +65,9 @@ namespace Esnaf.Presentation
                 TurkishTexts.Cash(api.GetCash()),
                 TurkishTexts.StockCapacityLine(stock.TotalUnits, stock.Capacity),
                 rows,
-                rows.Count == 0 ? TurkishTexts.WholesaleNoOffers : null);
+                rows.Count == 0 && phoneRows.Count == 0 ? TurkishTexts.WholesaleNoOffers : null,
+                phoneRows.Count == 0 ? null : TurkishTexts.PhonesHeader,
+                phoneRows);
         }
 
         public static AccessoryStockScreenViewModel BuildStock(IGameApi api)

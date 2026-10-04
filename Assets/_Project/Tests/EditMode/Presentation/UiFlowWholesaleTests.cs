@@ -451,5 +451,74 @@ namespace Esnaf.Tests.Presentation
             Assert.IsNull(DeepCompare.FirstDifference(rng, s.Capture().Rng));
             CollectionAssert.AreEqual(listings, s.Api.GetListings().Select(l => l.ListingId).ToArray());
         }
+
+        // ---------- Telefon toptancısı (Gün 14) ----------
+
+        [Test]
+        public void TheScreen_ListsEveryPhoneOfferFromContent_WithTheSameRowShape_AndKeepsAccessoriesSeparate()
+        {
+            GameSession s = New();
+            UiFlow flow = OpenWholesale(s);
+
+            WholesaleScreenViewModel screen = flow.WholesaleScreen;
+
+            Assert.AreEqual("Telefonlar", screen.PhonesHeader);
+            Assert.AreEqual(s.Content.Wholesale.ProductOffers.Count, screen.PhoneOffers.Count);
+            Assert.AreEqual(6, screen.Offers.Count, "aksesuar teklifleri ayrı kalır");
+            foreach (PhoneOfferRowViewModel row in screen.PhoneOffers)
+            {
+                Assert.AreEqual("Sıfır", row.ConditionLine);
+                StringAssert.EndsWith("/ adet", row.UnitCostLine);
+                StringAssert.EndsWith(" adet", row.QuantityLine);
+                StringAssert.StartsWith("Paket: ", row.PackPriceLine);
+                StringAssert.EndsWith(" ADET AL", row.ButtonText);
+                Assert.IsTrue(row.IsButtonEnabled);
+            }
+        }
+
+        [Test]
+        public void BuyingAPhonePack_ThroughTheFlow_AddsSeparateUnits_AndSaysSo()
+        {
+            GameSession s = New();
+            UiFlow flow = OpenWholesale(s);
+            PhoneWholesaleOfferView offer = s.Api.GetPhoneWholesaleOffers().First();
+            long cash = s.Api.GetCash().Tl;
+
+            Result<PhonePackReceipt> result = flow.BuyPhonePack(offer.SupplierId, offer.ProductId);
+
+            Assert.IsTrue(result.IsSuccess, result.ErrorCode);
+            Assert.AreEqual(cash - offer.PackCost.Tl, s.Api.GetCash().Tl);
+            Assert.AreEqual(offer.PackSize, result.Value.InstanceIds.Count);
+            StringAssert.Contains(offer.ProductName, flow.StatusMessage);
+            StringAssert.Contains("rafa eklendi", flow.StatusMessage);
+        }
+
+        [Test]
+        public void BuyingAPhonePack_WithoutCash_ShowsAReasonAndChangesNothing()
+        {
+            GameSession s = New();
+            UiFlow flow = OpenWholesale(s);
+            PhoneWholesaleOfferView priciest = s.Api.GetPhoneWholesaleOffers().OrderByDescending(o => o.PackCost.Tl).First();
+            while (s.Api.GetCash().Tl >= priciest.PackCost.Tl && flow.BuyPhonePack(priciest.SupplierId, priciest.ProductId).IsSuccess)
+            {
+            }
+
+            long cash = s.Api.GetCash().Tl;
+            Result<PhonePackReceipt> result = flow.BuyPhonePack(priciest.SupplierId, priciest.ProductId);
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.AreEqual(cash, s.Api.GetCash().Tl);
+            Assert.IsNotEmpty(flow.StatusMessage);
+        }
+
+        [Test]
+        public void BuyingAPhonePack_OutsideTheWholesaleScreen_IsRejected()
+        {
+            GameSession s = New();
+            UiFlow flow = Flow(s);
+            PhoneWholesaleOfferView offer = s.Api.GetPhoneWholesaleOffers().First();
+
+            Assert.IsFalse(flow.BuyPhonePack(offer.SupplierId, offer.ProductId).IsSuccess);
+        }
     }
 }

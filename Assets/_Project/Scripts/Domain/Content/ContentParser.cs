@@ -1221,7 +1221,17 @@ namespace Esnaf.Domain.Content
                         continue;
                     }
 
-                    bool item = Require(fileName, offerLabel, "accessoryId", dto.AccessoryId != null, issues);
+                    // Her teklif TAM OLARAK bir kalem verir: accessoryId (aksesuar) ya da productId (telefon modeli).
+                    bool hasAccessory = dto.AccessoryId != null;
+                    bool hasProduct = dto.ProductId != null;
+                    bool item = true;
+                    if (hasAccessory == hasProduct)
+                    {
+                        issues.Add(ContentIssue.Error(
+                            ContentIssueCodes.WholesaleFieldInvalid, fileName, offerLabel + ": exactly one of accessoryId or productId is required."));
+                        item = false;
+                    }
+
                     item &= Require(fileName, offerLabel, "unitCost", dto.UnitCost.HasValue, issues);
                     item &= Require(fileName, offerLabel, "packSize", dto.PackSize.HasValue, issues);
                     item &= Require(fileName, offerLabel, "availableFromDay", dto.AvailableFromDay.HasValue, issues);
@@ -1231,7 +1241,16 @@ namespace Esnaf.Domain.Content
                         continue;
                     }
 
-                    offers.Add(new WholesaleOffer(supplier.Id, supplier.Name, dto.AccessoryId, Money.FromTl(dto.UnitCost.Value), dto.PackSize.Value, dto.AvailableFromDay.Value));
+                    if (hasProduct)
+                    {
+                        offers.Add(WholesaleOffer.ForProduct(
+                            supplier.Id, supplier.Name, dto.ProductId, Money.FromTl(dto.UnitCost.Value), dto.PackSize.Value, dto.AvailableFromDay.Value,
+                            dto.SuggestedRetail.HasValue ? Money.FromTl(dto.SuggestedRetail.Value) : Money.Zero));
+                    }
+                    else
+                    {
+                        offers.Add(new WholesaleOffer(supplier.Id, supplier.Name, dto.AccessoryId, Money.FromTl(dto.UnitCost.Value), dto.PackSize.Value, dto.AvailableFromDay.Value));
+                    }
                 }
             }
 

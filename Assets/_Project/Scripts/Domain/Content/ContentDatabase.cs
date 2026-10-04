@@ -378,7 +378,21 @@ namespace Esnaf.Domain.Content
                 wholesale = ContentParser.ParseWholesale(ContentFileNames.Wholesale, text, issues);
                 if (wholesale != null && accessories != null)
                 {
-                    ContentValidator.ValidateWholesale(wholesale, accessories, ContentFileNames.Wholesale, issues);
+                    // Ürün teklifleri, telefon modelleri geçerli yüklendiyse çapraz denetlenir (ürün başvurusu: phone sektöründeki ProductDefinition).
+                    List<string> phoneIds = null;
+                    if (products != null)
+                    {
+                        phoneIds = new List<string>();
+                        for (int i = 0; i < products.Count; i++)
+                        {
+                            if (products[i].Sector == "phone")
+                            {
+                                phoneIds.Add(products[i].Id);
+                            }
+                        }
+                    }
+
+                    ContentValidator.ValidateWholesale(wholesale, accessories, ContentFileNames.Wholesale, issues, phoneIds);
                 }
             }
 
@@ -418,7 +432,7 @@ namespace Esnaf.Domain.Content
                 if (wholesale != null)
                 {
                     var supplierIds = new HashSet<string>(StringComparer.Ordinal);
-                    foreach (WholesaleOffer offer in wholesale.Offers)
+                    foreach (WholesaleOffer offer in wholesale.AllOffers)
                     {
                         if (supplierIds.Add(offer.SupplierId))
                         {

@@ -41,7 +41,62 @@ namespace Esnaf.Presentation
         }
     }
 
-    /// <summary>Toptancı ekranı: başlık (toptancı adı), nakit, teklifler ve aksesuar stok özeti. Telefon rafıyla ilgisi yoktur.</summary>
+    /// <summary>
+    /// Toptancı ekranındaki bir TELEFON teklifi satırı (Gün 14): hazır Türkçe satırlar. Tüm telefon teklifleri aynı yapıdan gelir; modele özel alan yoktur.
+    /// <see cref="ProductId"/> aynı zamanda telefon görselinin (PhoneImageCatalog) anahtarıdır.
+    /// </summary>
+    public sealed class PhoneOfferRowViewModel
+    {
+        public string SupplierId { get; }
+        public string ProductId { get; }
+        public string Name { get; }
+
+        /// <summary>"Sıfır" (toptancıdan gelen telefonlar yenidir).</summary>
+        public string ConditionLine { get; }
+
+        /// <summary>"14.000 ₺ / adet".</summary>
+        public string UnitCostLine { get; }
+
+        /// <summary>"5 adet".</summary>
+        public string QuantityLine { get; }
+
+        /// <summary>"Paket: 70.000 ₺".</summary>
+        public string PackPriceLine { get; }
+
+        /// <summary>"Önerilen satış: 15.000 ₺" (içerikte tanımlıysa; toptan fiyattan bağımsız); yoksa null.</summary>
+        public string RetailLine { get; }
+
+        public bool IsLocked { get; }
+
+        /// <summary>"5 ADET AL" ya da kilitliyse "Gün 3'te açılır".</summary>
+        public string ButtonText { get; }
+
+        public bool IsButtonEnabled
+        {
+            get { return !IsLocked; }
+        }
+
+        public string LockNote { get; }
+
+        public PhoneOfferRowViewModel(
+            string supplierId, string productId, string name, string conditionLine, string unitCostLine, string quantityLine, string packPriceLine, string retailLine,
+            bool isLocked, string buttonText, string lockNote)
+        {
+            SupplierId = supplierId;
+            ProductId = productId;
+            Name = name;
+            ConditionLine = conditionLine;
+            UnitCostLine = unitCostLine;
+            QuantityLine = quantityLine;
+            PackPriceLine = packPriceLine;
+            RetailLine = retailLine;
+            IsLocked = isLocked;
+            ButtonText = buttonText;
+            LockNote = lockNote;
+        }
+    }
+
+    /// <summary>Toptancı ekranı: başlık (toptancı adı), nakit, TELEFON teklifleri (Gün 14), aksesuar teklifleri ve aksesuar stok özeti.</summary>
     public sealed class WholesaleScreenViewModel
     {
         public string Title { get; }
@@ -54,9 +109,18 @@ namespace Esnaf.Presentation
         public IReadOnlyList<WholesaleOfferRowViewModel> Offers { get; }
         public string EmptyNote { get; }
 
+        /// <summary>"Telefonlar" başlığı (telefon teklifi varsa); yoksa null.</summary>
+        public string PhonesHeader { get; }
+
+        /// <summary>İçerikteki tüm telefon teklifleri (otomatik keşfedilir).</summary>
+        public IReadOnlyList<PhoneOfferRowViewModel> PhoneOffers { get; }
+
         public WholesaleScreenViewModel(
-            string title, string supplierName, string cashLine, string stockLine, IEnumerable<WholesaleOfferRowViewModel> offers, string emptyNote)
+            string title, string supplierName, string cashLine, string stockLine, IEnumerable<WholesaleOfferRowViewModel> offers, string emptyNote,
+            string phonesHeader = null, IEnumerable<PhoneOfferRowViewModel> phoneOffers = null)
         {
+            PhonesHeader = phonesHeader;
+            PhoneOffers = new ReadOnlyCollection<PhoneOfferRowViewModel>(new List<PhoneOfferRowViewModel>(phoneOffers ?? new PhoneOfferRowViewModel[0]));
             Title = title;
             SupplierName = supplierName;
             CashLine = cashLine;

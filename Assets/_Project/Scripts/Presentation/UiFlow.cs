@@ -738,6 +738,36 @@ namespace Esnaf.Presentation
         }
 
         /// <summary>
+        /// Toptancıdan bir TELEFON paketi alır (IGameApi.BuyPhonePack; tek kaynak PhoneWholesaleService). Başarıda "5 adet Nova N1 Lite rafa eklendi." der; hatada (nakit, raf kapasitesi, gün kilidi...)
+        /// Türkçe nedeni söyler ve hiçbir şey değişmez. Yalnızca Toptancı ekranında çalışır.
+        /// </summary>
+        public Result<PhonePackReceipt> BuyPhonePack(string supplierId, string productId)
+        {
+            if (CurrentScreen != UiScreen.Wholesale)
+            {
+                return Result<PhonePackReceipt>.Fail("ui.not_on_wholesale_screen", "The wholesale screen is not open.");
+            }
+
+            string name = productId;
+            int opensOn = 1;
+            foreach (PhoneWholesaleOfferView offer in _api.GetPhoneWholesaleOffers())
+            {
+                if (offer.SupplierId == supplierId && offer.ProductId == productId)
+                {
+                    name = offer.ProductName;
+                    opensOn = offer.AvailableFromDay;
+                }
+            }
+
+            Result<PhonePackReceipt> result = _api.BuyPhonePack(supplierId, productId);
+            StatusMessage = result.IsSuccess
+                ? TurkishTexts.PhonePackAdded(result.Value.Quantity, name)
+                : TurkishTexts.PhoneWholesaleError(result.ErrorCode, opensOn);
+            Refresh();
+            return result;
+        }
+
+        /// <summary>
         /// İlanlar ekranından Müşteri satış ekranını açar. Süren bir satış varsa kaldığı yerden sürer; yoksa dükkândaki müşteriler listelenir.
         /// İlanlar ekranında değilse hiçbir şey yapmaz (false).
         /// </summary>

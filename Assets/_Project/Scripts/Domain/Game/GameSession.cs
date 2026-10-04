@@ -55,6 +55,9 @@ namespace Esnaf.Domain.Game
         /// <summary>Toptancı satın alma servisi (Day 11.2.2); henüz IGameApi'de görünmez.</summary>
         public Esnaf.Domain.Wholesale.WholesaleService WholesaleService { get; }
 
+        /// <summary>Telefon toptancısı (Gün 14): içerikteki ürün tekliflerinden otomatik çalışır, aksesuar toptancısıyla aynı katalogu paylaşır.</summary>
+        public Esnaf.Domain.Wholesale.PhoneWholesaleService PhoneWholesaleService { get; }
+
         /// <summary>Telefon satışına aksesuar ek satışı (Gün 11.3.1); henüz IGameApi'de görünmez.</summary>
         public Esnaf.Domain.Accessories.AccessoryAddOnService AccessoryAddOns { get; }
 
@@ -105,6 +108,7 @@ namespace Esnaf.Domain.Game
             // İçerikte aksesuar yoksa kapasite 0'dır; stok yine de kurulur (en az 1 birim) ve boş kalır.
             AccessoryStock = new Esnaf.Domain.Accessories.AccessoryStock(Math.Max(1, content.Accessories.ShelfCapacityUnits));
             WholesaleService = new Esnaf.Domain.Wholesale.WholesaleService(content.Wholesale, content.Accessories, AccessoryStock, EconomyService);
+            PhoneWholesaleService = new Esnaf.Domain.Wholesale.PhoneWholesaleService(content, InventoryService, EconomyService, InstanceIds);
 
             AccessoryAddOns = new Esnaf.Domain.Accessories.AccessoryAddOnService(content.Accessories, AccessoryStock, EconomyService, EconomyState);
 

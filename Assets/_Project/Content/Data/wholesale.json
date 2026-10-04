@@ -10,7 +10,17 @@
         { "accessoryId": "accessory.earphones",        "unitCost": 200, "packSize": 10, "availableFromDay": 1 },
         { "accessoryId": "accessory.screen_protector", "unitCost": 40,  "packSize": 20, "availableFromDay": 1 },
         { "accessoryId": "accessory.phone_case",       "unitCost": 70,  "packSize": 20, "availableFromDay": 1 },
-        { "accessoryId": "accessory.powerbank",        "unitCost": 350, "packSize": 5,  "availableFromDay": 3 }
+        { "accessoryId": "accessory.powerbank",        "unitCost": 350, "packSize": 5,  "availableFromDay": 3 },
+        { "productId": "phone.nova_n1_lite", "unitCost": 4630, "packSize": 10, "availableFromDay": 1, "suggestedRetail": 5150 },
+        { "productId": "phone.yildiz_y5", "unitCost": 6180, "packSize": 10, "availableFromDay": 1, "suggestedRetail": 6860 },
+        { "productId": "phone.samsun_vega_a3", "unitCost": 9780, "packSize": 5, "availableFromDay": 1, "suggestedRetail": 10870 },
+        { "productId": "phone.nova_n3_pro", "unitCost": 12870, "packSize": 5, "availableFromDay": 1, "suggestedRetail": 14300 },
+        { "productId": "phone.zirve_z5", "unitCost": 14410, "packSize": 5, "availableFromDay": 1, "suggestedRetail": 16020 },
+        { "productId": "phone.yildiz_y8_plus", "unitCost": 18020, "packSize": 5, "availableFromDay": 1, "suggestedRetail": 20020 },
+        { "productId": "phone.elma_e11", "unitCost": 19560, "packSize": 5, "availableFromDay": 1, "suggestedRetail": 21740 },
+        { "productId": "phone.samsun_vega_s21", "unitCost": 24710, "packSize": 3, "availableFromDay": 1, "suggestedRetail": 27460 },
+        { "productId": "phone.elma_e13_pro", "unitCost": 32950, "packSize": 3, "availableFromDay": 1, "suggestedRetail": 36610 },
+        { "productId": "phone.elma_e14_pro_max", "unitCost": 47360, "packSize": 3, "availableFromDay": 1, "suggestedRetail": 52620 }
       ]
     }
   ]

@@ -156,6 +156,15 @@ namespace Esnaf.Domain.Game
         /// </summary>
         Result<WholesalePurchaseReceipt> BuyWholesalePack(string supplierId, string accessoryId);
 
+        /// <summary>İçerikteki TÜM telefon toptan teklifleri (Gün 14; veri odaklı, modele özel kod yok) ve bugün alınabilir mi. Aksesuar teklifleri <see cref="GetWholesaleOffers"/>'tadır.</summary>
+        IReadOnlyList<PhoneWholesaleOfferView> GetPhoneWholesaleOffers();
+
+        /// <summary>
+        /// Telefon toptancısından bir paket alır (Gün 14): packSize adet AYRI ProductInstance (sıfır kondisyon, maliyet = birim maliyet) mevcut envantere girer, nakit düşer, TEK defter satırı yazılır.
+        /// Paket atomiktir. Hatalar: supplier.unknown, product.unknown, offer.unknown, wholesale.not_available_yet, amount.invalid, cash.insufficient, inventory.full.
+        /// </summary>
+        Result<PhonePackReceipt> BuyPhonePack(string supplierId, string productId);
+
         /// <summary>Aksesuar stoğu: kalemler, toplam birim ve maliyet, kapasite. Telefon rafından (GetInventory) ayrıdır.</summary>
         AccessoryStockView GetAccessoryStock();
 

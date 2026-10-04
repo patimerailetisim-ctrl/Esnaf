@@ -1,6 +1,7 @@
 using System.IO;
 using Esnaf.App.Ui;
 using Esnaf.Domain.Content;
+using Esnaf.Domain.Wholesale;
 using Esnaf.Domain.Game;
 using Esnaf.Presentation;
 using NUnit.Framework;
@@ -100,6 +101,25 @@ namespace Esnaf.App.Tests
             Assert.IsFalse(Find("AccessoryStockScreen").gameObject.activeSelf);
             Assert.IsNotNull(Find("Offer_accessory.charger_adapter"));
             Assert.IsNotNull(Find("Offer_accessory.powerbank"));
+        }
+
+        [Test]
+        public void ThePhoneSection_ShowsACardAndBuyButtonPerPhoneOffer_AndBuyingAddsStock()
+        {
+            _flow.OpenWholesale();
+
+            Assert.IsNotNull(Find("PhonesHeader"));
+            Assert.IsNotNull(Find("PhoneOffer_phone.elma_e13_pro"));
+            Assert.IsNotNull(Find("PhoneOffer_phone.nova_n1_lite"));
+            foreach (PhoneWholesaleOfferView offer in _session.Api.GetPhoneWholesaleOffers())
+            {
+                Assert.IsNotNull(Find("BuyPhone_" + offer.ProductId), offer.ProductId);
+            }
+
+            int before = _session.Api.GetInventory().Count;
+            Find("BuyPhone_phone.elma_e13_pro").GetComponent<Button>().onClick.Invoke();
+
+            Assert.AreEqual(before + 3, _session.Api.GetInventory().Count);
         }
 
         [Test]
