@@ -1,0 +1,19 @@
+{
+  "name": "tiktok-interaktif-sahne",
+  "version": "1.0.0",
+  "description": "TikTok Live için modüler (senaryo tabanlı) interaktif yayın sahnesi - OBS Browser Source uyumlu",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "tiktok-live-connector": "^2.5.0"
+  }
+}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TikTok İnteraktif Sahne</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===================== SAHNE (1080x1920, 9:16) ===================== -->
+  <div id="viewport">
+    <div id="stage">
+      <div id="shaker">
+        <div id="bg"></div>
+        <div id="camera"><div id="world"></div></div>
+      </div>
+      <div id="hud"></div>
+      <div id="banners"></div>
+      <div id="feed"></div>
+      <div id="fx"></div>
+    </div>
+  </div>
+
+  <!-- Tarayıcıda ses kilidini açmak için (OBS'te görünmez) -->
+  <button id="audio-hint" hidden>🔊 Sesi başlatmak için tıkla</button>
+
+  <!-- ===================== TEST KONTROL PANELİ (sağda, gizlenebilir) ===================== -->
+  <button id="panel-toggle" title="Paneli aç/kapat (H tuşu)">⚙</button>
+  <aside id="panel" class="closed">
+    <header>
+      <h1>🎛 Test Paneli</h1>
+      <button id="panel-close" title="Gizle">✕</button>
+    </header>
+
+    <section>
+      <h2>Bağlantı</h2>
+      <div class="row">
+        <input id="tt-user" type="text" placeholder="TikTok kullanıcı adı (@ olmadan)" autocomplete="off">
+      </div>
+      <div class="row">
+        <button id="tt-connect" class="primary">Yayına Bağlan</button>
+        <button id="tt-disconnect">Kes</button>
+      </div>
+      <div id="live-status" class="status idle">Bağlı değil (test modu)</div>
+    </section>
+
+    <section>
+      <h2>Senaryo</h2>
+      <div class="row">
+        <select id="scenario-select"></select>
+      </div>
+      <div class="row">
+        <button id="sc-reload" title="scenarios/ klasörünü tekrar okur">Senaryoları Yenile</button>
+        <button id="sc-reset" class="warn">Sahneyi Sıfırla</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Ses</h2>
+      <div class="row">
+        <button id="audio-unlock">🔊 Sesi Aç</button>
+        <label class="inline"><input id="mute" type="checkbox"> Sessiz</label>
+      </div>
+      <div class="row"><input id="volume" type="range" min="0" max="100" value="80"></div>
+    </section>
+
+    <section>
+      <h2>Test Kullanıcısı</h2>
+      <div class="row">
+        <input id="fake-name" type="text" placeholder="Boş bırak = her seferinde rastgele kişi" autocomplete="off">
+      </div>
+    </section>
+
+    <section>
+      <h2>Hediye Gönder</h2>
+      <div class="row">
+        <label class="inline">Adet <input id="gift-count" type="number" min="1" max="999" value="1"></label>
+      </div>
+      <div id="gift-grid" class="grid"></div>
+    </section>
+
+    <section>
+      <h2>Beğeni</h2>
+      <div class="grid">
+        <button data-like="1">❤ +1</button>
+        <button data-like="10">❤ +10</button>
+        <button data-like="50">❤ +50</button>
+        <button data-like="100">❤ +100</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Yorum</h2>
+      <div class="row">
+        <input id="comment-text" type="text" placeholder="Yorum yaz... (örn: !zıpla)" autocomplete="off">
+        <button id="comment-send">Gönder</button>
+      </div>
+      <div id="cmd-grid" class="grid"></div>
+    </section>
+
+    <section>
+      <h2>Diğer</h2>
+      <div class="grid">
+        <button data-social="follow">➕ Takip</button>
+        <button data-social="share">🔁 Paylaş</button>
+        <button data-social="join">👋 Katıl</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Otomatik Test</h2>
+      <div class="row">
+        <button id="burst10">10 Kişi Ekle</button>
+        <button id="burst50">50 Kişi Ekle</button>
+      </div>
+      <div class="row">
+        <label class="inline"><input id="auto-toggle" type="checkbox"> Otomatik rastgele olaylar</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>OBS Adresi</h2>
+      <div class="row"><input id="obs-url" type="text" readonly></div>
+      <p class="hint">OBS'te Kaynak Ekle → Tarayıcı → bu adresi yapıştır. Genişlik <b>1080</b>, Yükseklik <b>1920</b>.<br>
+        Şeffaf arka plan için sonuna <code>&amp;transparent=1</code> ekle.</p>
+    </section>
+  </aside>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

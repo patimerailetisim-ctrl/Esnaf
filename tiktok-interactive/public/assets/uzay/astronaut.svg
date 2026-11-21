@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="130" height="180" viewBox="0 0 130 180">
+  <!-- sırt çantası -->
+  <rect x="22" y="70" width="86" height="64" rx="14" fill="#8d99ae"/>
+  <!-- bacaklar -->
+  <rect x="38" y="120" width="22" height="46" rx="10" fill="#e8ecf1"/>
+  <rect x="70" y="120" width="22" height="46" rx="10" fill="#e8ecf1"/>
+  <rect x="34" y="158" width="30" height="14" rx="7" fill="#ef476f"/>
+  <rect x="66" y="158" width="30" height="14" rx="7" fill="#ef476f"/>
+  <!-- kollar -->
+  <path d="M34 86 Q14 100 10 118" stroke="#e8ecf1" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <path d="M96 86 Q116 100 120 118" stroke="#e8ecf1" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <circle cx="10" cy="120" r="9" fill="#ef476f"/><circle cx="120" cy="120" r="9" fill="#ef476f"/>
+  <!-- gövde -->
+  <rect x="32" y="74" width="66" height="56" rx="18" fill="#f4f6f9"/>
+  <rect x="48" y="90" width="34" height="20" rx="6" fill="#3a86ff"/>
+  <circle cx="58" cy="100" r="4" fill="#ffd166"/><circle cx="72" cy="100" r="4" fill="#ef476f"/>
+</svg>

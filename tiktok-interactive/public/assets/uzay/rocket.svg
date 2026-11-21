@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="230" height="420" viewBox="0 0 230 420">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c9d1dc"/><stop offset="0.5" stop-color="#ffffff"/><stop offset="1" stop-color="#aab4c2"/>
+    </linearGradient>
+    <radialGradient id="fl" cx="0.5" cy="0" r="1">
+      <stop offset="0" stop-color="#fff7b0"/><stop offset="0.45" stop-color="#ffb02e"/><stop offset="1" stop-color="#ff3d00" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- alev -->
+  <path class="flame" d="M80 300 Q115 420 150 300 Z" fill="url(#fl)"/>
+  <!-- kanatlar -->
+  <path d="M62 240 L14 316 L62 296 Z" fill="#e63946"/>
+  <path d="M168 240 L216 316 L168 296 Z" fill="#e63946"/>
+  <!-- gövde -->
+  <path d="M115 12 Q184 90 176 250 L176 300 L54 300 L54 250 Q46 90 115 12 Z" fill="url(#body)" stroke="#8a95a6" stroke-width="3"/>
+  <!-- burun -->
+  <path d="M115 12 Q150 50 163 100 L67 100 Q80 50 115 12 Z" fill="#e63946"/>
+  <!-- pencere -->
+  <circle cx="115" cy="170" r="32" fill="#3a86ff" stroke="#8a95a6" stroke-width="6"/>
+  <circle cx="105" cy="160" r="9" fill="#ffffff" opacity="0.6"/>
+  <!-- şerit -->
+  <rect x="54" y="250" width="122" height="14" fill="#e63946"/>
+  <!-- motor -->
+  <path d="M84 300 H146 L138 322 H92 Z" fill="#59626f"/>
+</svg>

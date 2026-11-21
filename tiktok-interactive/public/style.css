@@ -1,0 +1,200 @@
+/* =====================================================================
+   TikTok İnteraktif Sahne - Stil
+   Sahne 1080x1920 (9:16) sabit koordinat sistemidir; pencereye JS ile ölçeklenir.
+   ===================================================================== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0b12;
+  font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body.transparent, body.obs { background: transparent; }
+
+#viewport { position: fixed; inset: 0; overflow: hidden; }
+
+#stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+  transform: translate(-50%, -50%) scale(var(--fit, 0.4));
+  background: transparent;
+  user-select: none;
+}
+
+#shaker, #bg, #camera, #world, #fx, #hud, #banners, #feed { position: absolute; }
+#shaker, #bg, #camera, #world { left: 0; top: 0; width: 1080px; height: 1920px; }
+#fx { inset: 0; pointer-events: none; z-index: 50; }
+
+#bg { overflow: hidden; }
+.bg-video, .bg-stars { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bg-floor { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; }
+
+/* ------------------------------------------------------------ sabit varlıklar */
+.entity { position: absolute; left: 0; top: 0; will-change: transform; }
+.entity-inner { width: 100%; height: 100%; transform-origin: 50% 85%; will-change: transform; }
+.entity-inner img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .45)); }
+.entity-label {
+  position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  margin-top: 6px; padding: 4px 16px; border-radius: 999px;
+  font-weight: 800; font-size: 22px; letter-spacing: 2px; color: #fff;
+  background: rgba(0, 0, 0, .5); white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ kalabalık üyeleri */
+.ring-svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.ring-line {
+  fill: none; stroke: rgba(255, 255, 255, .26); stroke-width: 7;
+  stroke-dasharray: 2 18; stroke-linecap: round; transition: opacity .6s;
+}
+
+.member { position: absolute; transform-origin: 50% 90%; }
+.member.pop { animation: pop .65s cubic-bezier(.2, 1.4, .4, 1); }
+.member.pulse { animation: pulse .6s ease-out; }
+.member.leave { animation: leave .4s ease-in forwards; }
+@keyframes pop   { 0% { transform: scale(0) translateY(-120px); opacity: 0; } 55% { transform: scale(1.35) translateY(0); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes pulse { 0% { transform: scale(1); } 35% { transform: scale(1.3); } 100% { transform: scale(1); } }
+@keyframes leave { to { transform: scale(0); opacity: 0; } }
+
+.member-inner { position: relative; width: 100%; height: 100%; transform-origin: 50% 90%; will-change: transform; }
+.m-body { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .35)); }
+.m-head {
+  position: absolute; border-radius: 50%; overflow: hidden;
+  border: 4px solid #fff; background: #333;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .5), inset 0 0 0 2px rgba(0, 0, 0, .15);
+}
+.m-head img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.m-name {
+  position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  margin-top: 2px; max-width: 150px; padding: 1px 10px;
+  font-size: 19px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: rgba(0, 0, 0, .55); border-radius: 999px;
+}
+.m-badge { position: absolute; right: -14px; top: -34px; font-size: 34px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6)); }
+
+/* ------------------------------------------------------------ HUD */
+#hud {
+  left: 0; right: 0; top: 42px; z-index: 20;
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; padding: 0 30px;
+}
+.hud-item {
+  position: relative; min-width: 220px; padding: 12px 24px 12px 16px;
+  display: flex; align-items: center; gap: 14px; overflow: hidden;
+  background: rgba(10, 10, 25, .55); border: 2px solid rgba(255, 255, 255, .22);
+  border-radius: 22px; color: #fff; backdrop-filter: blur(6px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .35);
+}
+.hud-icon { font-size: 44px; line-height: 1; }
+.hud-label { font-size: 17px; font-weight: 800; letter-spacing: 3px; opacity: .8; }
+.hud-value { font-size: 44px; font-weight: 900; line-height: 1.05; text-shadow: 0 2px 8px rgba(0, 0, 0, .5); font-variant-numeric: tabular-nums; }
+.hud-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 9px; background: rgba(255, 255, 255, .15); }
+.hud-bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ffd166, #ef476f); }
+
+/* ------------------------------------------------------------ BANNER */
+#banners {
+  left: 0; right: 0; top: 190px; z-index: 30;
+  display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 24px;
+}
+.banner {
+  display: flex; align-items: center; gap: 14px; max-width: 1000px;
+  color: #fff; font-weight: 800; text-align: center;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, .55);
+  background: var(--banner-color, rgba(15, 15, 35, .72));
+  border: 2px solid rgba(255, 255, 255, .35); border-radius: 999px;
+  padding: 10px 30px 10px 12px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .4);
+}
+.banner.small { font-size: 36px; }
+.banner.big   { font-size: 48px; background: linear-gradient(90deg, #ff7a18, #af002d); padding: 14px 36px 14px 14px; }
+.banner.mega  {
+  font-size: 62px; padding: 20px 50px; border-radius: 40px; line-height: 1.15;
+  background: linear-gradient(90deg, #f6d365, #fda085, #f093fb); color: #2b0a3d; text-shadow: none;
+  border: 4px solid #fff; animation: glow 1s ease-in-out infinite alternate;
+}
+@keyframes glow { from { box-shadow: 0 0 20px rgba(255, 220, 120, .6); } to { box-shadow: 0 0 60px rgba(255, 220, 120, 1); } }
+.banner-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; flex: none; }
+.banner.big .banner-avatar { width: 76px; height: 76px; }
+
+/* ------------------------------------------------------------ SOHBET AKIŞI */
+#feed {
+  left: 28px; bottom: 36px; width: 620px; z-index: 25;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.chat-row {
+  display: flex; align-items: center; gap: 10px; align-self: flex-start;
+  padding: 6px 18px 6px 6px; border-radius: 999px;
+  background: rgba(0, 0, 0, .5); color: #fff; font-size: 26px; max-width: 100%;
+}
+.chat-row img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex: none; }
+.chat-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-text b { color: #ffd166; }
+
+/* ------------------------------------------------------------ EFEKTLER */
+.particle { position: absolute; pointer-events: none; will-change: transform, opacity; text-shadow: 0 3px 8px rgba(0, 0, 0, .4); }
+.flash { position: absolute; inset: 0; }
+.gift-popup { position: absolute; left: 540px; top: 1250px; width: 220px; height: 220px; object-fit: contain; }
+
+/* =====================================================================
+   TEST PANELİ
+   ===================================================================== */
+#audio-hint {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 9000;
+  padding: 14px 26px; font-size: 18px; font-weight: 700; border: 0; border-radius: 999px;
+  color: #fff; background: #e63946; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  animation: nudge 1.4s ease-in-out infinite;
+}
+@keyframes nudge { 50% { transform: translateX(-50%) scale(1.06); } }
+
+#panel-toggle {
+  position: fixed; right: 0; top: 40%; z-index: 9500;
+  width: 42px; height: 56px; border: 0; border-radius: 12px 0 0 12px;
+  background: #ff3d71; color: #fff; font-size: 22px; cursor: pointer;
+  box-shadow: -3px 3px 12px rgba(0, 0, 0, .4);
+}
+#panel {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 350px; z-index: 9400;
+  overflow-y: auto; padding: 0 14px 30px;
+  background: rgba(18, 18, 30, .97); color: #ececf4; font-size: 14px;
+  border-left: 1px solid #333; box-shadow: -8px 0 30px rgba(0, 0, 0, .5);
+  transition: transform .25s ease;
+}
+#panel.closed { transform: translateX(105%); }
+body.obs #panel, body.obs #panel-toggle, body.obs #audio-hint { display: none !important; }
+
+#panel header { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 12px 0; background: rgba(18, 18, 30, .98); }
+#panel h1 { margin: 0; font-size: 18px; }
+#panel h2 { margin: 18px 0 8px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #9aa0c0; }
+#panel section { border-bottom: 1px solid #2a2a40; padding-bottom: 12px; }
+#panel .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+#panel .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+#panel input[type=text], #panel input[type=number], #panel select {
+  flex: 1; min-width: 0; padding: 9px 10px; color: #fff; background: #25253a;
+  border: 1px solid #3a3a58; border-radius: 8px; font-size: 14px;
+}
+#panel input[type=number] { width: 70px; flex: none; }
+#panel input[type=range] { width: 100%; }
+#panel button {
+  padding: 9px 10px; color: #fff; background: #34345a; border: 1px solid #46467a;
+  border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600;
+}
+#panel button:hover { background: #44447a; }
+#panel button:active { transform: scale(.97); }
+#panel button.primary { background: #ff3d71; border-color: #ff3d71; flex: 1; }
+#panel button.warn { background: #7a2a2a; border-color: #a33; }
+#panel button small { display: block; opacity: .65; font-weight: 400; font-size: 11px; }
+#panel label.inline { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+#panel #panel-close { background: transparent; border: 0; font-size: 18px; padding: 4px 8px; }
+
+.status { padding: 8px 10px; border-radius: 8px; font-size: 12.5px; background: #25253a; }
+.status.connected { background: #14502e; }
+.status.connecting { background: #5a4a10; }
+.status.error { background: #5a1a1a; }
+.hint { font-size: 12px; opacity: .75; line-height: 1.5; margin: 6px 0 0; }
+code { background: #25253a; padding: 1px 5px; border-radius: 4px; }
