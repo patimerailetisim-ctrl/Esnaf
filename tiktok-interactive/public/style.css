@@ -274,7 +274,7 @@ code { background: #25253a; padding: 1px 5px; border-radius: 4px; }
 .gc-text b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gc-text small { font-size: 12px; color: #f2d27a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .g-throne-status {
-  position: absolute; left: 50%; transform: translateX(-50%); bottom: 98px; z-index: 24; padding: 4px 18px; border-radius: 999px;
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 126px; z-index: 24; padding: 4px 18px; border-radius: 999px;
   background: rgba(45, 22, 10, .8); color: #ffe9a8; font-size: 19px; font-weight: 700; white-space: nowrap; border: 1.5px solid #c9a227;
 }
 .g-notices { position: absolute; left: 0; right: 0; top: 160px; z-index: 28; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
@@ -452,3 +452,69 @@ code { background: #25253a; padding: 1px 5px; border-radius: 4px; }
 #panel .grow .gp { grid-column: 2; opacity: .6; font-size: 11px; }
 #panel .grow .gs { grid-column: 3; grid-row: 1 / span 3; align-self: center; font-weight: 900; }
 #panel .grow .gs.ok { color: #6be08a; } #panel .grow .gs.bad { color: #ff6b6b; }
+
+
+/* =====================================================================
+   TAHT MÜCADELESİ KARTI (rankgame-auction.js) - sahnenin solu
+   ===================================================================== */
+.au-card {
+  position: absolute; left: 46px; top: 236px; width: 322px; z-index: 27; padding: 12px 15px 12px; color: #fdf0cf;
+  background: linear-gradient(180deg, rgba(20, 44, 56, .96), rgba(10, 22, 34, .97));
+  border: 4px solid #d4a72c; border-radius: 20px;
+  box-shadow: inset 0 0 0 3px #123241, inset 0 0 0 5px rgba(240, 200, 80, .75), 0 14px 34px rgba(0, 0, 0, .55);
+  transition: box-shadow .3s, border-color .3s;
+}
+.au-card.active { border-color: #ffe27a; box-shadow: inset 0 0 0 3px #5a1530, inset 0 0 0 5px rgba(255, 226, 120, .9), 0 0 30px rgba(255, 190, 70, .7); }
+.au-card.urgent { border-color: #ff5a4d; animation: au-urgent .5s ease-in-out infinite alternate; }
+.au-card.soon .au-time { color: #ffb84d; animation: au-soon .6s ease-in-out infinite alternate; }
+.au-card.au-pop { animation: au-popin .8s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes au-urgent { from { box-shadow: inset 0 0 0 3px #5a1530, 0 0 14px rgba(255, 70, 50, .5); } to { box-shadow: inset 0 0 0 3px #5a1530, 0 0 40px rgba(255, 70, 50, 1); } }
+@keyframes au-soon { to { transform: scale(1.08); } }
+@keyframes au-popin { 0% { transform: scale(.85); } 50% { transform: scale(1.07); } 100% { transform: scale(1); } }
+.au-head { text-align: center; font-weight: 900; font-size: 24px; letter-spacing: .5px; color: #ffe27a; padding-bottom: 6px; border-bottom: 2px solid rgba(212, 167, 44, .65); text-shadow: 0 2px 0 #123241; }
+.au-timer { position: relative; text-align: center; padding: 6px 0 4px; }
+.au-label { font-size: 19px; font-weight: 800; letter-spacing: 1px; color: #9be3b8; }
+.au-time { font-size: 70px; line-height: 1.05; font-weight: 900; font-variant-numeric: tabular-nums; color: #fff6dc; text-shadow: 0 4px 0 #123241, 0 0 22px rgba(255, 214, 90, .5); }
+.au-card.active .au-time { color: #ffe27a; }
+.au-card.urgent .au-time { color: #ff7a6b; animation: au-soon .35s ease-in-out infinite alternate; }
+.au-bar { height: 10px; margin: 4px 4px 0; border-radius: 6px; background: rgba(255, 255, 255, .14); overflow: hidden; }
+.au-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffe27a, #d4a72c); transition: width .25s linear; }
+.au-card.urgent .au-bar i { background: linear-gradient(90deg, #ff7a6b, #ff3d2e); }
+.au-ext { position: absolute; right: 0; top: 2px; font-size: 34px; font-weight: 900; color: #7dffb0; text-shadow: 0 3px 6px #000; opacity: 0; pointer-events: none; }
+.au-people { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.au-p { display: flex; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 12px; background: rgba(255, 226, 140, .09); border: 2px solid rgba(212, 167, 44, .4); }
+.au-p.holder { border-color: #ffe27a; background: linear-gradient(135deg, rgba(123, 30, 58, .7), rgba(192, 57, 43, .45)); }
+.au-p img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 3px solid #ffe27a; flex: none; background: #333; }
+.au-p div { min-width: 0; display: flex; flex-direction: column; }
+.au-p small { font-size: 16px; font-weight: 800; color: #ffd978; letter-spacing: .5px; }
+.au-p b { font-size: 24px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.au-bids { display: none; margin-top: 8px; }
+.au-card.active .au-bids { display: block; }
+.au-bids-title { text-align: center; font-size: 19px; font-weight: 900; color: #ffe27a; margin-bottom: 4px; }
+.au-bids-title span { font-size: 15px; font-weight: 700; color: #bfe8cf; }
+.au-list { position: relative; }
+.au-row {
+  position: absolute; left: 0; right: 0; top: 0; height: 54px; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 6px;
+  border-radius: 12px; background: rgba(255, 226, 140, .1); border: 2px solid rgba(212, 167, 44, .4);
+  transition: transform .5s cubic-bezier(.3, .9, .3, 1), opacity .35s;
+}
+.au-row.lead { background: linear-gradient(90deg, rgba(123, 30, 58, .85), rgba(192, 57, 43, .55)); border-color: #ffe27a; }
+.au-row.in { opacity: 0; } .au-row.out { opacity: 0; }
+.au-row .n { width: 24px; text-align: center; font-size: 26px; font-weight: 900; color: #ffd978; }
+.au-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: #333; }
+.au-row b { flex: 1; min-width: 0; font-size: 22px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.au-row em { font-style: normal; font-size: 24px; font-weight: 900; color: #ffe27a; font-variant-numeric: tabular-nums; }
+.au-row.bump { animation: au-bump .6s ease-out; }
+@keyframes au-bump { 0% { background: rgba(255, 226, 120, .8); transform-origin: left; } 100% { background: rgba(255, 226, 140, .1); } }
+.au-empty { display: none; text-align: center; font-size: 22px; font-weight: 700; padding: 14px 0 6px; color: #cfe8d6; line-height: 1.3; }
+.au-last { margin-top: 6px; text-align: center; font-size: 18px; font-weight: 700; color: #f0d9a0; }
+.au-last:empty { display: none; }
+.au-plus { position: absolute; right: 18px; top: 150px; font-size: 34px; font-weight: 900; color: #7dffb0; text-shadow: 0 3px 6px #000; pointer-events: none; }
+.au-count321 {
+  position: absolute; left: 50%; top: 42%; z-index: 56; transform: translate(-50%, -50%); opacity: 0; pointer-events: none;
+  font-size: 420px; line-height: 1; font-weight: 900; color: #ffe27a; text-shadow: 0 10px 0 #7b1e3a, 0 0 70px rgba(255, 90, 60, .9);
+}
+.gc-top { position: absolute; left: 20px; right: 20px; top: 1320px; text-align: center; font-size: 28px; font-weight: 700; color: #f0d9a0; opacity: 0; transition: opacity .6s .6s; }
+.g-crown.landed .gc-top { opacity: 1; }
+.g-board { flex-wrap: wrap; }
+.g-board-cap { flex: 0 0 100%; text-align: center; font-size: 18px; font-weight: 900; letter-spacing: 3px; color: #ffe27a; text-shadow: 0 2px 4px #000; margin-bottom: -2px; }

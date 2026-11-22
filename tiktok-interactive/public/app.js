@@ -87,6 +87,7 @@
   let currentScenario = null;
   socket.on('connect', () => { if (currentScenario && currentScenario.game) socket.emit('game:sync', { scenario: currentScenario.id }); });
   socket.on('game:state', (st) => {
+    st.__recv = Date.now();
     gameStates[st.scenario] = st;
     if (engine.gameView) engine.gameView.onState(st);
     if (currentScenario && currentScenario.id === st.scenario) renderGamePanel(st);
@@ -246,10 +247,12 @@
 
     // test hediyeleri
     const gg = $('game-gifts'); gg.innerHTML = '';
-    for (const t of g.testGifts || []) {
+    const unit = (g.giftValue && g.giftValue.unitLabel) || '💎';
+    for (const t of g.giftCatalog || []) {
       const b = document.createElement('button');
-      b.innerHTML = `${t.icon || '🎁'} ${t.name}<small>${t.diamonds.toLocaleString('tr-TR')} 💎</small>`;
-      b.addEventListener('click', () => sendGift(t));
+      const pts = GuideData.giftPoints(g, t);
+      b.innerHTML = `${t.icon || '🎁'} ${t.name}<small>${t.value.toLocaleString('tr-TR')} ${unit} → ${pts.toLocaleString('tr-TR')} puan</small>`;
+      b.addEventListener('click', () => sendGift({ name: t.name, diamonds: t.value })); // sunucu: değer = giftDetails.diamondCount alanı
       gg.appendChild(b);
     }
     // komutlar
@@ -268,12 +271,12 @@
     // rütbe seçici + rütbe tablosu
     const sel = $('game-rank'); sel.innerHTML = '';
     const tbl = $('game-ranks'); tbl.innerHTML = '';
-    const grants = {};
-    for (const gr of g.giftRankGrants || []) grants[gr.rank] = Math.min(grants[gr.rank] ?? Infinity, gr.minDiamonds);
+    const gdata = GuideData.build(g);
     g.ranks.forEach((r, i) => {
       const o = document.createElement('option'); o.value = r.id; o.textContent = `${i + 1}. ${r.icon} ${r.name}`; sel.appendChild(o);
       const row = document.createElement('div'); row.className = 'rrow';
-      const via = [r.auto !== false ? `${r.minPoints.toLocaleString('tr-TR')} puan` : null, grants[r.id] !== undefined ? `tek hediye ${grants[r.id].toLocaleString('tr-TR')}💎` : null].filter(Boolean).join(' · ');
+      const gr = gdata.rows[i];
+      const via = gr.throne ? 'yalnızca taht açık artırması (puandan bağımsız)' : (gr.start ? 'başlangıç (ücretsiz)' : `${gr.minPoints.toLocaleString('tr-TR')} puan`);
       row.innerHTML = `<span class="rn">${i + 1}</span><span class="ri">${r.icon}</span><span class="rt">${r.name}</span><span class="rv">${via}</span>`;
       tbl.appendChild(row);
     });
@@ -317,17 +320,19 @@
     out.textContent = 'Sınanıyor...';
     const data = GuideData.build(g);
     const st = gameStates[currentScenario.id];
-    const throneEmpty = !(st && st.throne && st.throne.holder);
+    if (st && st.auction && st.auction.phase === 'active') { out.textContent = 'Açık artırma sürerken sınama yapılamaz (test hediyeleri teklif olurdu). Önce bitir veya bekle.'; return; }
     const created = [];
     let ok = 0; let fail = 0; let skipped = 0; let n = 0;
     for (const r of data.rows) {
       const cell = document.querySelector(`#gt-${r.id} .gs`);
-      if (r.diamonds === null) continue;
-      if (r.throne && !throneEmpty) { if (cell) { cell.textContent = '⏭'; cell.title = 'Taht dolu: gerçek Padişah korunuyor'; } skipped++; continue; }
+      if (r.start) continue;
+      if (r.throne) { if (cell) { cell.textContent = '—'; cell.title = 'Padişahlık puandan bağımsız: açık artırmayla kazanılır'; } skipped++; continue; }
+      // Bu rütbeyi puanla kazandıran EN DÜŞÜK hediye değeri (katılma puanı dahil): tek hediyede gönderilir
+      const value = Math.ceil(r.pointsNeeded / data.perGiftValue);
       const uid = `esik${++n}`;
       const user = { id: 'test_' + uid, uniqueId: uid, nickname: 'Esik ' + r.name };
       socket.emit('test:event', { type: 'comment', user, text: data.cmds.join });
-      socket.emit('test:event', { type: 'gift', user, gift: { id: 'esik', name: 'EsikTest', diamondEach: r.diamonds, diamonds: r.diamonds, count: 1, image: '' } });
+      socket.emit('test:event', { type: 'gift', user, gift: { id: 'esik', name: 'EsikTest', valueEach: value, count: 1, image: '' } });
       const res = await adminCall('inspect', { user: 'test_' + uid });
       created.push('test_' + uid);
       const got = res.data && res.data.rank;
@@ -336,8 +341,23 @@
       }
     }
     for (const id of created) await adminCall('removeUser', { user: id });
-    out.textContent = `Sonuç: ✓ ${ok} doğru · ✗ ${fail} hatalı · ⏭ ${skipped} atlandı (test oyuncuları silindi).`;
+    out.textContent = `Sonuç: ✓ ${ok} doğru · ✗ ${fail} hatalı · — ${skipped} atlandı (Padişahlık açık artırmayla; test oyuncuları silindi).`;
   }
+
+  let lastGameState = null;
+  /** Panel: açık artırma durumu (kalan süre sunucu saatine göre hesaplanır) */
+  function updateAuctionPanel() {
+    const st = lastGameState;
+    const box = $('auction-status');
+    if (!st || !st.auction || !box) return;
+    const a = st.auction;
+    const now = Date.now() + (a.serverNow - (st.__recv || Date.now()));
+    const fmtT = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+    if (!a.enabled) box.textContent = 'Açık artırma kapalı (config).';
+    else if (a.phase === 'active') box.textContent = `⚔️ #${a.id} SÜRÜYOR · kalan ${fmtT(a.endsAt - now)} · ${a.bidders} teklif sahibi · toplam ${a.totalBid.toLocaleString('tr-TR')} puan · uzatma ${a.extensions}x`;
+    else box.textContent = `Sonraki mücadele: ${fmtT(a.nextAt - now)}${a.last && a.last.winnerName ? ` · son kazanan: ${a.last.winnerName} (${a.last.bid.toLocaleString('tr-TR')})` : ''}`;
+  }
+  setInterval(updateAuctionPanel, 1000);
 
   function renderGamePanel(st) {
     if (!currentScenario || !currentScenario.game) return;
@@ -345,9 +365,11 @@
     $('game-total').textContent = `(${st.total} oyuncu)`;
     if (st.ui) $('guide-toggle').textContent = st.ui.guideVisible ? 'Rehberi Gizle' : 'Rehberi Göster';
     const th = st.throne;
-    $('game-throne').textContent = th.holder
-      ? `👑 Padişah: ${th.holder.name} (taç değeri ${th.crownValue.toLocaleString('tr-TR')} 💎) · koruma: ${th.cooldownLeft} sn`
-      : '👑 Taht boş';
+    $('game-throne').textContent = `👑 Padişah: ${th.holder ? th.holder.name : '— (taht boş)'} · 📜 Sadrazam: ${th.vizier ? th.vizier.name : '—'}`;
+    lastGameState = st;
+    updateAuctionPanel();
+    const c = st.counters || {};
+    $('game-counters').textContent = `Sayaçlar → yorum ${c.comments} · takip ${c.follows} · beğeni ${c.likes} · paylaşım ${c.shares} · hediye ${c.gifts} (değer ${c.giftValue}, puan ${c.giftPoints}) · tekrar engellenen ${c.duplicates}`;
     const box = $('game-users');
     box.innerHTML = '';
     st.users.slice(0, 80).forEach((u, i) => {
@@ -385,6 +407,8 @@
     const ans = window.prompt('Tüm oyuncular, rütbeler ve hazine KALICI olarak silinecek.\nOnaylamak için SIFIRLA yaz:');
     if (ans === 'SIFIRLA') gameAdmin('wipe', { confirm: 'SIFIRLA' });
   });
+  $('auction-start').addEventListener('click', () => gameAdmin('auctionStart'));
+  $('auction-end').addEventListener('click', () => gameAdmin('auctionEnd'));
   $('guide-toggle').addEventListener('click', () => gameAdmin('guide', { visible: 'toggle' }));
   $('guide-open').addEventListener('click', () => gameAdmin('showGuide', {}));
   $('guide-intro').addEventListener('click', () => gameAdmin('showGuide', { intro: true }));

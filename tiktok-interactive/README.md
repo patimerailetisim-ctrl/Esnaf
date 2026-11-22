@@ -34,6 +34,7 @@ tiktok-interactive/
     │   ├── audio.js          ← Ses motoru (MP3 yoksa yerleşik synth müzik/efekt, mehter dahil)
     │   ├── rankgame-view.js  ← Rütbe oyunu görünümü (karakterler, taç giyme, Sadrazam girişi)
     │   ├── rankgame-guide.js ← Hediye ve Rütbe Rehberi (sağ rehber, büyük rehber, hediye etkisi animasyonu)
+    │   ├── rankgame-auction.js ← Taht mücadelesi kartı (geri sayım, ilk 5 teklif, 3-2-1)
     │   └── guide-data.js     ← Rehber verisini senaryo config'inden türetir (tarayıcı + panel + testler ortak kullanır)
     └── assets/
         ├── halay/            ← leader.svg, dancer.svg (+ buraya halay.mp3, join.mp3 ... koyabilirsin)
@@ -170,91 +171,96 @@ Metinlerde: `{nickname}` `{uniqueId}` `{gift}` `{count}` `{diamonds}` `{text}` `
 
 ## 6b) OSMANLI: TAHT MÜCADELESİ
 
-Halay ve Uzay'dan bağımsız bir senaryodur (`scenarios/osmanli.js`). Diğerlerinden farkı: izleyicilerin **rütbesi, puanı ve tahtın sahibi
-sunucuda tutulur ve diske kaydedilir** (`data/osmanli.json`), yani sunucuyu kapatıp açsan da kaybolmaz.
-Sahneyi seçmek için test panelinde **Senaryo → "OSMANLI: TAHT MÜCADELESİ"** seç (veya `SCENARIO=osmanli npm start`).
+Halay ve Uzay'dan bağımsız bir senaryodur (`scenarios/osmanli.js`). Oyun mantığı **sunucuda** çalışır (`games/rankgame.js`); izleyicilerin
+puanı, rütbesi, taht ve açık artırma durumu `data/osmanli.json` dosyasına kaydedilir, sunucu yeniden başlasa da kaybolmaz.
+Seçmek için test panelinde **Senaryo → "OSMANLI: TAHT MÜCADELESİ"** (veya `SCENARIO=osmanli npm start`).
+**Bütün kurallar `scenarios/osmanli.js` içindedir.**
 
 > Rütbeler **oyunlaştırma amaçlıdır**; tarihsel makamların birebir hiyerarşik sıralaması olduklarını iddia etmez.
 
 ### Nasıl oynanır?
 | İzleyici ne yapar | Ne olur |
 |---|---|
-| Yoruma **!katıl** yazar | Köylü olarak oyuna girer (ücretsiz). Tekrar yazınca çoğalmaz. |
-| Yorum yapar / takip eder / paylaşır / beğenir | Küçük puan kazanır, nüfus-üretim-hazine büyür, şehirler kazanılır |
-| **!rütbe** | Ekranda rütbe kartı: rütbe, puan, sıra, sonraki rütbe |
-| **!isim Yeni Ad** | Ekranda görünen adı değiştirir (temizlenir, en çok 16 karakter, 2 dk'da bir) |
-| **!meslek çiftçi / esnaf / asker** | Meslek seçer (yeterli puan gerekir); üretim veya ordu gücüne katkı verir |
-| **!ordu** / **!hazine** | Ordu gücü ve hazine özeti kartı |
-| **!hediyeler** | Hediye ve rütbe rehberini büyük açar (katılmadan da kullanılabilir) |
-| Hediye gönderir | Elmas değerine göre puan ve **rütbe** kazanır; en büyük hediye **Padişah** yapar |
+| Yoruma **!katıl** yazar | Ücretsiz Köylü olur (tekrar yazınca çoğalmaz) |
+| Normal yorum yazar | Şehir **nüfusuna** katkı (katılmamış izleyici dahil); oyuncuysa küçük puan. Spam sınırlıdır |
+| Takip eder / beğenir / paylaşır | **Ayrı sayaçlara** yazılır (takip, beğeni, paylaşım); oyuncuya küçük puan |
+| Hediye gönderir | Normal oyun puanı kazanır; **taht açık artırması sürüyorsa** aynı puan teklifine de eklenir |
+| **!rütbe** `!isim Ad` `!meslek çiftçi\|esnaf\|asker` `!ordu` `!hazine` | Ekranda bilgi kartı / ayar |
+| **!hediyeler** (`!hediye`, `!rehber`) | Hediye ve rütbe rehberi büyük açılır |
 
-TikTok'a sohbetten cevap yazılamadığı için tüm yanıtlar **ekranda kart olarak** görünür.
+### Hediye değeri ve puan (coin/diamond karışmaz)
+- Hediyenin değeri **yalnızca** connector'ın hediye metadata alanından okunur: `giftDetails.diamondCount` (`lib/events.js`). Mesajda ayrı bir "coin" alanı yoktur; **coin ↔ diamond dönüşümü yapılmaz**, `fanTicketCount` gibi başka alanlar kullanılmaz.
+- Olay metadata'sında değer eksik gelirse yedek olarak oda hediye kataloğu (`fetchAvailableGifts`) kullanılır. İkisi de yoksa **puan verilmez** (sayaç: `unknownGifts`). Başka alandan gelen değer reddedilir (`rejectedGifts`).
+- **Puan = hediye değeri × `points.perGiftValue`** (puan dönüşüm katsayısı, varsayılan `1`; Rose = 1 puan, Lion = 29.999 puan). Tek hediyeye özel birim puan: `points.giftOverrides: { Rose: 2 }`.
+- **Combo çift sayılmaz:** combo (`giftDetails.type = 1`) hediyelerinde her güncellemede yalnızca *artış* yazılır; seri bitiş olayı fark 0 olduğu için puan eklemez; seri kimliği (`groupId`) değişince yeni seri başlar.
+- Hediye puanları kullanıcı kaydına (`points`, `giftValue`, `giftPoints`) ve genel sayaçlara yazılır, **kalıcıdır**.
 
-### Rütbe sıralaması (aşağıdan yukarıya)
-Köylü → Çiftçi → Esnaf → Asker → Yeniçeri → Onbaşı → Çavuş → Sipahi → Subaşı → Kaptan-ı Derya → Sancak Beyi → Beylerbeyi → Paşa → Kubbealtı Veziri → **Sadrazam** → **Şehzade** → **Padişah**
+### Rütbeler (yalnızca puanla; `ranks` listesi)
+Köylü 0 · Çiftçi 100 · Esnaf 300 · Asker 700 · Yeniçeri 1.500 · Onbaşı 3.000 · Çavuş 5.000 · Sipahi 8.000 · Subaşı 12.000 · Kaptan-ı Derya 18.000 ·
+Sancak Beyi 25.000 · Beylerbeyi 40.000 · Paşa 60.000 · Kubbealtı Veziri 90.000 · Şehzade 130.000 · Sadrazam 180.000 · **Padişah (puandan bağımsız)**
 
-> ⚠ İstek metninde liste (Sadrazam < Şehzade < Padişah) ile "Padişah'ın bir altı Sadrazam" cümlesi birbirini tutmuyordu. **Listedeki sıra** uygulandı.
-> Sadrazam'ı Padişah'ın hemen altına almak için `scenarios/osmanli.js` içinde **üç şeyi** değiştir (testle doğrulandı):
-> 1. `ranks` listesinde `sadrazam` kaydını `sehzade` kaydının **ardına** taşı (… Kubbealtı → Şehzade → Sadrazam → Padişah).
-> 2. `giftRankGrants` içinde `sadrazam` ile `sehzade` eşiklerinin rütbe adlarını yer değiştir (5000💎 → `sehzade`, 15000💎 → `sadrazam`).
-> 3. İstersen `throne.demoteTo` / `throne.fallbackRank` değerini `'sadrazam'` yap.
-> Kod değişikliği gerekmez.
+Rütbe puanla yükselir ve asla puanla düşmez. **Padişahlık normal puana bağlı değildir** (`auto:false`); yalnızca taht açık artırmasını kazananın olur.
+Önceki sürümdeki "tek hediyeyle rütbe/taç" kuralları kaldırıldı.
 
-### Hediye sistemi (hepsi `scenarios/osmanli.js` → `game` içinde, kodda sabit eşik yok)
-- **`points.perDiamond`**: 1 elmas (coin) kaç puan? (varsayılan 10 → Rose = 10 puan). Tek hediyeye özel puan için `points.giftOverrides: { Rose: 15 }`.
-- **Puanla terfi**: her `ranks` kaydının `minPoints` değeri. `auto: false` olan rütbelere (Sadrazam, Şehzade, Padişah) puanla gelinmez.
-- **`giftRankGrants`**: *tek bir olaydaki* (combo toplamı dahil) elmas değeri `minDiamonds`'e ulaşırsa o rütbe hemen kazanılır. Örnek: 5💎 Çiftçi, 1000💎 Beylerbeyi, 5000💎 Sadrazam, 15000💎 Şehzade, 29999💎 (Lion) **Padişah**.
-- Rütbe hediyeyle **asla düşmez**. Rose ve küçük hediyeler yalnızca yavaş gelişim sağlar.
+### Taht açık artırması (`throne.auction`)
+| Kural | Ayar |
+|---|---|
+| Her **10 dk**'da bir otomatik başlar (sayaç açık artırmanın **bitişinden** itibaren işler) | `intervalSec: 600` |
+| **60 sn** sürer | `durationSec: 60` |
+| Süre boyunca gelen **hediye puanları** kullanıcının *teklifine* eklenir; **normal puan da aynı anda yazılır**. Her kullanıcının teklifi ayrı tutulur | – |
+| **Son 10 sn**'de gelen teklif süreyi **+10 sn** uzatır (zincirleme) | `extendWindowSec: 10`, `extendBySec: 10` |
+| En yüksek teklif **Padişah** olur; **beraberlikte son geçerli teklifi veren** kazanır | – |
+| Eski Padişah **Sadrazam** olur (kaydı silinmez) | `throne.demoteTo: 'sadrazam'` |
+| Teklifler bitişte **sıfırlanır**; **normal puanlar asla sıfırlanmaz** | – |
+| Teklif gelmezse taht değişmez; mevcut Padişah en yükseği verirse tahtını korur | – |
+| Ekranda ilk **5** teklif sahibi ve puanları, geri sayım, son 10 sn nabız, son 3 sn dev 3-2-1, "+10 sn" animasyonu, kazanan sinematiği | `topN: 5` |
 
-### Oyun dengesi
-- **Tek aktif Padişah.** Taht, rütbeden ayrı tutulur (`throne` durumu ayrı kaydedilir); yeni Padişah gelince eskisi `throne.demoteTo` rütbesine (varsayılan Şehzade; Sadrazam yazabilirsin) iner.
-- **Taç koruma süresi** (`throne.cooldownSec`, varsayılan 120 sn): bu sürede kimse tahta geçemez; en büyük hediyeyi gönderen bile `throne.fallbackRank` (Şehzade) kazanır.
-- **Devralma bedeli** (`throne.overtakeFactor`): tahtı almak için tek hediye, mevcut Padişah'ın taç değeri x çarpan kadar olmalı. Padişah kendi kendini tekrar taçlandıramaz.
-- Hiçbir hediye **başka kullanıcının karakterini silmez**. Kalabalık ekranda en çok `view.zones[].max` kişi çizilir (taşanlar "+N daha" olarak gösterilir) ama kayıtları durur.
-- Yorum puanı bekleme süreli (`commentCooldownSec`), komutlarda spam koruması (`cooldowns`) vardır.
+Sayfa yenilense de durum kaybolmaz: bitiş saati sunucuda mutlak olarak tutulur, sayfa güncel durumu sunucudan alır.
+**Sunucu yeniden başlarsa:** açık artırma sürüyorsa kalan süre ve kayıtlı tekliflerle **devam eder**; süresi dolmuşsa açılışta **kontrollü kapatılır** (kayıtlı tekliflerden kazanan belirlenir, bir kez);
+beklerken zamanı geçmiş bir mücadele ani başlamaz, `restartDelaySec` (30 sn) ertelenir.
 
-### Test panelinden oynamak (yayına bağlanmadan)
-`http://localhost:3000/?panel=1` → senaryoyu seç → **"🎮 Oyun"** bölümü açılır:
-1. **Test Kullanıcısı** kutusuna bir ad yaz (örn. `ahmet`) → **Oyun Komutları → !katıl** (veya "50 Kişi !katıl").
-2. **Oyun Hediyeleri**: 🌹 Rose'dan 🪐 Universe'e kadar; her biri o adla gönderilir. Rütbe animasyonlarını izle.
-3. **Sadrazam** girişi için `Sports Car` (7000💎), **taç giyme** için `Lion` (29999💎) gönder.
-4. Aynı anda ikinci biriyle `Universe` gönder → önce **taht koruma** kartını gör; 2 dk sonra (veya yönetici düğmesiyle tahtı boşaltarak) devralmayı dene.
-5. **Yönetici** düğmeleri: seçili oyuncuya rütbe ver, taç giydir, tahtı boşalt, +100 puan, oyuncuyu sil.
-6. **Kullanıcı Listesi** (satıra tıklayınca o oyuncu seçilir) ve **Rütbe Tablosu** panelde canlı görünür.
-7. **Sahneyi Sıfırla** yalnızca görseli yeniden kurar, kalıcı veriyi **silmez**. Veriyi silmek için "⚠ Tüm Oyun Verisini Sıfırla" (onay için SIFIRLA yazılır).
+### Ücretsiz katılım ve spam koruması
+- `!katıl` herkesi ücretsiz Köylü yapar; hediye/takip/paylaşım da otomatik katar (`autoJoin`). Ücretsiz oyuncuların verileri de kalıcıdır.
+- Yorumlar (`spam`): kullanıcı başına bekleme (`commentCooldownSec`), aynı metin tekrarı (`duplicateWindowSec`), tüm izleyiciler için dakikalık sınır (`globalPerMinute`).
+- Takip ve beğeni **nüfusa değil, kendi sayaçlarına** (`follows`, `likes`) yazılır; paylaşım `shares`. Sayaçlar test panelinde görünür.
 
-### Hediye ve Rütbe Rehberi (yayın sahnesinde)
-Sahnenin **sağ tarafında** altın işlemeli bir rehber durur; izleyiciler hangi rütbe için hangi hediyenin ve kaç puanın gerektiğini görür.
-Rehber **yayın sahnesinin** (OBS / TikTok LIVE Studio'ya giren sayfanın) parçasıdır; test paneli ayrı bir katmandır ve yayına girmez.
+### İdempotency (aynı olayın tekrar işlenmesi)
+Her TikTok olayı bir kimlik taşır (`common.msgId`; yoksa kullanıcı+hediye+seri+sayaç gibi alanlardan türetilir). Oyun, son `idempotency.maxIds` (2000) kimliği **kayıtla birlikte kalıcı** tutar;
+aynı kimlik ikinci kez gelirse (yeniden bağlanma, yeniden başlatma sonrası dahil) işlenmez (`duplicates` sayacı). Kimliği olmayan olaylar tekilleştirilemez.
+
+### Ekran
+Sol: **Taht Mücadelesi kartı** (sonraki mücadeleye geri sayım / açık artırmada kalan süre, **Padişah ve Sadrazam**, ilk 5 teklif). Sağ: **Hediye ve Rütbe Rehberi**.
+Üstte: hazine, **nüfus**, **ordu**, şehir. Altta: **en yüksek puanlı 5 oyuncu**. Rütbe yükselmeleri banner, parçacık ve karakter animasyonuyla duyurulur.
+
+### Hediye ve Rütbe Rehberi
+Sahnenin **sağında** altın işlemeli bir rehber; rütbeleri 3'erli sayfalar halinde döndürür (rütbe · hediye karşılığı · değer · puan) ve altta sürekli **👑 PADİŞAH OL** (açık artırma) ve **🆓 ÜCRETSİZ KATIL** kutuları durur.
+Rehber yayın sahnesinin parçasıdır; test paneli ayrı bir katmandır ve yayına girmez.
 
 | Bölüm | Ne yapar |
 |---|---|
-| **Yan rehber** | Rütbeleri 3'erli sayfalar halinde döndürür: rütbe adı · hediye adı · gereken 💎 ve puan. Altta sürekli **👑 PADİŞAH OL** (taç bedeli + hediye adı) ve **🆓 ÜCRETSİZ KATIL** (`!katıl`) kutuları görünür. |
-| **Büyük rehber** | `!hediyeler` (veya `!hediye`, `!rehber`) yazılınca 15 sn tüm rütbeleri iki sütunda, büyük puntoyla gösterir. Rehber gizliyken de açılır. Spam'e karşı tüm izleyiciler için ortak 20 sn bekleme vardır. |
-| **Yayın açılışı** | Sahne açılınca ve TikTok yayınına bağlanınca otomatik **10 sn'lik** katılım + hediye bilgilendirmesi çıkar. Kapatmak için `intro.enabled: false`; tek bir sayfada kapatmak için URL'ye `&intro=0` ekle. |
-| **Hediye etkisi** | Hediye gelince rehberin içinde kısa animasyonla: kazanılan **puan**, kazanılan/yaklaşılan **rütbe**, sonraki rütbe için kalan puan. Ardından listede o rütbe vurgulanır. Rehber gizliyken gösterilmez. |
-| **`!katıl` bilgisi** | Yeni katılana "Hoş geldin, ücretsiz katıldın" kartı çıkar; rehberin altında kalıcı olarak da yazar. |
-| **Göster / gizle** | Test panelinde **Rehberi Gizle / Göster** düğmesi (yayıncı kontrolü, OBS sahnesine anında yansır ve kalıcıdır). |
+| **Büyük rehber** | `!hediyeler` yazılınca 15 sn tüm rütbeleri iki sütunda büyük puntoyla açar (rehber gizliyken de). Ortak 20 sn bekleme vardır |
+| **Yayın açılışı** | Sahne açılınca ve TikTok yayınına bağlanınca otomatik **10 sn**'lik katılım + hediye bilgilendirmesi. Kapatmak: `intro.enabled: false` veya URL'ye `&intro=0` |
+| **Hediye etkisi** | Hediye gelince rehberde: kazanılan **puan**, rütbe yükselmesi / sonraki rütbeye kalan puan, açık artırmada **teklifin ve sıran** |
+| **Göster / gizle** | Test panelinde düğme (OBS sahnesine anında yansır, kalıcı) |
 
-**Tek kaynak:** Rehberdeki hiçbir hediye eşiği, puan, taç bedeli veya komut adı ikinci kez yazılmaz; hepsi `scenarios/osmanli.js` içindeki
-`ranks`, `points`, `giftRankGrants`, `commands` ve `testGifts` (örnek hediye kataloğu) bölümlerinden okunur. Eşiği değiştirirsen rehber kendiliğinden değişir.
-Yalnızca görünüm ve metinler `game.guide` bölümündedir (`pageSize`, `pageSeconds`, `openSeconds`, `intro`, `texts`...).
+**Tek kaynak:** rehberdeki puan eşikleri, hediye karşılıkları, katsayı, açık artırma süreleri ve komut adları `ranks`, `points`, `throne.auction`, `commands`, `giftCatalog` bölümlerinden okunur; ikinci kez yazılmaz.
+Yalnızca görünüm ve metinler `game.guide` içindedir. Hediye karşılığı (örn. "≈ 3× Hand Hearts") `giftCatalog` içindeki en uygun hediyeden hesaplanır.
 
-**Önemli (etkin eşik):** Bir rütbeye iki yoldan ulaşılır: hediye eşiği (`giftRankGrants`) veya puan (`minPoints`).
-Rehber, yeni bir oyuncunun tek hediyede o rütbeye ulaşması için gereken **en düşük** elmas değerini gösterir. Varsayılan ayarda (1💎 = 10 puan)
-Sipahi ve üstü (Kubbealtı Veziri'ne kadar) için puan yolu hediye eşiğinden daha ucuzdur; bu yüzden örneğin Kaptan-ı Derya `450 💎+` görünür (`giftRankGrants` içindeki `600` değil).
-Bunu dengelemek istersen `points.perDiamond` değerini düşür veya `minPoints` değerlerini yükselt; rehber otomatik uyar.
+### Test panelinden oynamak (yayına bağlanmadan)
+`http://localhost:3000/?panel=1` → senaryoyu seç → **"🎮 Oyun"** bölümü:
+1. **Test Kullanıcısı** kutusuna ad yaz (örn. `ahmet`) → **!katıl**; hediyeler seçili kullanıcı adına gider (Rose'dan Universe'e; her düğmede değer ve kazandırdığı puan yazar).
+2. **Taht Mücadelesi:** durum satırı + **⚔️ Şimdi Başlat / Şimdi Bitir**. Açık artırmada farklı adlarla hediye gönderip ilk 5'i, uzatmayı ve kazananı izle (süre uzatmayı görmek için son 10 sn'de teklif ver).
+3. **Hediye Rehberi:** göster/gizle, büyük rehberi aç, 10 sn tanıtımı oynat; **Hediye Eşikleri** tablosu (yayındakiyle aynı veri) ve **"Eşikleri Canlı Sına"**: her rütbe için geçici oyuncu ekleyip eşik değerinde hediye gönderir, sunucudaki gerçek sonucu okur (✓/✗) ve oyuncuları siler. Açık artırma sürerken çalışmaz; yayın sırasında kullanma.
+4. **Yönetici** düğmeleri, **Kullanıcı Listesi** (tıklayınca oyuncu seçilir), **Rütbe Tablosu**, sayaçlar.
+5. **Sahneyi Sıfırla** yalnızca görseli yeniden kurar. "⚠ Tüm Oyun Verisini Sıfırla" kalıcı veriyi siler (onay: SIFIRLA).
+Panel açıkken sahne alanı daralır; panel yayın sahnesini (ve rehberi) örtmez.
 
-**Test paneli (Oyun bölümü → Hediye Rehberi):** rehberi gizle/göster, büyük rehberi aç, 10 sn tanıtımı oynat ve **Hediye Eşikleri** tablosu
-(yayındaki rehberle aynı veriden). **"Eşikleri Canlı Sına"** her eşik için geçici bir test oyuncusu ekleyip tam eşik değerinde hediye gönderir,
-sunucudaki gerçek sonucu okur ve tabloda ✓/✗ gösterir; sonra test oyuncularını siler (taht doluysa Padişah satırını atlar, gerçek Padişah'ı korur). Yayın sırasında kullanma.
-Panel açıkken sahne alanı daralır, böylece panel rehberi örtmez.
-
-### Güvenlik ve kayıt notları
-- Oyun verisini değiştiren işlemler (yönetici düğmeleri, sahte olaylar) varsayılan olarak **yalnızca sunucunun çalıştığı bilgisayardan** kabul edilir. Başka cihazdan test için `ALLOW_REMOTE_ADMIN=1 npm start`.
-- Kayıt klasörü: `data/` (değiştirmek için `DATA_DIR=...`). Yazma atomiktir; bozuk dosya silinmez, `.bozuk-...` adıyla kenara alınır; son iyi kayıt `osmanli.json.bak` olarak tutulur.
-- Olaylar **aktif senaryoya** işlenir. OBS URL'sine `&scenario=osmanli` eklemek yalnızca *görüntülenen* senaryoyu seçer; sunucudaki aktif senaryo Osmanlı değilse olaylar oyuna işlenmez. Önce panelden Osmanlı'yı seç.
-- `npm test` oyun kurallarını (taht, rütbe, komutlar, kalıcılık, combo) otomatik sınar.
+### Güvenlik, kayıt ve test notları
+- Oyun verisini değiştiren işlemler (yönetici düğmeleri, sahte olaylar) varsayılan olarak **yalnızca sunucunun çalıştığı bilgisayardan** kabul edilir. Başka cihazdan: `ALLOW_REMOTE_ADMIN=1 npm start`.
+- Kayıt klasörü: `data/` (`DATA_DIR=...`). Yazma atomiktir; bozuk dosya silinmez, `.bozuk-...` adıyla kenara alınır; son iyi kayıt `osmanli.json.bak`.
+- **Eski kayıt (v1):** ilk açılışta `osmanli.json.v1.bak` olarak yedeklenir ve rütbeler **yeni puan eşiklerine göre yeniden hesaplanır** (eski hediye rütbeleri geçersizdir; Padişah korunur).
+- Olaylar **aktif senaryoya** işlenir. OBS URL'sine `&scenario=osmanli` yalnızca *görüntülenen* senaryoyu seçer; önce panelden Osmanlı'yı seç. Halay/Uzay çalışırken Osmanlı oyunu ve açık artırma sayacı **çalışmaz**, kayıt dosyasına dokunulmaz.
+- `npm test`: puan eşikleri, hediye değeri/katsayı, combo, idempotency, kalıcılık, yeniden başlatma, açık artırma (zamanlama, teklif, süre uzatma, eşitlik, Sadrazam'a düşme, sıfırlama), spam ve rehberin config ile uyumu.
 
 ## 7) Sık karşılaşılan sorunlar
 

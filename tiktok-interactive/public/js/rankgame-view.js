@@ -118,11 +118,15 @@
 
       // Hediye ve rütbe rehberi (senaryoda `guide` bölümü varsa)
       this.guide = (this.cfg.guide && window.RankGameGuide && window.GuideData) ? new window.RankGameGuide(this) : null;
+      // Taht mücadelesi (açık artırma) kartı: geri sayım, Padişah/Sadrazam, ilk 5 teklif
+      const au = this.cfg.throne && this.cfg.throne.auction;
+      this.auction = (au && au.enabled !== false && window.RankGameAuction) ? new window.RankGameAuction(this) : null;
     }
 
     destroy() {
       this.destroyed = true;
       if (this.guide) this.guide.destroy();
+      if (this.auction) this.auction.destroy();
       clearInterval(this._countdown);
       this.timers.forEach((t) => clearTimeout(t));
       this.layer.remove(); this.board.remove(); this.throneStatus.remove(); this.noticeBox.remove();
@@ -140,6 +144,7 @@
       if (this.destroyed || !state || state.scenario !== this.sc.id) return;
       this.state = state;
       if (this.guide && state.ui) this.guide.setVisible(state.ui.guideVisible); // yayıncının göster/gizle ayarı (kalıcı)
+      if (this.auction) this.auction.onState(state);
       const e = this.engine;
       const s = state.stats;
       e.setCounter('treasury', s.treasury);
@@ -166,6 +171,10 @@
 
       for (const z of this.zones) {
         const inZone = st.users.filter((u) => z.ranks.includes(u.rank));
+        if (z.pin && st.throne[z.pin]) { // örn. Sadrazam koltuğu: tahttan inen Padişah önce
+          const i = inZone.findIndex((u) => u.id === st.throne[z.pin].id);
+          if (i > 0) inZone.unshift(inZone.splice(i, 1)[0]);
+        }
         const totalInZone = z.ranks.reduce((a, r) => a + (st.rankCounts[r] || 0), 0);
         const shown = inZone.slice(0, z.max);
         let npcN = 0;
@@ -299,9 +308,10 @@
 
     // ---------------------------------------------------------------- ŞEREF LİSTESİ + TAHT DURUMU
     _renderBoard() {
+      // "En yüksek puanlı oyuncular": rütbeden bağımsız, puana göre ilk N
       const n = (this.cfg.view && this.cfg.view.leaderboardTop) || 5;
-      const top = (this.state.users || []).slice(0, n);
-      this.board.innerHTML = '';
+      const top = (this.state.topPoints || this.state.users || []).slice(0, n);
+      this.board.innerHTML = '<div class="g-board-cap">🏆 EN YÜKSEK PUAN</div>';
       top.forEach((u, i) => {
         const r = this.rankById.get(u.rank);
         const chip = el('div', 'g-chip' + (i === 0 ? ' first' : ''));
@@ -313,20 +323,18 @@
       });
     }
 
+    /** Alt şerit: açık artırma sürüyorsa çağrı, değilse bir sonraki mücadeleye kalan süre */
     _updateThroneStatus(fresh) {
-      if (!this.state) return;
-      const th = this.state.throne;
-      if (fresh) this.stateAt = Date.now();
-      const left = Math.max(0, (th.cooldownLeft || 0) - Math.floor((Date.now() - (this.stateAt || Date.now())) / 1000));
-      const rule = this.cfg.throne || {};
-      if (!th.holder) this.throneStatus.textContent = '👑 Taht boş! Tek hediyede ' + fmt(this._crownMin()) + '+ 💎 taç kazandırır';
-      else if (left > 0) this.throneStatus.textContent = `🛡️ Taht ${left} sn korumada · Padişah: ${th.holder.name}`;
-      else this.throneStatus.textContent = `⚔️ Tahta talip olmak için tek hediyede ${fmt(Math.ceil((th.crownValue || 0) * (rule.overtakeFactor ?? 1)))}+ 💎`;
-    }
-
-    _crownMin() {
-      const g = (this.cfg.giftRankGrants || []).filter((x) => x.rank === (this.cfg.throne || {}).rank);
-      return g.length ? Math.min(...g.map((x) => x.minDiamonds)) : 0;
+      if (!this.state || !this.state.auction) return;
+      const a = this.state.auction;
+      if (fresh) this.skew = a.serverNow - Date.now();
+      const now = Date.now() + (this.skew || 0);
+      if (!a.enabled) this.throneStatus.textContent = '👑 Taht açık artırması kapalı';
+      else if (a.phase === 'active') this.throneStatus.textContent = '⚔️ AÇIK ARTIRMA SÜRÜYOR · hediye göndererek teklif ver!';
+      else {
+        const s = Math.max(0, Math.ceil((a.nextAt - now) / 1000));
+        this.throneStatus.textContent = `👑 Sonraki taht mücadelesi: ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+      }
     }
 
     // ---------------------------------------------------------------- SUNUCUDAN GELEN OLAYLAR (animasyonlar)
@@ -336,7 +344,8 @@
         case 'join': return this._fxJoin(fx);
         case 'rankup': return this._fxRankUp(fx);
         case 'demote': return this._fxDemote(fx);
-        case 'coronation': return this._enqueueCine(() => this._cineCoronation(fx));
+        case 'coronation': return this._enqueueCine(() => this._cineCoronation(fx)); // yönetici (zorla) taç giydirme
+        case 'auction': return this.auction ? this.auction.onFx(fx) : undefined;
         case 'gift': if (this.guide) this.guide.flashGift(fx); return this._fxGift(fx);
         case 'guide': return this.guide ? this.guide.onFx(fx) : undefined;
         case 'notice': return this._queueNotice(fx);
@@ -497,18 +506,33 @@
     _entitySeat(zoneId) { return this.zones.find((z) => z.id === zoneId); }
 
     // ---------------------------------------------------------------- TAÇ GİYME (PADİŞAH)
+    /** Açık artırma sonucu: kazanan varsa taç giyme sinematiği, yoksa kısa duyuru */
+    async _cineAuctionEnd(fx) {
+      if (!fx.winner) {
+        this._sound('gong', 0);
+        this.engine.runAction('banner', { text: '⚔️ Açık artırma bitti: teklif gelmedi, taht değişmedi.', style: 'big', duration: 4 }, {});
+        return;
+      }
+      await this._cineCoronation(fx);
+    }
+
     async _cineCoronation(fx) {
       const e = this.engine;
-      const u = fx.user;
+      const u = fx.winner || fx.user;
       this.hold.add(u.id);
       this.render();
 
       const wrap = el('div', 'g-cine g-crown');
       wrap.innerHTML = `<div class="gc-dim"></div><div class="gc-rays"></div>
         <div class="gc-portrait"><img><div class="gc-crown">👑</div></div>
-        <div class="gc-title">PADİŞAH</div><div class="gc-name"></div><div class="gc-prev"></div>`;
+        <div class="gc-title"></div><div class="gc-name"></div><div class="gc-prev"></div><div class="gc-top"></div>`;
+      wrap.querySelector('.gc-title').textContent = fx.retained ? 'TAHTINI KORUDU' : 'PADİŞAH';
       wrap.querySelector('.gc-name').textContent = u.name;
-      if (fx.previous) wrap.querySelector('.gc-prev').textContent = `${fx.previous.name} tahttan indi → ${this.rankById.get(fx.demotedTo).name}`;
+      const prevLines = [];
+      if (fx.bid) prevLines.push(`${fmt(fx.bid)} puanlık teklifle`);
+      if (fx.previous) prevLines.push(`${fx.previous.name} tahttan indi → ${this.rankById.get(fx.demotedTo).name}`);
+      wrap.querySelector('.gc-prev').textContent = prevLines.join(' · ');
+      if (fx.top && fx.top.length > 1) wrap.querySelector('.gc-top').textContent = fx.top.map((t, i) => `${i + 1}. ${t.name} ${fmt(t.bid)}`).join('   ');
       const img = wrap.querySelector('.gc-portrait img');
       img.onerror = () => { img.onerror = null; img.src = `/avatar/fake/${encodeURIComponent(u.uniqueId || 'x')}.svg`; };
       img.src = u.avatar;
@@ -526,7 +550,7 @@
       e.runAction('shake', { intensity: 16, duration: 0.8 });
       e.runAction('flash', { color: 'rgba(255,225,130,0.85)', duration: 1.0 });
       e.runAction('burst', { emoji: ['👑', '✨', '⭐', '🪙'], count: 56, x: 540, y: 760, spread: 1.6 });
-      e.runAction('banner', { text: `👑 ${u.name} PADİŞAH OLDU! 👑`, style: 'mega', duration: 4.6 }, { user: u });
+      e.runAction('banner', { text: fx.retained ? `👑 ${u.name} TAHTINI KORUDU! 👑` : `👑 ${u.name} PADİŞAH OLDU! 👑`, style: 'mega', duration: 4.6 }, { user: u });
       await sleep(1300);
       e.runAction('burst', { emoji: ['🪙', '✨', '🎉'], count: 50, x: 540, y: 700, spread: 1.8 });
       await sleep(1700);

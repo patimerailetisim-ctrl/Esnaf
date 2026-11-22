@@ -15,7 +15,7 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const scenarioLoader = require('./scenarios');
-const { createNormalizer } = require('./lib/events');
+const { createNormalizer, extractGiftCatalog, VALUE_FIELD } = require('./lib/events');
 const games = require('./games');
 
 // ---------------------------------------------------------------- AYARLAR
@@ -142,7 +142,9 @@ app.get('/avatar/proxy', async (req, res) => {
 
 // ---------------------------------------------------------------- OLAY NORMALİZASYONU
 // (lib/events.js: hediye combo çift sayımını önleyen seri takibi dahil)
-const { normalize } = createNormalizer();
+const normalizer = createNormalizer();
+const { normalize } = normalizer;
+let testSeq = 0;
 
 function broadcastEvent(ev) {
   if (!ev) return;
@@ -192,6 +194,16 @@ async function connectTikTok(username) {
 
     const state = await conn.connect();
     setLive({ status: 'connected', message: `@${username} yayınına bağlı (oda: ${state?.roomId ?? '?'})` });
+    // Hediye değeri güvenliği: olay metadata'sında değer eksik gelirse yedek olarak oda hediye kataloğu kullanılır
+    (async () => {
+      try {
+        const info = typeof conn.fetchAvailableGifts === 'function' ? await conn.fetchAvailableGifts() : conn.availableGifts;
+        normalizer.setCatalog(extractGiftCatalog(info));
+        console.log(`[tiktok] hediye kataloğu: ${normalizer.catalogSize} hediye`);
+      } catch (err) {
+        console.warn('[tiktok] hediye kataloğu alınamadı (olay metadata\'sı kullanılacak):', err && err.message);
+      }
+    })();
     const g = getGame(activeScenarioId);
     if (g && g.intro) g.intro(); // yayın açıldı: 10 sn'lik katılım + hediye bilgilendirmesi
     console.log(`[tiktok] @${username} yayınına bağlandı.`);
@@ -226,8 +238,17 @@ io.on('connection', (socket) => {
     // Kalıcı oyun verisi söz konusuysa sahte olayları yalnızca bu bilgisayardan kabul et
     if (!ALLOW_REMOTE_ADMIN && !isLocalSocket(socket) && getGame(activeScenarioId)) return;
     if (ev.type === 'gift') {
-      ev.gift = Object.assign({ id: 'test', name: 'Rose', diamonds: 1, diamondEach: 1, count: 1, image: '' }, ev.gift);
+      // Sahte hediye: değer alanları (valueEach/value) ile eski takma adlar (diamondEach/diamonds) aynı sayıya eşitlenir
+      const g = Object.assign({ id: 'test', name: 'Rose', count: 1, image: '' }, ev.gift);
+      g.count = Math.max(1, Math.floor(Number(g.count) || 1));
+      const n = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+      const each = n(g.valueEach) ?? n(g.diamondEach) ?? (n(g.value) !== undefined ? g.value / g.count : undefined) ?? (n(g.diamonds) !== undefined ? g.diamonds / g.count : 1);
+      Object.assign(g, { valueEach: each, value: each * g.count, diamondEach: each, diamonds: each * g.count });
+      g.valueField = g.valueField || VALUE_FIELD;
+      g.valueSource = g.valueSource || 'message';
+      ev.gift = g;
     }
+    if (!ev.id) ev.id = `test:${Date.now()}:${++testSeq}`; // her sahte olay benzersiz (tekrar denemek için aynı id gönderilebilir)
     if (ev.user && !ev.user.avatar) ev.user.avatar = `/avatar/fake/${encodeURIComponent(ev.user.uniqueId || 'x')}.svg`;
     broadcastEvent(ev);
   });

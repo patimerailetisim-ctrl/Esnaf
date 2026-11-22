@@ -77,7 +77,7 @@
         <div class="gd-rail-head">📜 ${esc(this.gcfg.title || '')}</div>
         <div class="gd-stage"><div class="gd-list"></div><div class="gd-flash"></div></div>
         <div class="gd-dots">${this.pages.map(() => '<span></span>').join('')}</div>
-        <div class="gd-throne"><div class="t">👑 ${esc(this.t(tx.throneTitle))}</div><div class="l">${esc(this.t(tx.throneLine))}</div></div>
+        <div class="gd-throne"><div class="t">👑 ${esc(this.t(tx.throneTitle))}</div><div class="l">${esc(this.t(tx.throneRail || tx.throneLine))}</div></div>
         <div class="gd-free"><div class="t">🆓 ${esc(this.t(tx.freeTitle))}</div><div class="l">${esc(this.t(tx.freeLine))}</div></div>
         <div class="gd-more">${esc(this.t(tx.moreLine))}</div>`;
       this.listEl = this.rail.querySelector('.gd-list');
@@ -130,7 +130,7 @@
           <div class="gd-ov-tag"></div>
           <div class="gd-ov-head">📜 ${esc(this.gcfg.title || '')}</div>
           <div class="gd-ov-band gd-ov-free"><div class="b1">🆓 ${esc(this.t(tx.freeTitle))}</div><div class="b2">${esc(this.t(tx.freeLine))}</div><div class="b3">${esc(this.t(tx.freeMore))}</div></div>
-          <div class="gd-ov-band gd-ov-throne"><div class="b1">👑 ${esc(this.t(tx.throneTitle))}</div><div class="b2">${esc(this.t(tx.throneLine))}</div></div>
+          <div class="gd-ov-band gd-ov-throne"><div class="b1">👑 ${esc(this.t(tx.throneTitle))}</div><div class="b2">${esc(this.t(tx.throneLine))}</div><div class="b3">${esc(this.t(tx.throneMore || ''))}</div></div>
           <div class="gd-ov-conv">${esc(this.t(tx.pointsLine))}</div>
           <div class="gd-ov-grid">${cells}</div>
           <div class="gd-ov-foot">${esc(cmdList)}</div>
@@ -168,11 +168,9 @@
       const gd = GD();
       const rk = (id) => this.data.rows.find((r) => r.id === id);
       const g = fx.gift || {};
-      let line; let cls = '';
-      if (fx.crowned) { line = '👑 PADİŞAH OLDU!'; cls = 'crown'; } else if (fx.note === 'protected') line = '🛡️ Taht korumada';
-      else if (fx.note === 'too-low') line = '⚔️ Taç için daha büyük hediye gerek';
-      else if (fx.rankChanged && rk(fx.rank)) { const r = rk(fx.rank); line = `${r.icon} ${r.name} oldu!`; cls = 'up'; } else if (fx.grantRank && rk(fx.grantRank)) { const r = rk(fx.grantRank); line = `Hediye rütbesi: ${r.icon} ${r.name}`; } else line = '';
-      const sub = fx.next ? `${fx.next.name} için ${gd.fmt(fx.next.need)} puan` : (fx.rankChanged ? '' : 'Üst rütbeler hediye ile');
+      let line = ''; let cls = '';
+      if (fx.rankChanged && rk(fx.rank)) { const r = rk(fx.rank); line = `${r.icon} ${r.name} oldu!`; cls = 'up'; } else if (fx.next) line = `${fx.next.name} için ${gd.fmt(fx.next.need)} puan`;
+      const sub = fx.bid ? `⚔️ Teklifin: ${gd.fmt(fx.bid.total)} · #${fx.bid.position}${fx.bid.extended ? ' · +' + this.data.auction.extendBySec + ' sn' : ''}` : (fx.rankChanged && fx.next ? `${fx.next.name} için ${gd.fmt(fx.next.need)} puan` : '');
       return `<div class="gd-fl ${cls}">
         <div class="f1">🎁 ${esc(g.name || '')}${g.count > 1 ? ' ×' + g.count : ''}</div>
         <div class="f2">+${esc(gd.fmt(fx.points))} PUAN</div>
@@ -192,7 +190,7 @@
         this.flashEl.animate([{ opacity: 0, transform: 'scale(.85)' }, { opacity: 1, transform: 'scale(1.04)', offset: 0.12 }, { opacity: 1, transform: 'scale(1)', offset: 0.9 }, { opacity: 0 }], { duration: dur, easing: 'ease-out' });
         await new Promise((r) => { const t = setTimeout(r, dur); this.timers.add(t); });
         this.flashEl.classList.remove('on');
-        if (!this.flashQueue.length) this.focusRank(fx.grantRank || fx.rank); // hediyenin kazandırdığı rütbeyi listede göster
+        if (!this.flashQueue.length) this.focusRank(fx.rank); // oyuncunun güncel rütbesini listede göster
       }
       this.flashEl.classList.remove('on');
       this.flashRunning = false;

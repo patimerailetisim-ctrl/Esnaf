@@ -10,7 +10,14 @@
  * NOT: Rütbeler OYUNLAŞTIRMA amaçlıdır. Tarihsel makamların birebir hiyerarşik sıralaması
  * olduklarını iddia etmez; sıralama tamamen bu dosyadaki `ranks` listesinin sırasıdır.
  *
- * Verilerin kaydı: data/osmanli.json  (sunucu yeniden başlayınca korunur)
+ * Verilerin kaydı: data/osmanli.json  (oyuncular, puanlar, taht, açık artırma durumu ve işlenmiş olay kimlikleri;
+ * sunucu yeniden başlayınca korunur)
+ *
+ * KURALLAR ÖZETİ
+ *  - Hediye değeri: connector'ın hediye metadata alanı `giftDetails.diamondCount`. Puan = değer x points.perGiftValue.
+ *  - Rütbeler yalnızca PUANLA yükselir. Padişahlık puandan bağımsızdır; yalnızca taht açık artırmasıyla kazanılır.
+ *  - Taht açık artırması: her 10 dk'da bir, 60 sn; hediye puanı teklife de eklenir; son 10 sn teklif +10 sn uzatır;
+ *    en yüksek teklif Padişah olur (eşitlikte son teklif); eski Padişah Sadrazam olur; teklifler sıfırlanır (puanlar ASLA).
  */
 module.exports = {
   id: 'osmanli',
@@ -53,6 +60,8 @@ module.exports = {
       vizier:  { src: 'assets/osmanli/vizier.mp3',  synth: 'fanfareShort' },
       crown:   { src: 'assets/osmanli/crown.mp3',   synth: 'fanfare' },   // taç giyme mehter fanfarı
       city:    { src: 'assets/osmanli/city.mp3',    synth: 'boom' },
+      tick:    { src: 'assets/osmanli/tick.mp3',    synth: 'pop' },      // açık artırma son 10 sn geri sayım
+      bid:     { src: 'assets/osmanli/bid.mp3',     synth: 'coin' },     // yeni teklif
     },
   },
 
@@ -99,81 +108,81 @@ module.exports = {
     storage: 'osmanli', // data/osmanli.json
     disclaimer: 'Rütbeler oyunlaştırma amaçlıdır; tarihsel makamların birebir hiyerarşik sıralaması değildir.',
 
-    // ---------------------------------------------------------------- RÜTBELER (aşağıdan yukarıya)
-    // minPoints : bu rütbeye puanla ulaşma eşiği (auto:true ise)
-    // auto:false: puanla ASLA gelinmez; yalnızca hediye eşiği / taht kuralı ile kazanılır
-    // army      : ordu gücüne katkısı
-    // fx        : terfi animasyon türü (minor | major | vizier | prince | coronation)
+    // ---------------------------------------------------------------- HEDİYE DEĞERİ
+    // TikTok hediyesinin değeri YALNIZCA connector'ın hediye metadata alanından okunur: giftDetails.diamondCount.
+    // (Mesajda ayrı bir "coin" alanı yoktur; coin <-> diamond dönüşümü yapılmaz, iki kavram karıştırılmaz.)
+    // Olayda bu alan yoksa oda hediye kataloğundaki diamond_count yedek olarak kullanılır; ikisi de yoksa PUAN VERİLMEZ.
+    giftValue: {
+      field: 'diamondCount',   // geçerli metadata alanı (lib/events.js bunu gift.valueField olarak işaretler)
+      unitLabel: '💎',         // ekranda değerin yanında gösterilen simge
+      maxPerUnit: 1000000,     // akıl sağlığı sınırı: tek hediyenin birim değeri bunu aşarsa reddedilir
+    },
+
+    // ---------------------------------------------------------------- RÜTBELER (aşağıdan yukarıya; puanla)
+    // minPoints : bu rütbeye ulaşmak için toplam puan (auto:true olanlar yalnızca puanla yükselir)
+    // auto:false: puanla ASLA gelinmez (Padişah: yalnızca taht açık artırmasıyla)
+    // army      : ordu gücüne katkısı · fx: terfi animasyonu (minor | major | vizier | prince | coronation)
     // look      : karakter kıyafeti (robe/trim/sash renkleri, hat: başlık türü, prop: elindeki simge)
-    // NOT: Sadrazam ile Şehzade'nin sırası istek metnindeki listeye göredir (Sadrazam < Şehzade < Padişah).
-    //      "Padişah'ın bir altı Sadrazam olsun" istersen 'sehzade' kaydını 'sadrazam'ın ALTINA taşıman yeterli.
     ranks: [
       { id: 'koylu',      name: 'Köylü',            icon: '🌾', minPoints: 0,      auto: true,  army: 0,  fx: 'minor', look: { robe: '#a68a64', trim: '#6e5638', sash: '#7d6444', hat: 'cap',   hatColor: '#7b5e3b', prop: '🌾' } },
-      { id: 'ciftci',     name: 'Çiftçi',           icon: '🌱', minPoints: 50,     auto: true,  army: 0,  fx: 'minor', look: { robe: '#7c9a5b', trim: '#4f6a36', sash: '#d9c27a', hat: 'straw', hatColor: '#d8b45a', prop: '🌾' } },
-      { id: 'esnaf',      name: 'Esnaf',            icon: '⚒️', minPoints: 150,    auto: true,  army: 0,  fx: 'minor', look: { robe: '#4f7cac', trim: '#2f527a', sash: '#e8d9b0', hat: 'fez',   hatColor: '#b3262d', prop: '🔨' } },
-      { id: 'asker',      name: 'Asker',            icon: '🛡️', minPoints: 300,    auto: true,  army: 1,  fx: 'minor', look: { robe: '#8a2c2c', trim: '#5e1c1c', sash: '#c9a227', hat: 'helmet', hatColor: '#9aa3ad', prop: '🗡️' } },
-      { id: 'yenicer',    name: 'Yeniçeri',         icon: '🪖', minPoints: 600,    auto: true,  army: 3,  fx: 'minor', look: { robe: '#2b4a8b', trim: '#1b2f5e', sash: '#c9a227', hat: 'bork',  hatColor: '#f3ecd8', prop: '🏹' } },
-      { id: 'onbasi',     name: 'Onbaşı',           icon: '🎖️', minPoints: 1000,   auto: true,  army: 4,  fx: 'minor', look: { robe: '#2b4a8b', trim: '#c9a227', sash: '#b3262d', hat: 'bork',  hatColor: '#f3ecd8', prop: '📯' } },
-      { id: 'cavus',      name: 'Çavuş',            icon: '🎗️', minPoints: 1500,   auto: true,  army: 5,  fx: 'minor', look: { robe: '#1f6f78', trim: '#134a50', sash: '#c9a227', hat: 'turban', hatColor: '#1f8a95', prop: '🗡️' } },
-      { id: 'sipahi',     name: 'Sipahi',           icon: '🐎', minPoints: 2200,   auto: true,  army: 6,  fx: 'major', look: { robe: '#b23a2e', trim: '#7d2219', sash: '#c9a227', hat: 'kalpak', hatColor: '#4b3a2a', prop: '🐎' } },
-      { id: 'subasi',     name: 'Subaşı',           icon: '🏅', minPoints: 3200,   auto: true,  army: 7,  fx: 'major', look: { robe: '#7a3b6e', trim: '#c9a227', sash: '#e8d9b0', hat: 'turban', hatColor: '#9b4f8c', prop: '📜' } },
-      { id: 'kaptan',     name: 'Kaptan-ı Derya',   icon: '⚓', minPoints: 4500,   auto: true,  army: 8,  fx: 'major', look: { robe: '#1c4a7a', trim: '#c9a227', sash: '#e8d9b0', hat: 'captain', hatColor: '#1c4a7a', prop: '⚓' } },
-      { id: 'sancak',     name: 'Sancak Beyi',      icon: '🚩', minPoints: 6000,   auto: true,  army: 9,  fx: 'major', look: { robe: '#8c2f39', trim: '#c9a227', sash: '#f3e5c0', hat: 'turban', hatColor: '#f3e5c0', prop: '🚩' } },
-      { id: 'beylerbeyi', name: 'Beylerbeyi',       icon: '🏹', minPoints: 8000,   auto: true,  army: 10, fx: 'major', look: { robe: '#5b2f7d', trim: '#c9a227', sash: '#f3e5c0', hat: 'bigturban', hatColor: '#f3e5c0', prop: '🏹' } },
-      { id: 'pasa',       name: 'Paşa',             icon: '🧿', minPoints: 11000,  auto: true,  army: 12, fx: 'major', look: { robe: '#245c4f', trim: '#c9a227', sash: '#f3e5c0', hat: 'bigturban', hatColor: '#f6f0dc', prop: '📜' } },
-      { id: 'kubbealti',  name: 'Kubbealtı Veziri', icon: '🕌', minPoints: 15000,  auto: true,  army: 0,  fx: 'major', look: { robe: '#2d3a6b', trim: '#e0b93a', sash: '#e0b93a', hat: 'bigturban', hatColor: '#f6f0dc', prop: '📜' } },
-      { id: 'sadrazam',   name: 'Sadrazam',         icon: '📜', minPoints: 25000,  auto: false, army: 0,  fx: 'vizier', look: { robe: '#7b1e3a', trim: '#e0b93a', sash: '#e0b93a', hat: 'vizier', hatColor: '#fff7e0', prop: '📜' } },
-      { id: 'sehzade',    name: 'Şehzade',          icon: '🌙', minPoints: 40000,  auto: false, army: 0,  fx: 'prince', look: { robe: '#1f7a5a', trim: '#e0b93a', sash: '#e0b93a', hat: 'prince', hatColor: '#2fa37a', prop: '🌙' } },
-      { id: 'padisah',    name: 'Padişah',          icon: '👑', minPoints: 60000,  auto: false, army: 0,  fx: 'coronation', look: { robe: '#c9a227', trim: '#7b1e3a', sash: '#7b1e3a', hat: 'sultan', hatColor: '#fff7e0', prop: '👑' } },
+      { id: 'ciftci',     name: 'Çiftçi',           icon: '🌱', minPoints: 100,    auto: true,  army: 0,  fx: 'minor', look: { robe: '#7c9a5b', trim: '#4f6a36', sash: '#d9c27a', hat: 'straw', hatColor: '#d8b45a', prop: '🌾' } },
+      { id: 'esnaf',      name: 'Esnaf',            icon: '⚒️', minPoints: 300,    auto: true,  army: 0,  fx: 'minor', look: { robe: '#4f7cac', trim: '#2f527a', sash: '#e8d9b0', hat: 'fez',   hatColor: '#b3262d', prop: '🔨' } },
+      { id: 'asker',      name: 'Asker',            icon: '🛡️', minPoints: 700,    auto: true,  army: 1,  fx: 'minor', look: { robe: '#8a2c2c', trim: '#5e1c1c', sash: '#c9a227', hat: 'helmet', hatColor: '#9aa3ad', prop: '🗡️' } },
+      { id: 'yenicer',    name: 'Yeniçeri',         icon: '🪖', minPoints: 1500,   auto: true,  army: 3,  fx: 'minor', look: { robe: '#2b4a8b', trim: '#1b2f5e', sash: '#c9a227', hat: 'bork',  hatColor: '#f3ecd8', prop: '🏹' } },
+      { id: 'onbasi',     name: 'Onbaşı',           icon: '🎖️', minPoints: 3000,   auto: true,  army: 4,  fx: 'minor', look: { robe: '#2b4a8b', trim: '#c9a227', sash: '#b3262d', hat: 'bork',  hatColor: '#f3ecd8', prop: '📯' } },
+      { id: 'cavus',      name: 'Çavuş',            icon: '🎗️', minPoints: 5000,   auto: true,  army: 5,  fx: 'minor', look: { robe: '#1f6f78', trim: '#134a50', sash: '#c9a227', hat: 'turban', hatColor: '#1f8a95', prop: '🗡️' } },
+      { id: 'sipahi',     name: 'Sipahi',           icon: '🐎', minPoints: 8000,   auto: true,  army: 6,  fx: 'major', look: { robe: '#b23a2e', trim: '#7d2219', sash: '#c9a227', hat: 'kalpak', hatColor: '#4b3a2a', prop: '🐎' } },
+      { id: 'subasi',     name: 'Subaşı',           icon: '🏅', minPoints: 12000,  auto: true,  army: 7,  fx: 'major', look: { robe: '#7a3b6e', trim: '#c9a227', sash: '#e8d9b0', hat: 'turban', hatColor: '#9b4f8c', prop: '📜' } },
+      { id: 'kaptan',     name: 'Kaptan-ı Derya',   icon: '⚓', minPoints: 18000,  auto: true,  army: 8,  fx: 'major', look: { robe: '#1c4a7a', trim: '#c9a227', sash: '#e8d9b0', hat: 'captain', hatColor: '#1c4a7a', prop: '⚓' } },
+      { id: 'sancak',     name: 'Sancak Beyi',      icon: '🚩', minPoints: 25000,  auto: true,  army: 9,  fx: 'major', look: { robe: '#8c2f39', trim: '#c9a227', sash: '#f3e5c0', hat: 'turban', hatColor: '#f3e5c0', prop: '🚩' } },
+      { id: 'beylerbeyi', name: 'Beylerbeyi',       icon: '🏹', minPoints: 40000,  auto: true,  army: 10, fx: 'major', look: { robe: '#5b2f7d', trim: '#c9a227', sash: '#f3e5c0', hat: 'bigturban', hatColor: '#f3e5c0', prop: '🏹' } },
+      { id: 'pasa',       name: 'Paşa',             icon: '🧿', minPoints: 60000,  auto: true,  army: 12, fx: 'major', look: { robe: '#245c4f', trim: '#c9a227', sash: '#f3e5c0', hat: 'bigturban', hatColor: '#f6f0dc', prop: '📜' } },
+      { id: 'kubbealti',  name: 'Kubbealtı Veziri', icon: '🕌', minPoints: 90000,  auto: true,  army: 0,  fx: 'major', look: { robe: '#2d3a6b', trim: '#e0b93a', sash: '#e0b93a', hat: 'bigturban', hatColor: '#f6f0dc', prop: '📜' } },
+      { id: 'sehzade',    name: 'Şehzade',          icon: '🌙', minPoints: 130000, auto: true,  army: 0,  fx: 'prince', look: { robe: '#1f7a5a', trim: '#e0b93a', sash: '#e0b93a', hat: 'prince', hatColor: '#2fa37a', prop: '🌙' } },
+      { id: 'sadrazam',   name: 'Sadrazam',         icon: '📜', minPoints: 180000, auto: true,  army: 0,  fx: 'vizier', look: { robe: '#7b1e3a', trim: '#e0b93a', sash: '#e0b93a', hat: 'vizier', hatColor: '#fff7e0', prop: '📜' } },
+      // Padişahlık normal rütbe puanından BAĞIMSIZDIR: yalnızca taht açık artırmasının kazananı olur.
+      { id: 'padisah',    name: 'Padişah',          icon: '👑', minPoints: null,   auto: false, army: 0,  fx: 'coronation', look: { robe: '#c9a227', trim: '#7b1e3a', sash: '#7b1e3a', hat: 'sultan', hatColor: '#fff7e0', prop: '👑' } },
     ],
 
     // ---------------------------------------------------------------- PUAN SİSTEMİ (hepsi ayarlanabilir)
     points: {
-      perDiamond: 10,          // 1 elmas (coin) = 10 puan  ->  Rose (1 elmas) = 10 puan
-      giftOverrides: {},       // Tek bir hediyeye özel BİRİM puan: { Rose: 15 }
+      perGiftValue: 1,         // PUAN DÖNÜŞÜM KATSAYISI: hediye değeri (giftDetails.diamondCount) başına kaç puan. Rose (1) = 1 puan.
+      giftOverrides: {},       // Tek bir hediyeye özel BİRİM puan: { Rose: 2 }  (verilmezse değer x perGiftValue)
       join: 5,                 // !katıl ile katılma
       comment: 1,              // oyundaki oyuncunun sıradan yorumu
-      commentCooldownSec: 15,  // yorum puanı en sık bu aralıkla
       follow: 30,              // takip (bir kez)
       share: 20,               // yayın paylaşımı (60 sn'de bir)
       like: 0.1,               // beğeni başına
       likeMaxPerEvent: 50,     // tek beğeni olayında sayılacak en fazla beğeni
     },
 
-    // ---------------------------------------------------------------- HEDİYE -> RÜTBE EŞİKLERİ
-    // TEK bir olaydaki (combo toplamı dahil) elmas değeri minDiamonds'a ulaşıyorsa o rütbe KAZANILIR
-    // (en yüksek eşleşen uygulanır; rütbe asla düşürülmez). Kodda sabit eşik yoktur.
-    giftRankGrants: [
-      { minDiamonds: 5,     rank: 'ciftci' },
-      { minDiamonds: 15,    rank: 'esnaf' },
-      { minDiamonds: 30,    rank: 'asker' },
-      { minDiamonds: 60,    rank: 'yenicer' },
-      { minDiamonds: 99,    rank: 'onbasi' },
-      { minDiamonds: 150,   rank: 'cavus' },
-      { minDiamonds: 250,   rank: 'sipahi' },
-      { minDiamonds: 400,   rank: 'subasi' },
-      { minDiamonds: 600,   rank: 'kaptan' },
-      { minDiamonds: 800,   rank: 'sancak' },
-      { minDiamonds: 1000,  rank: 'beylerbeyi' },
-      { minDiamonds: 1500,  rank: 'pasa' },
-      { minDiamonds: 2500,  rank: 'kubbealti' },
-      { minDiamonds: 5000,  rank: 'sadrazam' },
-      { minDiamonds: 15000, rank: 'sehzade' },
-      { minDiamonds: 29999, rank: 'padisah' },   // en büyük hediye (örn. Lion / Universe) taç kazandırır
-    ],
-
-    // ---------------------------------------------------------------- TAHT (rütbeden ayrı yönetilir)
+    // ---------------------------------------------------------------- TAHT (rütbeden ayrı yönetilir) + AÇIK ARTIRMA
     throne: {
-      rank: 'padisah',        // taht rütbesi; aynı anda yalnızca 1 kişide
-      demoteTo: 'sehzade',    // yeni Padişah gelince eskisi bu rütbeye iner ('sadrazam' da yazabilirsin)
-      fallbackRank: 'sehzade',// taç hakkı kazanılamazsa (korunan/yetersiz) verilecek rütbe
-      cooldownSec: 120,       // taç giyildikten sonra bu süre tahta kimse geçemez (hediye spam'ine karşı)
-      overtakeFactor: 1.0,    // devralmak için tek hediye >= mevcut taç değeri x bu çarpan
+      rank: 'padisah',        // taht rütbesi; aynı anda yalnızca 1 kişide; puanla kazanılmaz
+      demoteTo: 'sadrazam',   // yeni Padişah gelince eskisi bu rütbeye iner
+      auction: {
+        enabled: true,
+        intervalSec: 600,         // mücadeleler arası süre (açık artırma BİTİŞİNDEN itibaren 10 dk)
+        durationSec: 60,          // açık artırma süresi
+        extendWindowSec: 10,      // son kaç saniyede gelen teklif süreyi uzatır
+        extendBySec: 10,          // uzatma miktarı
+        minBidPoints: 0,          // geçerli bir tekliften beklenen en düşük tek hediye puanı (0: puanı olan her hediye)
+        topN: 5,                  // ekranda gösterilen teklif sahibi sayısı
+        restartDelaySec: 30,      // sunucu yeniden başlayınca, zamanı geçmiş bir mücadele ani başlamasın diye ertelenir
+      },
     },
 
     // ---------------------------------------------------------------- KATILIM (ücretsiz katılım engellenmez)
     // Hangi olaylar oyuncuyu OTOMATİK Köylü olarak ekler. Yorumla katılım !katıl komutuyla yapılır.
     autoJoin: { comment: false, gift: true, follow: true, share: true, like: false, join: false },
+
+    // ---------------------------------------------------------------- SPAM VE TEKRAR KORUMASI
+    spam: {
+      commentCooldownSec: 15,    // aynı kişinin sayılan yorumları arası
+      duplicateWindowSec: 120,   // aynı kişinin aynı metni tekrarı bu sürede sayılmaz
+      globalPerMinute: 120,      // tüm izleyicilerden dakikada en çok bu kadar yorum nüfusa/ekonomiye yazılır
+    },
+    idempotency: { maxIds: 2000 }, // son N olay kimliği saklanır (aynı TikTok olayı ikinci kez işlenmez; kayıtla birlikte kalıcı)
 
     // ---------------------------------------------------------------- KOMUTLAR (yazımlar değiştirilebilir)
     commands: {
@@ -188,12 +197,12 @@ module.exports = {
     cooldowns: { join: 20, rank: 15, name: 5, nameChange: 120, job: 10, army: 20, treasury: 20, guide: 20 },
 
     // ---------------------------------------------------------------- MESLEKLER (!meslek çiftçi / asker / esnaf)
-    // unlockPoints: gereken puan (ücretsiz oyuncular yorum yaparak kazanır)
-    // minRank: seçilince en az bu rütbeye yükselir · commentEffect: yorum başına ek üretim · armyBonus: ordu katkısı
+    // Rütbe yalnızca puanla yükseldiği için meslekler rütbe vermez; ekonomiye/orduya katkı sağlar.
+    // unlockPoints: gereken puan · commentEffect: yorum başına ek üretim · armyBonus: ordu katkısı
     professions: {
-      ciftci: { names: ['çiftçi', 'ciftci'], label: 'Çiftçi', icon: '🌾', unlockPoints: 30,  minRank: 'ciftci', commentEffect: { production: 0.3, treasury: 0.5 } },
-      esnaf:  { names: ['esnaf'],            label: 'Esnaf',  icon: '⚒️', unlockPoints: 100, minRank: 'esnaf',  commentEffect: { treasury: 2 } },
-      asker:  { names: ['asker'],            label: 'Asker',  icon: '🛡️', unlockPoints: 200, minRank: 'asker',  armyBonus: 1 },
+      ciftci: { names: ['çiftçi', 'ciftci'], label: 'Çiftçi', icon: '🌾', unlockPoints: 30,  commentEffect: { production: 0.3, treasury: 0.5 } },
+      esnaf:  { names: ['esnaf'],            label: 'Esnaf',  icon: '⚒️', unlockPoints: 100, commentEffect: { treasury: 2 } },
+      asker:  { names: ['asker'],            label: 'Asker',  icon: '🛡️', unlockPoints: 200, armyBonus: 1 },
     },
 
     // ---------------------------------------------------------------- EKONOMİ (nüfus, üretim, şehir, hazine)
@@ -203,11 +212,12 @@ module.exports = {
       incomePerProduction: 2,      // her tikte: hazine += üretim x 2
       effects: {
         join:            { population: 10, production: 0.2, treasury: 5 },
-        comment:         { population: 0.5, production: 0.05, treasury: 1 },
-        follow:          { population: 5, treasury: 10 },
+        comment:         { population: 0.5 },                       // her (spam sınırını geçen) normal yorum: şehir nüfusu
+        playerComment:   { production: 0.05, treasury: 1 },         // yorumcu oyundaysa ek üretim/hazine
+        follow:          {},                                        // takip ve beğeni AYRI sayaçlara yazılır (nüfusa değil)
         share:           { population: 3, treasury: 5 },
-        likePerLike:     { treasury: 0.2 },
-        giftPerDiamond:  { treasury: 5, production: 0.01, population: 0.05 },
+        likePerLike:     {},
+        giftPerValue:    { treasury: 5, production: 0.01, population: 0.05 },  // hediye değeri başına
       },
       // Nüfus eşiğine ulaşılınca yeni şehir kazanılır
       cities: [
@@ -226,10 +236,10 @@ module.exports = {
     nameBlocklist: [],             // yasaklı isimler (rütbe adları zaten yasaktır)
 
     // ---------------------------------------------------------------- HEDİYE VE RÜTBE REHBERİ (yayın sahnesinde, sağda)
-    // Rehberdeki hediye eşikleri, puanlar, taç bedeli ve komut adları YUKARIDAKİ ranks / points /
-    // giftRankGrants / commands / testGifts bölümlerinden OTOMATİK okunur; burada ikinci kez yazılmaz.
+    // Rehberdeki puan eşikleri, hediye karşılıkları, katsayı, açık artırma süreleri ve komut adları YUKARIDAKİ
+    // ranks / points / throne.auction / commands / giftCatalog bölümlerinden OTOMATİK okunur; ikinci kez yazılmaz.
     // Burada yalnızca görünüm ayarları ve açıklama metinleri bulunur.
-    // Metin değişkenleri: {join} {guide} {crownDiamonds} {crownGift} {perDiamond}
+    // Metin değişkenleri: {join} {guide} {perGiftValue} {auctionEvery} {auctionSeconds} {extendWindow} {extendBy}
     guide: {
       title: 'HEDİYE VE RÜTBE REHBERİ',
       visible: true,                 // yan rehber varsayılan olarak açık (panelden gizlenip açılabilir)
@@ -248,38 +258,42 @@ module.exports = {
         freeLine: 'Yorumuna {join} yaz, Köylü ol!',
         freeMore: 'Yorum, takip ve beğeniyle puan kazan.',
         throneTitle: 'PADİŞAH OL',
-        throneLine: 'Tek hediyede {crownDiamonds} 💎 ({crownGift})',
-        pointsLine: '1 💎 = {perDiamond} puan · combo toplamı sayılır',
+        throneRail: 'Açık artırmada en yüksek teklif · her {auctionEvery} dk',
+        throneLine: 'Her {auctionEvery} dk taht açık artırması: en çok hediye puanı veren Padişah',
+        throneMore: '{auctionSeconds} sn sürer · son {extendWindow} sn teklif +{extendBy} sn uzatır',
+        pointsLine: '1 💎 hediye değeri = {perGiftValue} puan · combo toplamı sayılır',
         moreLine: 'Tüm liste: {guide}',
         welcomeTitle: 'Hoş geldin! Ücretsiz katıldın',
         welcomeLine: 'Köylü olarak başlıyorsun. Hediyeler için {guide} yaz.',
       },
     },
 
-    // ---------------------------------------------------------------- TEST PANELİ HEDİYELERİ (aynı zamanda rehberdeki örnek hediye kataloğu)
-    testGifts: [
-      { name: 'Rose', diamonds: 1, icon: '🌹' },
-      { name: 'TikTok', diamonds: 1, icon: '🎵' },
-      { name: 'Finger Heart', diamonds: 5, icon: '🫰' },
-      { name: 'Doughnut', diamonds: 30, icon: '🍩' },
-      { name: 'Hand Hearts', diamonds: 100, icon: '🫶' },
-      { name: 'Diamond Ring', diamonds: 500, icon: '💍' },
-      { name: 'Galaxy', diamonds: 1000, icon: '🌌' },
-      { name: 'Sports Car', diamonds: 7000, icon: '🏎️' },
-      { name: 'Castle', diamonds: 20000, icon: '🏰' },
-      { name: 'Lion', diamonds: 29999, icon: '🦁' },
-      { name: 'Universe', diamonds: 34999, icon: '🪐' },
+    // ---------------------------------------------------------------- HEDİYE KATALOĞU (rehberdeki örnek hediyeler + test paneli düğmeleri)
+    // value: hediyenin connector metadata değeri (giftDetails.diamondCount)
+    giftCatalog: [
+      { name: 'Rose', value: 1, icon: '🌹' },
+      { name: 'TikTok', value: 1, icon: '🎵' },
+      { name: 'Finger Heart', value: 5, icon: '🫰' },
+      { name: 'Doughnut', value: 30, icon: '🍩' },
+      { name: 'Hand Hearts', value: 100, icon: '🫶' },
+      { name: 'Diamond Ring', value: 500, icon: '💍' },
+      { name: 'Galaxy', value: 1000, icon: '🌌' },
+      { name: 'Sports Car', value: 7000, icon: '🏎️' },
+      { name: 'Castle', value: 20000, icon: '🏰' },
+      { name: 'Lion', value: 29999, icon: '🦁' },
+      { name: 'Universe', value: 34999, icon: '🪐' },
     ],
 
     // ---------------------------------------------------------------- GÖRÜNÜM (rankgame-view.js)
     // Her bölge belirli rütbelerdeki oyuncuları gösterir. En yüksek rütbe/puan saraya en yakın yerde durur.
     // x,y: ilk koltuğun alt-orta noktası · cols/dx/dy: ızgara · scale: karakter ölçeği · max: görünür üst sınır
     // label: 'full' (isim+rütbe+puan) | 'name' · npc: oyuncu yokken sahneyi canlı tutan figüranlar
+    // pin: bölgenin başına önce bu kişi alınır (throne.vizier: tahttan inen Padişah / Sadrazam)
     view: {
       sendTop: 250,
       zones: [
         { id: 'sultan', ranks: ['padisah'],  max: 1, x: 540, y: 925, cols: 1, dx: 0,   dy: 0,   scale: 1.2,  label: 'full', seat: { rank: 'padisah', name: 'TAHT BOŞ' } },
-        { id: 'vizier', ranks: ['sadrazam'],  max: 1, x: 300, y: 990, cols: 1, dx: 0,   dy: 0,   scale: 0.95, label: 'full', seat: { rank: 'sadrazam', name: 'Sadrazam' } },
+        { id: 'vizier', ranks: ['sadrazam'],  max: 1, x: 300, y: 990, cols: 1, dx: 0,   dy: 0,   scale: 0.95, label: 'full', pin: 'vizier', seat: { rank: 'sadrazam', name: 'Sadrazam' } },
         { id: 'prince', ranks: ['sehzade'],   max: 1, x: 780, y: 990, cols: 1, dx: 0,   dy: 0,   scale: 0.95, label: 'full', seat: { rank: 'sehzade', name: 'Şehzade' } },
         { id: 'divan',  ranks: ['kubbealti', 'pasa', 'beylerbeyi', 'sancak', 'kaptan'], max: 8, x: 540, y: 1140, cols: 8, dx: 118, dy: 0, scale: 0.68, label: 'full',
           npc: { count: 3, ranks: ['pasa', 'kubbealti', 'beylerbeyi'], names: ['Vezir', 'Vezir', 'Vezir'] } },
@@ -288,7 +302,7 @@ module.exports = {
         { id: 'commons', ranks: ['esnaf', 'ciftci', 'koylu'], max: 36, x: 540, y: 1580, cols: 12, dx: 84, dy: 90, scale: 0.46, label: 'name',
           npc: { count: 12, perPopulation: 10, ranks: ['koylu', 'ciftci', 'esnaf', 'koylu'], names: ['Köylü', 'Çiftçi', 'Esnaf', 'Köylü'] } },
       ],
-      leaderboardTop: 5,
+      leaderboardTop: 5,   // "en yüksek puanlı oyuncular" şeridi
     },
   },
 };
