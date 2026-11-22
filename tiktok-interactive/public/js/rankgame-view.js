@@ -115,10 +115,14 @@
       engine.el.banners.style.top = '330px'; // saray gökyüzü bölgesine
 
       this._countdown = setInterval(() => this._updateThroneStatus(), 1000);
+
+      // Hediye ve rütbe rehberi (senaryoda `guide` bölümü varsa)
+      this.guide = (this.cfg.guide && window.RankGameGuide && window.GuideData) ? new window.RankGameGuide(this) : null;
     }
 
     destroy() {
       this.destroyed = true;
+      if (this.guide) this.guide.destroy();
       clearInterval(this._countdown);
       this.timers.forEach((t) => clearTimeout(t));
       this.layer.remove(); this.board.remove(); this.throneStatus.remove(); this.noticeBox.remove();
@@ -135,6 +139,7 @@
     onState(state) {
       if (this.destroyed || !state || state.scenario !== this.sc.id) return;
       this.state = state;
+      if (this.guide && state.ui) this.guide.setVisible(state.ui.guideVisible); // yayıncının göster/gizle ayarı (kalıcı)
       const e = this.engine;
       const s = state.stats;
       e.setCounter('treasury', s.treasury);
@@ -332,7 +337,8 @@
         case 'rankup': return this._fxRankUp(fx);
         case 'demote': return this._fxDemote(fx);
         case 'coronation': return this._enqueueCine(() => this._cineCoronation(fx));
-        case 'gift': return this._fxGift(fx);
+        case 'gift': if (this.guide) this.guide.flashGift(fx); return this._fxGift(fx);
+        case 'guide': return this.guide ? this.guide.onFx(fx) : undefined;
         case 'notice': return this._queueNotice(fx);
         case 'city': return this._fxCity(fx);
         case 'job': return this._fxJob(fx);
@@ -389,6 +395,7 @@
     _fxJoin(fx) {
       this._sound('join', 120);
       this._withChar(fx.user.id, (c) => this._float(c, '🌾 +', 'g-join'));
+      if (this.guide && !this.first) this.guide.welcome(fx.user); // ücretsiz katılım bilgisi
       if (!this.first) this._banner(`🌾 ${fx.user.name} krallığa katıldı!`, 'small', fx.user, 2.2);
     }
 

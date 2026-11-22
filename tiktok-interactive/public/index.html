@@ -81,6 +81,14 @@
       <h2>Oyun Komutları</h2>
       <div id="game-cmds" class="grid"></div>
       <div class="row"><button id="game-join10">10 Kişi !katıl</button><button id="game-join50">50 Kişi !katıl</button></div>
+      <h2>Hediye Rehberi</h2>
+      <div class="hint">Rehber yayın sahnesinin (OBS) parçasıdır; bu test paneli yayına girmez.</div>
+      <div class="row"><button id="guide-toggle">Rehberi Gizle</button><button id="guide-open">Büyük Rehberi Aç</button></div>
+      <div class="row"><button id="guide-intro">10 sn Tanıtımı Oynat</button></div>
+      <h2>Hediye Eşikleri <small>(senaryo dosyasından okunur)</small></h2>
+      <div id="guide-table" class="gtable"></div>
+      <div class="row"><button id="guide-verify">Eşikleri Canlı Sına</button></div>
+      <div id="guide-verify-result" class="hint"></div>
       <h2>Yönetici (seçili oyuncu)</h2>
       <div class="hint" id="game-target">Hedef: Test Kullanıcısı kutusundaki ad veya listeden seçilen oyuncu</div>
       <div class="row"><select id="game-rank"></select><button id="game-setrank">Rütbe Ver</button></div>
@@ -157,6 +165,8 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/engine.js"></script>
+  <script src="js/guide-data.js"></script>
+  <script src="js/rankgame-guide.js"></script>
   <script src="js/rankgame-view.js"></script>
   <script src="app.js"></script>
 </body>

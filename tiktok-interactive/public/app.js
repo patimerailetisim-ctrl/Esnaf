@@ -24,7 +24,9 @@
   // ---------------------------------------------------------------- ölçekleme (OBS 1080x1920'de ölçek = 1)
   const stage = document.getElementById('stage');
   function fit() {
-    const s = Math.min(window.innerWidth / 1080, window.innerHeight / 1920);
+    // Sahne, #viewport alanına sığar. Test paneli açıkken #viewport daralır; böylece panel yayın sahnesini (ve rehberi) örtmez.
+    const v = document.getElementById('viewport');
+    const s = Math.min(v.clientWidth / 1080, v.clientHeight / 1920);
     stage.style.setProperty('--fit', s.toFixed(5));
   }
   window.addEventListener('resize', fit);
@@ -90,7 +92,9 @@
     if (currentScenario && currentScenario.id === st.scenario) renderGamePanel(st);
   });
   socket.on('game:fx', (fx) => { audio.unlock(); if (engine.gameView) engine.gameView.onFx(fx); });
+  let adminWaiter = null; // sıralı yönetici çağrıları (eşik sınaması) için
   socket.on('game:admin-result', (res) => {
+    if (adminWaiter) { const w = adminWaiter; adminWaiter = null; w(res); return; }
     const box = document.getElementById('game-result');
     if (!box) return;
     box.hidden = false; box.textContent = res.message; box.className = 'status ' + (res.ok ? 'connected' : 'error');
@@ -113,14 +117,18 @@
   // ---------------------------------------------------------------- panel
   const panel = document.getElementById('panel');
   const toggleBtn = document.getElementById('panel-toggle');
-  const setPanel = (open) => panel.classList.toggle('closed', !open);
+  const setPanel = (open) => {
+    panel.classList.toggle('closed', !open);
+    document.body.classList.toggle('panel-open', open);
+    fit();
+  };
   if (!OBS) {
     setPanel(params.get('panel') === '1');
-    toggleBtn.addEventListener('click', () => panel.classList.toggle('closed'));
+    toggleBtn.addEventListener('click', () => setPanel(panel.classList.contains('closed')));
     document.getElementById('panel-close').addEventListener('click', () => setPanel(false));
     window.addEventListener('keydown', (e) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-      if (e.key.toLowerCase() === 'h') panel.classList.toggle('closed');
+      if (e.key.toLowerCase() === 'h') setPanel(panel.classList.contains('closed'));
     });
   }
 
@@ -269,14 +277,73 @@
       row.innerHTML = `<span class="rn">${i + 1}</span><span class="ri">${r.icon}</span><span class="rt">${r.name}</span><span class="rv">${via}</span>`;
       tbl.appendChild(row);
     });
+    renderGuideTable();
     selectedUser = null;
     if (gameStates[sc.id]) renderGamePanel(gameStates[sc.id]);
+  }
+
+  // ---- Hediye eşikleri tablosu: yayın sahnesindeki rehberle AYNI kaynaktan (GuideData + senaryo) türetilir
+  function renderGuideTable() {
+    const box = $('guide-table');
+    box.innerHTML = '';
+    $('guide-verify-result').textContent = '';
+    const g = currentScenario && currentScenario.game;
+    if (!g || !g.guide) { box.textContent = 'Bu senaryoda rehber yok.'; return; }
+    const data = GuideData.build(g);
+    for (const r of data.rows) {
+      const row = document.createElement('div');
+      row.className = 'grow' + (r.throne ? ' throne' : '');
+      row.id = 'gt-' + r.id;
+      row.innerHTML = `<span class="gi">${r.icon}</span><span class="gn"></span><span class="gg"></span><span class="gp"></span><span class="gs"></span>`;
+      row.querySelector('.gn').textContent = r.name;
+      row.querySelector('.gg').textContent = GuideData.giftLabel(r);
+      row.querySelector('.gp').textContent = GuideData.pointsLabel(r, data);
+      box.appendChild(row);
+    }
+  }
+
+  const adminCall = (action, payload) => new Promise((resolve) => {
+    adminWaiter = resolve;
+    socket.emit('admin:game', { action, payload });
+    setTimeout(() => { if (adminWaiter === resolve) { adminWaiter = null; resolve({ ok: false, message: 'zaman aşımı' }); } }, 3000);
+  });
+
+  // Gerçek sunucu akışıyla her eşiği dener: eşik değerinde tek hediye gönderir, oyuncunun rütbesini sorar.
+  async function verifyThresholds() {
+    const g = currentScenario && currentScenario.game;
+    if (!g) return;
+    if (!window.confirm('Her eşik için geçici test oyuncusu eklenip hediye gönderilecek, sonra silinecek.\nSahnede terfi animasyonları oynar; hazine/nüfus sayaçları değişir. Yayın sırasında KULLANMA. Devam edilsin mi?')) return;
+    const out = $('guide-verify-result');
+    out.textContent = 'Sınanıyor...';
+    const data = GuideData.build(g);
+    const st = gameStates[currentScenario.id];
+    const throneEmpty = !(st && st.throne && st.throne.holder);
+    const created = [];
+    let ok = 0; let fail = 0; let skipped = 0; let n = 0;
+    for (const r of data.rows) {
+      const cell = document.querySelector(`#gt-${r.id} .gs`);
+      if (r.diamonds === null) continue;
+      if (r.throne && !throneEmpty) { if (cell) { cell.textContent = '⏭'; cell.title = 'Taht dolu: gerçek Padişah korunuyor'; } skipped++; continue; }
+      const uid = `esik${++n}`;
+      const user = { id: 'test_' + uid, uniqueId: uid, nickname: 'Esik ' + r.name };
+      socket.emit('test:event', { type: 'comment', user, text: data.cmds.join });
+      socket.emit('test:event', { type: 'gift', user, gift: { id: 'esik', name: 'EsikTest', diamondEach: r.diamonds, diamonds: r.diamonds, count: 1, image: '' } });
+      const res = await adminCall('inspect', { user: 'test_' + uid });
+      created.push('test_' + uid);
+      const got = res.data && res.data.rank;
+      if (got === r.id) { ok++; if (cell) { cell.textContent = '✓'; cell.className = 'gs ok'; } } else {
+        fail++; if (cell) { cell.textContent = '✗'; cell.className = 'gs bad'; cell.title = 'beklenen ' + r.id + ', gelen ' + got; }
+      }
+    }
+    for (const id of created) await adminCall('removeUser', { user: id });
+    out.textContent = `Sonuç: ✓ ${ok} doğru · ✗ ${fail} hatalı · ⏭ ${skipped} atlandı (test oyuncuları silindi).`;
   }
 
   function renderGamePanel(st) {
     if (!currentScenario || !currentScenario.game) return;
     const ranks = new Map(currentScenario.game.ranks.map((r) => [r.id, r]));
     $('game-total').textContent = `(${st.total} oyuncu)`;
+    if (st.ui) $('guide-toggle').textContent = st.ui.guideVisible ? 'Rehberi Gizle' : 'Rehberi Göster';
     const th = st.throne;
     $('game-throne').textContent = th.holder
       ? `👑 Padişah: ${th.holder.name} (taç değeri ${th.crownValue.toLocaleString('tr-TR')} 💎) · koruma: ${th.cooldownLeft} sn`
@@ -318,6 +385,10 @@
     const ans = window.prompt('Tüm oyuncular, rütbeler ve hazine KALICI olarak silinecek.\nOnaylamak için SIFIRLA yaz:');
     if (ans === 'SIFIRLA') gameAdmin('wipe', { confirm: 'SIFIRLA' });
   });
+  $('guide-toggle').addEventListener('click', () => gameAdmin('guide', { visible: 'toggle' }));
+  $('guide-open').addEventListener('click', () => gameAdmin('showGuide', {}));
+  $('guide-intro').addEventListener('click', () => gameAdmin('showGuide', { intro: true }));
+  $('guide-verify').addEventListener('click', verifyThresholds);
   function joinMany(n) {
     let i = 0;
     const t = setInterval(() => {

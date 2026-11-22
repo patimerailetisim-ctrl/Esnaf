@@ -192,6 +192,8 @@ async function connectTikTok(username) {
 
     const state = await conn.connect();
     setLive({ status: 'connected', message: `@${username} yayınına bağlı (oda: ${state?.roomId ?? '?'})` });
+    const g = getGame(activeScenarioId);
+    if (g && g.intro) g.intro(); // yayın açıldı: 10 sn'lik katılım + hediye bilgilendirmesi
     console.log(`[tiktok] @${username} yayınına bağlandı.`);
   } catch (err) {
     live.connection = null;

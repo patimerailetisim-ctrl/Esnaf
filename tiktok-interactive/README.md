@@ -32,7 +32,9 @@ tiktok-interactive/
     ├── js/
     │   ├── engine.js         ← Senaryo Motoru (tetikleyici/aksiyon/sayaç/kamera)
     │   ├── audio.js          ← Ses motoru (MP3 yoksa yerleşik synth müzik/efekt, mehter dahil)
-    │   └── rankgame-view.js  ← Rütbe oyunu görünümü (karakterler, taç giyme, Sadrazam girişi)
+    │   ├── rankgame-view.js  ← Rütbe oyunu görünümü (karakterler, taç giyme, Sadrazam girişi)
+    │   ├── rankgame-guide.js ← Hediye ve Rütbe Rehberi (sağ rehber, büyük rehber, hediye etkisi animasyonu)
+    │   └── guide-data.js     ← Rehber verisini senaryo config'inden türetir (tarayıcı + panel + testler ortak kullanır)
     └── assets/
         ├── halay/            ← leader.svg, dancer.svg (+ buraya halay.mp3, join.mp3 ... koyabilirsin)
         ├── uzay/             ← rocket.svg, astronaut.svg, planet.svg
@@ -183,6 +185,7 @@ Sahneyi seçmek için test panelinde **Senaryo → "OSMANLI: TAHT MÜCADELESİ"*
 | **!isim Yeni Ad** | Ekranda görünen adı değiştirir (temizlenir, en çok 16 karakter, 2 dk'da bir) |
 | **!meslek çiftçi / esnaf / asker** | Meslek seçer (yeterli puan gerekir); üretim veya ordu gücüne katkı verir |
 | **!ordu** / **!hazine** | Ordu gücü ve hazine özeti kartı |
+| **!hediyeler** | Hediye ve rütbe rehberini büyük açar (katılmadan da kullanılabilir) |
 | Hediye gönderir | Elmas değerine göre puan ve **rütbe** kazanır; en büyük hediye **Padişah** yapar |
 
 TikTok'a sohbetten cevap yazılamadığı için tüm yanıtlar **ekranda kart olarak** görünür.
@@ -219,6 +222,33 @@ Köylü → Çiftçi → Esnaf → Asker → Yeniçeri → Onbaşı → Çavuş 
 5. **Yönetici** düğmeleri: seçili oyuncuya rütbe ver, taç giydir, tahtı boşalt, +100 puan, oyuncuyu sil.
 6. **Kullanıcı Listesi** (satıra tıklayınca o oyuncu seçilir) ve **Rütbe Tablosu** panelde canlı görünür.
 7. **Sahneyi Sıfırla** yalnızca görseli yeniden kurar, kalıcı veriyi **silmez**. Veriyi silmek için "⚠ Tüm Oyun Verisini Sıfırla" (onay için SIFIRLA yazılır).
+
+### Hediye ve Rütbe Rehberi (yayın sahnesinde)
+Sahnenin **sağ tarafında** altın işlemeli bir rehber durur; izleyiciler hangi rütbe için hangi hediyenin ve kaç puanın gerektiğini görür.
+Rehber **yayın sahnesinin** (OBS / TikTok LIVE Studio'ya giren sayfanın) parçasıdır; test paneli ayrı bir katmandır ve yayına girmez.
+
+| Bölüm | Ne yapar |
+|---|---|
+| **Yan rehber** | Rütbeleri 3'erli sayfalar halinde döndürür: rütbe adı · hediye adı · gereken 💎 ve puan. Altta sürekli **👑 PADİŞAH OL** (taç bedeli + hediye adı) ve **🆓 ÜCRETSİZ KATIL** (`!katıl`) kutuları görünür. |
+| **Büyük rehber** | `!hediyeler` (veya `!hediye`, `!rehber`) yazılınca 15 sn tüm rütbeleri iki sütunda, büyük puntoyla gösterir. Rehber gizliyken de açılır. Spam'e karşı tüm izleyiciler için ortak 20 sn bekleme vardır. |
+| **Yayın açılışı** | Sahne açılınca ve TikTok yayınına bağlanınca otomatik **10 sn'lik** katılım + hediye bilgilendirmesi çıkar. Kapatmak için `intro.enabled: false`; tek bir sayfada kapatmak için URL'ye `&intro=0` ekle. |
+| **Hediye etkisi** | Hediye gelince rehberin içinde kısa animasyonla: kazanılan **puan**, kazanılan/yaklaşılan **rütbe**, sonraki rütbe için kalan puan. Ardından listede o rütbe vurgulanır. Rehber gizliyken gösterilmez. |
+| **`!katıl` bilgisi** | Yeni katılana "Hoş geldin, ücretsiz katıldın" kartı çıkar; rehberin altında kalıcı olarak da yazar. |
+| **Göster / gizle** | Test panelinde **Rehberi Gizle / Göster** düğmesi (yayıncı kontrolü, OBS sahnesine anında yansır ve kalıcıdır). |
+
+**Tek kaynak:** Rehberdeki hiçbir hediye eşiği, puan, taç bedeli veya komut adı ikinci kez yazılmaz; hepsi `scenarios/osmanli.js` içindeki
+`ranks`, `points`, `giftRankGrants`, `commands` ve `testGifts` (örnek hediye kataloğu) bölümlerinden okunur. Eşiği değiştirirsen rehber kendiliğinden değişir.
+Yalnızca görünüm ve metinler `game.guide` bölümündedir (`pageSize`, `pageSeconds`, `openSeconds`, `intro`, `texts`...).
+
+**Önemli (etkin eşik):** Bir rütbeye iki yoldan ulaşılır: hediye eşiği (`giftRankGrants`) veya puan (`minPoints`).
+Rehber, yeni bir oyuncunun tek hediyede o rütbeye ulaşması için gereken **en düşük** elmas değerini gösterir. Varsayılan ayarda (1💎 = 10 puan)
+Sipahi ve üstü (Kubbealtı Veziri'ne kadar) için puan yolu hediye eşiğinden daha ucuzdur; bu yüzden örneğin Kaptan-ı Derya `450 💎+` görünür (`giftRankGrants` içindeki `600` değil).
+Bunu dengelemek istersen `points.perDiamond` değerini düşür veya `minPoints` değerlerini yükselt; rehber otomatik uyar.
+
+**Test paneli (Oyun bölümü → Hediye Rehberi):** rehberi gizle/göster, büyük rehberi aç, 10 sn tanıtımı oynat ve **Hediye Eşikleri** tablosu
+(yayındaki rehberle aynı veriden). **"Eşikleri Canlı Sına"** her eşik için geçici bir test oyuncusu ekleyip tam eşik değerinde hediye gönderir,
+sunucudaki gerçek sonucu okur ve tabloda ✓/✗ gösterir; sonra test oyuncularını siler (taht doluysa Padişah satırını atlar, gerçek Padişah'ı korur). Yayın sırasında kullanma.
+Panel açıkken sahne alanı daralır, böylece panel rehberi örtmez.
 
 ### Güvenlik ve kayıt notları
 - Oyun verisini değiştiren işlemler (yönetici düğmeleri, sahte olaylar) varsayılan olarak **yalnızca sunucunun çalıştığı bilgisayardan** kabul edilir. Başka cihazdan test için `ALLOW_REMOTE_ADMIN=1 npm start`.

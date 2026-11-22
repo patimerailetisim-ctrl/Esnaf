@@ -183,8 +183,9 @@ module.exports = {
       job:      ['!meslek'],
       army:     ['!ordu'],
       treasury: ['!hazine'],
+      guide:    ['!hediyeler', '!hediye', '!rehber'],   // hediye ve rütbe rehberini ekranda açar
     },
-    cooldowns: { join: 20, rank: 15, name: 5, nameChange: 120, job: 10, army: 20, treasury: 20 },
+    cooldowns: { join: 20, rank: 15, name: 5, nameChange: 120, job: 10, army: 20, treasury: 20, guide: 20 },
 
     // ---------------------------------------------------------------- MESLEKLER (!meslek çiftçi / asker / esnaf)
     // unlockPoints: gereken puan (ücretsiz oyuncular yorum yaparak kazanır)
@@ -224,7 +225,38 @@ module.exports = {
     limits: { maxUsers: 5000, nameLength: 16 },
     nameBlocklist: [],             // yasaklı isimler (rütbe adları zaten yasaktır)
 
-    // ---------------------------------------------------------------- TEST PANELİ HEDİYELERİ
+    // ---------------------------------------------------------------- HEDİYE VE RÜTBE REHBERİ (yayın sahnesinde, sağda)
+    // Rehberdeki hediye eşikleri, puanlar, taç bedeli ve komut adları YUKARIDAKİ ranks / points /
+    // giftRankGrants / commands / testGifts bölümlerinden OTOMATİK okunur; burada ikinci kez yazılmaz.
+    // Burada yalnızca görünüm ayarları ve açıklama metinleri bulunur.
+    // Metin değişkenleri: {join} {guide} {crownDiamonds} {crownGift} {perDiamond}
+    guide: {
+      title: 'HEDİYE VE RÜTBE REHBERİ',
+      visible: true,                 // yan rehber varsayılan olarak açık (panelden gizlenip açılabilir)
+      pageSize: 3,                   // yan rehberde aynı anda görünen rütbe sayısı
+      pageSeconds: 4,                // sayfa değiştirme aralığı
+      openSeconds: 15,               // !hediyeler yazılınca büyük rehber kaç sn açık kalsın
+      giftFlashSeconds: 4.5,         // hediye geldiğinde puan/rütbe bilgisinin ekranda kalma süresi
+      intro: {                       // yayın açıldığında otomatik bilgilendirme
+        enabled: true,
+        seconds: 10,
+        onSceneLoad: true,           // sahne (OBS/LIVE Studio kaynağı) açılınca
+        onLiveConnect: true,         // TikTok yayınına bağlanınca
+      },
+      texts: {
+        freeTitle: 'ÜCRETSİZ KATIL',
+        freeLine: 'Yorumuna {join} yaz, Köylü ol!',
+        freeMore: 'Yorum, takip ve beğeniyle puan kazan.',
+        throneTitle: 'PADİŞAH OL',
+        throneLine: 'Tek hediyede {crownDiamonds} 💎 ({crownGift})',
+        pointsLine: '1 💎 = {perDiamond} puan · combo toplamı sayılır',
+        moreLine: 'Tüm liste: {guide}',
+        welcomeTitle: 'Hoş geldin! Ücretsiz katıldın',
+        welcomeLine: 'Köylü olarak başlıyorsun. Hediyeler için {guide} yaz.',
+      },
+    },
+
+    // ---------------------------------------------------------------- TEST PANELİ HEDİYELERİ (aynı zamanda rehberdeki örnek hediye kataloğu)
     testGifts: [
       { name: 'Rose', diamonds: 1, icon: '🌹' },
       { name: 'TikTok', diamonds: 1, icon: '🎵' },

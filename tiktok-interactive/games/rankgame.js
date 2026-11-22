@@ -46,7 +46,7 @@ class RankGame {
     c.economy.effects = c.economy.effects || {};
     c.cooldowns = c.cooldowns || {};
     c.professions = c.professions || {};
-    c.commands = Object.assign({ join: ['!katıl'], rank: ['!rütbe'], name: ['!isim'], job: ['!meslek'], army: ['!ordu'], treasury: ['!hazine'] }, c.commands);
+    c.commands = Object.assign({ join: ['!katıl'], rank: ['!rütbe'], name: ['!isim'], job: ['!meslek'], army: ['!ordu'], treasury: ['!hazine'], guide: ['!hediyeler'] }, c.commands);
     c.autoJoin = c.autoJoin || {};
     c.points = Object.assign({ perDiamond: 1 }, c.points);
 
@@ -106,6 +106,7 @@ class RankGame {
       users: {},
       stats: { treasury: st.treasury ?? 0, population: st.population ?? 0, production: st.production ?? 0, cities: 0 },
       throne: { holderId: null, crownedAt: 0, crownValue: 0, history: [] },
+      ui: { guideVisible: this.cfg.guide ? this.cfg.guide.visible !== false : false }, // yan rehber açık mı (yayıncı ayarı, kalıcı)
       savedAt: 0,
     };
   }
@@ -121,6 +122,7 @@ class RankGame {
       this.state = Object.assign(this._blank(), data);
       this.state.stats = Object.assign(this._blank().stats, data.stats);
       this.state.throne = Object.assign(this._blank().throne, data.throne);
+      this.state.ui = Object.assign(this._blank().ui, data.ui);
       // config'te artık olmayan rütbeleri başlangıç rütbesine çek
       for (const u of Object.values(this.state.users)) {
         if (!this.rankIndex.has(u.rank)) u.rank = this.ranks[0].id;
@@ -424,7 +426,14 @@ class RankGame {
       const r = this.ranks[after];
       this.emitFx('rankup', { user: this.pub(user), from: this.ranks[before].id, to: r.id, fx: r.fx || 'minor', reason: 'gift' });
     }
-    this.emitFx('gift', { user: this.pub(user), gift: { name: g.name, count: g.count, diamonds, image: g.image || '' }, crowned, note, rankChanged: after > before });
+    // Ekrandaki "hediye etkisi" animasyonu için bilgi: kazanılan puan, hediyenin eşik rütbesi, sonraki rütbe
+    const nx = this._nextInfo(user);
+    this.emitFx('gift', {
+      user: this.pub(user), gift: { name: g.name, count: g.count, diamonds, image: g.image || '' }, crowned, note, rankChanged: after > before,
+      points: Math.round(this._giftPoints(g) * 100) / 100, total: Math.floor(user.points),
+      grantRank: grant >= 0 ? this.ranks[grant].id : null, rank: this.ranks[after].id,
+      next: nx ? { id: nx.id, name: nx.name, need: Math.ceil(nx.need) } : null,
+    });
   }
 
   _tryCrown(user, diamonds) {
@@ -518,6 +527,10 @@ class RankGame {
   _command(cmd, ev) {
     const cd = this.cfg.cooldowns || {};
     if (cmd.name === 'join') { this._join(ev, false); return; }
+    if (cmd.name === 'guide') { // herkes açabilir; tek bir genel bekleme süresi var (spam ile ekran kilitlenemez)
+      if (!this._cooling('*', 'cmd:guide', cd.guide ?? 20)) this.showGuide('command');
+      return;
+    }
 
     const user = this._getUser(ev.user, false);
     if (!user) {
@@ -543,13 +556,21 @@ class RankGame {
     return sorted.findIndex((u) => u.id === user.id) + 1;
   }
 
+  /** Puanla ulaşılabilecek bir sonraki rütbe ve kalan puan (yoksa null) */
+  _nextInfo(user) {
+    for (let i = this.rankIdxOf(user) + 1; i < this.ranks.length; i++) {
+      const r = this.ranks[i];
+      if (r.auto !== false) return { id: r.id, name: r.name, icon: r.icon, need: Math.max(0, r.minPoints - user.points) };
+    }
+    return null;
+  }
+
   _cmdRank(user) {
     const idx = this.rankIdxOf(user);
     const r = this.ranks[idx];
     let nextLine = 'En üst kademedesin!';
-    let next = null;
-    for (let i = idx + 1; i < this.ranks.length; i++) if (this.ranks[i].auto !== false) { next = this.ranks[i]; break; }
-    if (next) nextLine = `Sonraki: ${next.name} (${fmtNum(Math.max(0, next.minPoints - user.points))} puan kaldı)`;
+    const nx = this._nextInfo(user);
+    if (nx) nextLine = `Sonraki: ${nx.name} (${fmtNum(nx.need)} puan kaldı)`;
     else if (idx < this.ranks.length - 1) nextLine = 'Üst rütbeler hediye ile kazanılır.';
     this.emitFx('notice', {
       kind: 'rank', user: this.pub(user), icon: r.icon, title: `${this.displayName(user)} · ${r.name}`,
@@ -644,6 +665,21 @@ class RankGame {
     });
   }
 
+  // ---------------------------------------------------------------- rehber (görünüm olayları)
+  /** Büyük hediye/rütbe rehberini ekranda açtırır (reason: command | admin | intro) */
+  showGuide(reason, seconds) {
+    const g = this.cfg.guide;
+    if (!g) return;
+    const sec = seconds ?? (reason === 'intro' ? (g.intro && g.intro.seconds) || 10 : g.openSeconds || 15);
+    this.emitFx('guide', { mode: 'open', seconds: sec, reason });
+  }
+
+  /** Yayın açıldığında (TikTok'a bağlanınca) otomatik katılım + hediye bilgilendirmesi */
+  intro() {
+    const g = this.cfg.guide;
+    if (g && g.intro && g.intro.enabled !== false && g.intro.onLiveConnect !== false) this.showGuide('intro');
+  }
+
   // ---------------------------------------------------------------- anlık görüntü
   _sortedUsers() {
     return Object.values(this.state.users).sort((a, b) => (this.rankIdxOf(b) - this.rankIdxOf(a)) || (b.points - a.points) || (a.joinedAt - b.joinedAt));
@@ -667,6 +703,7 @@ class RankGame {
         treasury: Math.floor(st.treasury), population: Math.floor(st.population), production: Math.round(st.production * 10) / 10,
         cities: st.cities, cityName: st.cities ? cities[st.cities - 1].name : '', army: Math.floor(army.power), soldiers: army.soldiers,
       },
+      ui: { guideVisible: !!(this.state.ui && this.state.ui.guideVisible) },
       throne: {
         holder: th.holderId ? this.pub(this.state.users[th.holderId]) : null,
         crownedAt: th.crownedAt, crownValue: th.crownValue, cooldownLeft: this.throneCooldownLeftSec(), history: th.history.slice(0, 5),
@@ -709,6 +746,21 @@ class RankGame {
         this._crown(u, p.value || 0, { force: true });
         return ok('Taç giydirildi.');
       }
+      case 'inspect': { // salt okunur: bir oyuncunun güncel rütbe/puanı (panelin eşik sınaması için)
+        const u = this._find(p.user);
+        if (!u) return { ok: false, message: 'Kullanıcı bulunamadı.', data: null };
+        return { ok: true, message: `${this.displayName(u)}: ${u.rank}`, data: { id: u.id, rank: u.rank, points: Math.floor(u.points) } };
+      }
+      case 'guide': { // yan rehberi göster/gizle (yayıncı kontrolü; OBS sahnesine anında yansır)
+        if (!this.cfg.guide) return fail('Bu senaryoda rehber yok.');
+        const v = p.visible === 'toggle' ? !this.state.ui.guideVisible : !!p.visible;
+        this.state.ui.guideVisible = v;
+        return ok(v ? 'Rehber gösteriliyor.' : 'Rehber gizlendi.');
+      }
+      case 'showGuide': {
+        this.showGuide(p.intro ? 'intro' : 'admin');
+        return ok('Büyük rehber açıldı.');
+      }
       case 'vacateThrone': {
         const th = this.state.throne;
         const h = th.holderId ? this.state.users[th.holderId] : null;
@@ -721,6 +773,7 @@ class RankGame {
         const u = this._find(p.user);
         if (!u) return fail('Kullanıcı bulunamadı.');
         if (this.state.throne.holderId === u.id) { this.state.throne.holderId = null; this.state.throne.crownedAt = 0; }
+        this.state.throne.history = this.state.throne.history.filter((h) => h.id !== u.id);
         delete this.state.users[u.id];
         return ok('Oyuncu silindi.');
       }
