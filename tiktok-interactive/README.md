@@ -205,18 +205,18 @@ Rütbe puanla yükselir ve asla puanla düşmez. **Padişahlık normal puana ba�
 ### Taht açık artırması (`throne.auction`)
 | Kural | Ayar |
 |---|---|
-| Her **10 dk**'da bir otomatik başlar (sayaç açık artırmanın **bitişinden** itibaren işler) | `intervalSec: 600` |
-| **60 sn** sürer | `durationSec: 60` |
+| Her **3 dk**'da bir otomatik başlar (sayaç açık artırmanın **bitişinden** itibaren işler) | `intervalSec: 180` |
+| **45 sn** sürer | `durationSec: 45` |
 | Süre boyunca gelen **hediye puanları** kullanıcının *teklifine* eklenir; **normal puan da aynı anda yazılır**. Her kullanıcının teklifi ayrı tutulur | – |
-| **Son 10 sn**'de gelen teklif süreyi **+10 sn** uzatır (zincirleme) | `extendWindowSec: 10`, `extendBySec: 10` |
+| **Son 10 sn**'de gelen teklif **mevcut bitiş süresine +5 sn** ekler (zincirleme). **Toplam uzatma en fazla 30 sn** (en çok 6 uzatma; kalan hak adımdan azsa yalnızca kalanı eklenir). Tavan dolunca teklif sayılır ama süre uzamaz | `extendWindowSec: 10`, `extendBySec: 5`, `maxExtensionSec: 30` |
 | En yüksek teklif **Padişah** olur; **beraberlikte son geçerli teklifi veren** kazanır | – |
 | Eski Padişah **Sadrazam** olur (kaydı silinmez) | `throne.demoteTo: 'sadrazam'` |
 | Teklifler bitişte **sıfırlanır**; **normal puanlar asla sıfırlanmaz** | – |
 | Teklif gelmezse taht değişmez; mevcut Padişah en yükseği verirse tahtını korur | – |
-| Ekranda ilk **5** teklif sahibi ve puanları, geri sayım, son 10 sn nabız, son 3 sn dev 3-2-1, "+10 sn" animasyonu, kazanan sinematiği | `topN: 5` |
+| Ekranda ilk **5** teklif sahibi ve puanları, geri sayım, son 10 sn nabız, son 3 sn dev 3-2-1, "+5 sn" animasyonu, kazanan sinematiği | `topN: 5` |
 
-Sayfa yenilense de durum kaybolmaz: bitiş saati sunucuda mutlak olarak tutulur, sayfa güncel durumu sunucudan alır.
-**Sunucu yeniden başlarsa:** açık artırma sürüyorsa kalan süre ve kayıtlı tekliflerle **devam eder**; süresi dolmuşsa açılışta **kontrollü kapatılır** (kayıtlı tekliflerden kazanan belirlenir, bir kez);
+Sayfa yenilense de durum kaybolmaz: bitiş saati ve toplam uzatma sayacı sunucuda mutlak olarak tutulur, sayfa güncel durumu sunucudan alır.
+**Sunucu yeniden başlarsa:** açık artırma sürüyorsa kalan süre, kullanılmış uzatma hakkı ve kayıtlı tekliflerle **devam eder**; süresi dolmuşsa açılışta **kontrollü kapatılır** (kayıtlı tekliflerden kazanan belirlenir, bir kez);
 beklerken zamanı geçmiş bir mücadele ani başlamaz, `restartDelaySec` (30 sn) ertelenir.
 
 ### Ücretsiz katılım ve spam koruması

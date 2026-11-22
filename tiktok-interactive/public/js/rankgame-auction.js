@@ -3,7 +3,7 @@
  * TAHT MÜCADELESİ KARTI (rankgame-auction.js) - yayın sahnesinin solunda
  * ---------------------------------------------------------------------
  *  - Beklerken: sonraki mücadeleye geri sayım + Padişah ve Sadrazam bilgisi
- *  - Açık artırmada: kalan süre (son 10 sn kırmızı nabız, son 3 sn dev 3-2-1), "+10 sn" uzatma animasyonu,
+ *  - Açık artırmada: kalan süre (son 10 sn kırmızı nabız, son 3 sn dev 3-2-1), "+5 sn" uzatma animasyonu,
  *    ilk 5 teklif sahibi ve teklif puanları (sıralama değişimi animasyonlu)
  * Durum sunucudan gelir (game:state); geri sayım sunucunun mutlak bitiş saatinden hesaplanır, bu yüzden
  * sayfa yenilense de açık artırma durumu ve kalan süre kaybolmaz.
@@ -146,7 +146,7 @@
       const bar = this.q('.au-bar i');
       if (a.phase === 'active') {
         const left = Math.max(0, a.endsAt - now);
-        const total = (a.durationSec + a.extensions * a.extendBySec) * 1000;
+        const total = (a.durationSec + (a.extendedSec || 0)) * 1000;
         label.textContent = 'AÇIK ARTIRMA · KALAN SÜRE';
         timeEl.textContent = left < 10000 ? (left / 1000).toFixed(1) : clock(left);
         bar.style.width = Math.min(100, (left / total) * 100) + '%';

@@ -354,7 +354,7 @@
     const now = Date.now() + (a.serverNow - (st.__recv || Date.now()));
     const fmtT = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
     if (!a.enabled) box.textContent = 'Açık artırma kapalı (config).';
-    else if (a.phase === 'active') box.textContent = `⚔️ #${a.id} SÜRÜYOR · kalan ${fmtT(a.endsAt - now)} · ${a.bidders} teklif sahibi · toplam ${a.totalBid.toLocaleString('tr-TR')} puan · uzatma ${a.extensions}x`;
+    else if (a.phase === 'active') box.textContent = `⚔️ #${a.id} SÜRÜYOR · kalan ${fmtT(a.endsAt - now)} · ${a.bidders} teklif sahibi · toplam ${a.totalBid.toLocaleString('tr-TR')} puan · uzatma +${a.extendedSec || 0}/${a.maxExtensionSec} sn (${a.extensions}x)`;
     else box.textContent = `Sonraki mücadele: ${fmtT(a.nextAt - now)}${a.last && a.last.winnerName ? ` · son kazanan: ${a.last.winnerName} (${a.last.bid.toLocaleString('tr-TR')})` : ''}`;
   }
   setInterval(updateAuctionPanel, 1000);

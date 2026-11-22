@@ -25,8 +25,8 @@ test('Rehber verisi senaryo dosyasından okunur: her rütbe için puan eşiği v
   }
   assert.equal(d.crown.id, 'padisah');
   assert.equal(GuideData.giftLabel(d.crown), 'En yüksek teklif');
-  assert.equal(d.auction.everySec, 600);
-  assert.equal(d.auction.durationSec, 60);
+  assert.equal(d.auction.everySec, 180);
+  assert.equal(d.auction.durationSec, 45);
 });
 
 test('Rehber metinleri değişkenleri config\'ten doldurur (komut adı, puan katsayısı, açık artırma süreleri)', () => {
@@ -34,8 +34,8 @@ test('Rehber metinleri değişkenleri config\'ten doldurur (komut adı, puan kat
   const d = GuideData.build(sc.game);
   const t = sc.game.guide.texts;
   assert.equal(GuideData.template(t.freeLine, d), `Yorumuna ${sc.game.commands.join[0]} yaz, Köylü ol!`);
-  assert.equal(GuideData.template(t.throneRail, d), 'Açık artırmada en yüksek teklif · her 10 dk');
-  assert.equal(GuideData.template(t.throneMore, d), '60 sn sürer · son 10 sn teklif +10 sn uzatır');
+  assert.equal(GuideData.template(t.throneRail, d), 'Açık artırmada en yüksek teklif · her 3 dk');
+  assert.equal(GuideData.template(t.throneMore, d), '45 sn sürer · son 10 sn teklif +5 sn (en çok +30 sn)');
   assert.equal(GuideData.template(t.pointsLine, d), '1 💎 hediye değeri = 1 puan · combo toplamı sayılır');
   assert.equal(GuideData.template(t.moreLine, d), `Tüm liste: ${sc.game.commands.guide[0]}`);
 });
@@ -57,7 +57,7 @@ test('Config değişince rehber de değişir (ikinci kez sabit yazılmış değe
   assert.equal(GuideData.template(sc.game.guide.texts.pointsLine, d), '1 💎 hediye değeri = 4 puan · combo toplamı sayılır');
   assert.match(GuideData.template(sc.game.guide.texts.freeLine, d), /!gir/);
   assert.equal(GuideData.template(sc.game.guide.texts.throneRail, d), 'Açık artırmada en yüksek teklif · her 15 dk');
-  assert.match(GuideData.template(sc.game.guide.texts.throneMore, d), /90 sn sürer.*\+15 sn/);
+  assert.match(GuideData.template(sc.game.guide.texts.throneMore, d), /90 sn sürer.*\+15 sn \(en çok \+30 sn\)/);
   assert.equal(GuideData.pointsLabel(d.rows[0], d), '🆓 !gir');
   // katsayı 4 olunca aynı puan için 4 kat daha az hediye değeri gerekir
   const sipahiBase = GuideData.build(makeGame().sc.game).rows.find((r) => r.id === 'sipahi').example.value;
@@ -147,7 +147,7 @@ test('Yan rehber satırları: hediye karşılığı + değer + puan config\'ten 
   const row = (id) => d.rows.find((r) => r.id === id);
   assert.deepEqual(GuideData.railLines(row('ciftci'), d), { gift: '≈ Hand Hearts', detail: '100 💎 · 100 puan' });
   assert.deepEqual(GuideData.railLines(row('esnaf'), d), { gift: '≈ 3× Hand Hearts', detail: '300 💎 · 300 puan' });
-  assert.deepEqual(GuideData.railLines(row('padisah'), d), { gift: 'En yüksek teklif', detail: 'her 10 dk · 60 sn' });
+  assert.deepEqual(GuideData.railLines(row('padisah'), d), { gift: 'En yüksek teklif', detail: 'her 3 dk · 45 sn' });
   assert.deepEqual(GuideData.railLines(row('koylu'), d), { gift: 'Hediyesiz', detail: '🆓 !katıl' });
 });
 

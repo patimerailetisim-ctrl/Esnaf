@@ -63,7 +63,7 @@ class RankGame {
     c.giftValue = Object.assign({ field: 'diamondCount', maxPerUnit: 1000000 }, c.giftValue);
     c.throne = c.throne || {};
     c.throne.auction = Object.assign({
-      enabled: true, intervalSec: 600, durationSec: 60, extendWindowSec: 10, extendBySec: 10, minBidPoints: 0, restartDelaySec: 30, topN: 5,
+      enabled: true, intervalSec: 180, durationSec: 45, extendWindowSec: 10, extendBySec: 5, maxExtensionSec: 30, minBidPoints: 0, restartDelaySec: 30, topN: 5,
     }, c.throne.auction);
     c.spam = Object.assign({ commentCooldownSec: c.points.commentCooldownSec ?? 15, duplicateWindowSec: 120, globalPerMinute: 120 }, c.spam);
     c.idempotency = Object.assign({ maxIds: 2000 }, c.idempotency);
@@ -124,7 +124,7 @@ class RankGame {
     }
     need(typeof c.points.perGiftValue === 'number' && c.points.perGiftValue > 0, 'points.perGiftValue pozitif sayı olmalı');
     const a = c.throne.auction;
-    for (const k of ['intervalSec', 'durationSec', 'extendWindowSec', 'extendBySec']) need(typeof a[k] === 'number' && a[k] > 0, `throne.auction.${k} pozitif sayı olmalı`);
+    for (const k of ['intervalSec', 'durationSec', 'extendWindowSec', 'extendBySec', 'maxExtensionSec']) need(typeof a[k] === 'number' && a[k] > 0, `throne.auction.${k} pozitif sayı olmalı`);
     for (const [k, j] of Object.entries(c.professions || {})) need(!j.minRank || ids.has(j.minRank), `professions.${k}.minRank bilinmiyor`);
   }
 
@@ -135,7 +135,7 @@ class RankGame {
       users: {},
       stats: { treasury: st.treasury ?? 0, population: st.population ?? 0, production: st.production ?? 0, cities: 0, counters: BLANK_COUNTERS() },
       throne: { holderId: null, vizierId: null, crownedAt: 0, crownBid: 0, history: [] },
-      auction: { phase: 'idle', id: 0, nextAt: 0, startedAt: 0, endsAt: 0, extensions: 0, seq: 0, bids: {}, last: null },
+      auction: { phase: 'idle', id: 0, nextAt: 0, startedAt: 0, endsAt: 0, extensions: 0, extendedSec: 0, seq: 0, bids: {}, last: null },
       seen: [],
       ui: { guideVisible: this.cfg.guide ? this.cfg.guide.visible !== false : false }, // yan rehber açık mı (yayıncı ayarı, kalıcı)
       savedAt: 0,
@@ -434,7 +434,7 @@ class RankGame {
     const a = this.state.auction;
     const now = this.now();
     a.phase = 'active'; a.id += 1; a.startedAt = now; a.endsAt = now + this.au.durationSec * 1000;
-    a.extensions = 0; a.seq = 0; a.bids = {};
+    a.extensions = 0; a.extendedSec = 0; a.seq = 0; a.bids = {};
     this.emitFx('auction', { mode: 'start', id: a.id, endsAt: a.endsAt, durationSec: this.au.durationSec, holder: this.pub(this._holder()) });
     this._changed();
   }
@@ -459,12 +459,16 @@ class RankGame {
     b.points = r2(b.points + points);
     b.seq = ++a.seq;
     b.at = now;
+    // Son N saniyede gelen teklif MEVCUT bitiş süresine extendBySec ekler; toplam uzatma maxExtensionSec'i aşamaz
     let extended = false;
-    if (a.endsAt - now <= this.au.extendWindowSec * 1000) { // son N saniyede gelen teklif süreyi uzatır
-      a.endsAt += this.au.extendBySec * 1000;
+    const room = this.au.maxExtensionSec - (a.extendedSec || 0);
+    if (a.endsAt - now <= this.au.extendWindowSec * 1000 && room > 0) {
+      const add = Math.min(this.au.extendBySec, room);
+      a.endsAt += add * 1000;
+      a.extendedSec = (a.extendedSec || 0) + add;
       a.extensions += 1;
       extended = true;
-      this.emitFx('auction', { mode: 'extend', id: a.id, endsAt: a.endsAt, bySec: this.au.extendBySec, by: this.pub(user) });
+      this.emitFx('auction', { mode: 'extend', id: a.id, endsAt: a.endsAt, bySec: add, totalSec: a.extendedSec, maxSec: this.au.maxExtensionSec, by: this.pub(user) });
     }
     const position = this._bidList().findIndex((e) => e.user.id === user.id) + 1;
     this.emitFx('auction', { mode: 'bid', id: a.id, user: this.pub(user), bid: b.points, delta: points, position });
@@ -493,7 +497,7 @@ class RankGame {
     }
     a.last = { id: a.id, endedAt: now, winnerId: payload.winner ? payload.winner.id : null, winnerName: payload.winner ? payload.winner.name : null, bid: payload.bid, retained: payload.retained, bidders: payload.bidders };
     // Teklifler sıfırlanır; oyuncu PUANLARI asla. Yeni mücadele için aralık sayacı BİTİŞTEN itibaren başlar.
-    a.phase = 'idle'; a.bids = {}; a.seq = 0; a.extensions = 0; a.startedAt = 0; a.endsAt = 0;
+    a.phase = 'idle'; a.bids = {}; a.seq = 0; a.extensions = 0; a.extendedSec = 0; a.startedAt = 0; a.endsAt = 0;
     a.nextAt = now + this.au.intervalSec * 1000;
     this.emitFx('auction', payload);
     this._changed();
@@ -875,8 +879,8 @@ class RankGame {
       },
       auction: {
         enabled: !!this.au.enabled, phase: a.phase, id: a.id, serverNow: now, nextAt: a.nextAt, endsAt: a.endsAt,
-        durationSec: this.au.durationSec, intervalSec: this.au.intervalSec, extendWindowSec: this.au.extendWindowSec, extendBySec: this.au.extendBySec,
-        extensions: a.extensions, bidders: bids.length, totalBid: Math.floor(bids.reduce((s, e) => s + e.points, 0)),
+        durationSec: this.au.durationSec, intervalSec: this.au.intervalSec, extendWindowSec: this.au.extendWindowSec, extendBySec: this.au.extendBySec, maxExtensionSec: this.au.maxExtensionSec,
+        extensions: a.extensions, extendedSec: a.extendedSec || 0, bidders: bids.length, totalBid: Math.floor(bids.reduce((s, e) => s + e.points, 0)),
         top: bids.slice(0, this.au.topN).map((e) => Object.assign(this.pub(e.user), { bid: Math.floor(e.points) })),
         last: a.last,
       },

@@ -71,7 +71,7 @@
       unit: (game.giftValue && game.giftValue.unitLabel) || '💎',
       auction: {
         enabled: au.enabled !== false, everySec: au.intervalSec, durationSec: au.durationSec,
-        extendWindowSec: au.extendWindowSec, extendBySec: au.extendBySec, topN: au.topN || 5,
+        extendWindowSec: au.extendWindowSec, extendBySec: au.extendBySec, maxExtensionSec: au.maxExtensionSec, topN: au.topN || 5,
       },
       guide: game.guide || {},
     };
@@ -106,14 +106,14 @@
     return { gift, detail: parts.join(' · ') };
   }
 
-  /** Metin şablonu: {join} {guide} {perGiftValue} {auctionEvery} {auctionSeconds} {extendWindow} {extendBy} */
+  /** Metin şablonu: {join} {guide} {perGiftValue} {auctionEvery} {auctionSeconds} {extendWindow} {extendBy} {extendMax} */
   function template(str, data) {
     const a = data.auction;
     const vars = {
       join: data.cmds.join || '', guide: data.cmds.guide || '', rank: data.cmds.rank || '',
       perGiftValue: trim(data.perGiftValue),
       auctionEvery: trim(a.everySec / 60), auctionSeconds: String(a.durationSec),
-      extendWindow: String(a.extendWindowSec), extendBy: String(a.extendBySec),
+      extendWindow: String(a.extendWindowSec), extendBy: String(a.extendBySec), extendMax: String(a.maxExtensionSec),
     };
     return String(str || '').replace(/\{(\w+)\}/g, (_m, k) => (k in vars ? vars[k] : ''));
   }

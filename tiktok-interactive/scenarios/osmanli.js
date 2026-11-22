@@ -16,7 +16,7 @@
  * KURALLAR ÖZETİ
  *  - Hediye değeri: connector'ın hediye metadata alanı `giftDetails.diamondCount`. Puan = değer x points.perGiftValue.
  *  - Rütbeler yalnızca PUANLA yükselir. Padişahlık puandan bağımsızdır; yalnızca taht açık artırmasıyla kazanılır.
- *  - Taht açık artırması: her 10 dk'da bir, 60 sn; hediye puanı teklife de eklenir; son 10 sn teklif +10 sn uzatır;
+ *  - Taht açık artırması: her 3 dk'da bir, 45 sn; hediye puanı teklife de eklenir; son 10 sn teklif +5 sn uzatır (toplam en çok +30 sn);
  *    en yüksek teklif Padişah olur (eşitlikte son teklif); eski Padişah Sadrazam olur; teklifler sıfırlanır (puanlar ASLA).
  */
 module.exports = {
@@ -162,10 +162,11 @@ module.exports = {
       demoteTo: 'sadrazam',   // yeni Padişah gelince eskisi bu rütbeye iner
       auction: {
         enabled: true,
-        intervalSec: 600,         // mücadeleler arası süre (açık artırma BİTİŞİNDEN itibaren 10 dk)
-        durationSec: 60,          // açık artırma süresi
+        intervalSec: 180,         // mücadeleler arası süre: açık artırma BİTİŞİNDEN itibaren 3 dk
+        durationSec: 45,          // açık artırma süresi
         extendWindowSec: 10,      // son kaç saniyede gelen teklif süreyi uzatır
-        extendBySec: 10,          // uzatma miktarı
+        extendBySec: 5,           // her uzatmada MEVCUT bitiş süresine eklenen saniye
+        maxExtensionSec: 30,      // bir açık artırmada toplam uzatma üst sınırı
         minBidPoints: 0,          // geçerli bir tekliften beklenen en düşük tek hediye puanı (0: puanı olan her hediye)
         topN: 5,                  // ekranda gösterilen teklif sahibi sayısı
         restartDelaySec: 30,      // sunucu yeniden başlayınca, zamanı geçmiş bir mücadele ani başlamasın diye ertelenir
@@ -239,7 +240,7 @@ module.exports = {
     // Rehberdeki puan eşikleri, hediye karşılıkları, katsayı, açık artırma süreleri ve komut adları YUKARIDAKİ
     // ranks / points / throne.auction / commands / giftCatalog bölümlerinden OTOMATİK okunur; ikinci kez yazılmaz.
     // Burada yalnızca görünüm ayarları ve açıklama metinleri bulunur.
-    // Metin değişkenleri: {join} {guide} {perGiftValue} {auctionEvery} {auctionSeconds} {extendWindow} {extendBy}
+    // Metin değişkenleri: {join} {guide} {perGiftValue} {auctionEvery} {auctionSeconds} {extendWindow} {extendBy} {extendMax}
     guide: {
       title: 'HEDİYE VE RÜTBE REHBERİ',
       visible: true,                 // yan rehber varsayılan olarak açık (panelden gizlenip açılabilir)
@@ -260,7 +261,7 @@ module.exports = {
         throneTitle: 'PADİŞAH OL',
         throneRail: 'Açık artırmada en yüksek teklif · her {auctionEvery} dk',
         throneLine: 'Her {auctionEvery} dk taht açık artırması: en çok hediye puanı veren Padişah',
-        throneMore: '{auctionSeconds} sn sürer · son {extendWindow} sn teklif +{extendBy} sn uzatır',
+        throneMore: '{auctionSeconds} sn sürer · son {extendWindow} sn teklif +{extendBy} sn (en çok +{extendMax} sn)',
         pointsLine: '1 💎 hediye değeri = {perGiftValue} puan · combo toplamı sayılır',
         moreLine: 'Tüm liste: {guide}',
         welcomeTitle: 'Hoş geldin! Ücretsiz katıldın',
