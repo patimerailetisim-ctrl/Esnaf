@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="130" viewBox="0 0 170 130">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0a6"/><stop offset="0.5" stop-color="#d4a72c"/><stop offset="1" stop-color="#8a6512"/></linearGradient>
+    <linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a5a2a"/><stop offset="1" stop-color="#5a3114"/></linearGradient>
+  </defs>
+  <ellipse cx="85" cy="122" rx="74" ry="8" fill="#000" opacity=".25"/>
+  <!-- altın yığını -->
+  <g fill="url(#g)" stroke="#8a6512" stroke-width="1.5">
+    <ellipse cx="85" cy="52" rx="62" ry="22"/><circle cx="46" cy="40" r="11"/><circle cx="68" cy="30" r="11"/><circle cx="92" cy="26" r="11"/><circle cx="114" cy="34" r="11"/><circle cx="128" cy="46" r="10"/><circle cx="58" cy="52" r="10"/><circle cx="82" cy="46" r="10"/><circle cx="106" cy="50" r="10"/>
+  </g>
+  <!-- sandık -->
+  <rect x="16" y="56" width="138" height="62" rx="8" fill="url(#w)" stroke="#3a1d0a" stroke-width="3"/>
+  <rect x="16" y="56" width="138" height="14" rx="6" fill="url(#g)"/>
+  <rect x="34" y="56" width="12" height="62" fill="url(#g)"/><rect x="124" y="56" width="12" height="62" fill="url(#g)"/>
+  <rect x="73" y="70" width="24" height="26" rx="5" fill="url(#g)" stroke="#8a6512" stroke-width="2"/><circle cx="85" cy="82" r="4" fill="#3a1d0a"/>
+</svg>

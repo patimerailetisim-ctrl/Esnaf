@@ -15,11 +15,15 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const scenarioLoader = require('./scenarios');
+const { createNormalizer } = require('./lib/events');
+const games = require('./games');
 
 // ---------------------------------------------------------------- AYARLAR
 const PORT = Number(process.env.PORT) || 3000;
 const DEFAULT_SCENARIO = process.env.SCENARIO || 'halay';
 const AUTO_USERNAME = (process.env.TIKTOK_USERNAME || process.argv[2] || '').replace(/^@/, '');
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(__dirname, 'data'); // kalıcı oyun kayıtları
+const ALLOW_REMOTE_ADMIN = process.env.ALLOW_REMOTE_ADMIN === '1'; // oyun verisini değiştiren işlemler varsayılan olarak sadece bu bilgisayardan
 
 // ---------------------------------------------------------------- DURUM
 let scenarios = scenarioLoader.loadAll();
@@ -36,6 +40,44 @@ const live = {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
+
+// ---------------------------------------------------------------- OYUN MODÜLLERİ (yalnızca `game` bölümü olan senaryolar)
+// Halay ve Uzay gibi `game` içermeyen senaryolar bu katmandan hiç etkilenmez.
+const gameInstances = new Map(); // senaryo id -> oyun örneği (veya hatalıysa null)
+
+function getGame(id) {
+  const sc = scenarios[id];
+  if (!sc || !sc.game) return null;
+  if (!gameInstances.has(id)) {
+    try {
+      gameInstances.set(id, games.create(sc, {
+        dataDir: DATA_DIR,
+        emitFx: (type, payload) => io.emit('game:fx', Object.assign({ scenario: id, type }, payload)),
+        emitState: (snap) => io.emit('game:state', snap),
+      }));
+    } catch (err) {
+      console.error(`[oyun] "${id}" başlatılamadı: ${err.message}`);
+      gameInstances.set(id, null);
+    }
+  }
+  return gameInstances.get(id);
+}
+
+/** Aktif senaryonun oyununu çalıştırır (ekonomi tiki vb.), diğerlerini durdurup kaydeder. */
+function activateGame() {
+  for (const [id, g] of gameInstances) if (g && id !== activeScenarioId) g.stop();
+  const g = getGame(activeScenarioId);
+  if (g) g.start();
+}
+
+function stopAllGames() {
+  for (const g of gameInstances.values()) if (g) g.stop();
+}
+
+const isLocalSocket = (socket) => {
+  const a = String((socket.handshake && socket.handshake.address) || '');
+  return a === '::1' || a === '127.0.0.1' || a.endsWith('127.0.0.1');
+};
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -99,79 +141,16 @@ app.get('/avatar/proxy', async (req, res) => {
 });
 
 // ---------------------------------------------------------------- OLAY NORMALİZASYONU
-const pick = (...vals) => vals.find((v) => v !== undefined && v !== null && v !== '');
-
-function normUser(raw = {}) {
-  const u = raw.user || {};
-  const urls = pick(u.avatarLarge?.urlList, u.avatarMedium?.urlList, u.avatarThumb?.urlList, u.profilePicture?.urls, []) || [];
-  const bestUrl = urls.find((x) => /100x100/.test(x) && /\.(jpeg|jpg|webp)/.test(x)) || urls.find((x) => !/shrink/.test(x)) || urls[0];
-  const uniqueId = String(pick(raw.uniqueId, u.displayId, u.uniqueId, u.nickname, 'misafir'));
-  const avatar = pick(raw.profilePictureUrl, bestUrl);
-  return {
-    id: String(pick(raw.userId, u.idStr, u.userId, uniqueId)),
-    uniqueId,
-    nickname: String(pick(raw.nickname, u.nickname, uniqueId)),
-    avatar: avatar
-      ? `/avatar/proxy?url=${encodeURIComponent(avatar)}`
-      : `/avatar/fake/${encodeURIComponent(uniqueId)}.svg`,
-    isModerator: !!raw.isModerator,
-    isSubscriber: !!raw.isSubscriber,
-  };
-}
-
-// Hediye serisi (streak) takibi: seri sürerken her güncellemede sadece FARKI gönderir
-const streaks = new Map(); // "userId:giftId" -> son repeatCount
-function normGift(raw) {
-  const d = raw.giftDetails || {};
-  const giftType = pick(d.giftType, raw.giftType, 0);
-  const repeatCount = Number(pick(raw.repeatCount, 1));
-  const repeatEnd = !!raw.repeatEnd;
-  const user = normUser(raw);
-  const giftId = String(pick(raw.giftId, d.id, d.giftName, raw.giftName));
-  let count = 1;
-  if (giftType === 1) {
-    const key = `${user.id}:${giftId}`;
-    const last = streaks.get(key) || 0;
-    count = Math.max(0, repeatCount - last);
-    if (repeatEnd) streaks.delete(key);
-    else streaks.set(key, repeatCount);
-  } else {
-    count = Math.max(1, repeatCount);
-  }
-  if (count <= 0) return null;
-  const diamondEach = Number(pick(d.diamondCount, raw.diamondCount, 1));
-  return {
-    type: 'gift',
-    user,
-    gift: {
-      id: giftId,
-      name: String(pick(d.giftName, raw.giftName, 'Hediye')),
-      diamonds: diamondEach * count,
-      diamondEach,
-      count,
-      image: pick(d.giftImage?.url?.[0], d.icon?.urlList?.[0], raw.giftPictureUrl, ''),
-    },
-  };
-}
-
-function normalize(type, raw) {
-  switch (type) {
-    case 'gift': return normGift(raw);
-    case 'like':
-      return { type: 'like', user: normUser(raw), count: Number(pick(raw.likeCount, 1)), total: Number(pick(raw.totalLikeCount, 0)) };
-    case 'chat':
-      return { type: 'comment', user: normUser(raw), text: String(pick(raw.comment, raw.content, '')) };
-    case 'follow': return { type: 'follow', user: normUser(raw) };
-    case 'share': return { type: 'share', user: normUser(raw) };
-    case 'member': return { type: 'join', user: normUser(raw) };
-    default: return null;
-  }
-}
+// (lib/events.js: hediye combo çift sayımını önleyen seri takibi dahil)
+const { normalize } = createNormalizer();
 
 function broadcastEvent(ev) {
   if (!ev) return;
   ev.ts = Date.now();
   io.emit('event', ev);
+  // Aktif senaryo bir oyun içeriyorsa olayı oyun mantığına da ver (rütbe, puan, taht...)
+  const g = getGame(activeScenarioId);
+  if (g) g.handleEvent(ev);
 }
 
 // ---------------------------------------------------------------- TİKTOK BAĞLANTISI
@@ -242,6 +221,8 @@ io.on('connection', (socket) => {
   // Test panelinden sahte olay -> gerçek olaylarla aynı hattan herkese
   socket.on('test:event', (ev) => {
     if (!ev || typeof ev !== 'object' || !ev.type) return;
+    // Kalıcı oyun verisi söz konusuysa sahte olayları yalnızca bu bilgisayardan kabul et
+    if (!ALLOW_REMOTE_ADMIN && !isLocalSocket(socket) && getGame(activeScenarioId)) return;
     if (ev.type === 'gift') {
       ev.gift = Object.assign({ id: 'test', name: 'Rose', diamonds: 1, diamondEach: 1, count: 1, image: '' }, ev.gift);
     }
@@ -252,12 +233,17 @@ io.on('connection', (socket) => {
   socket.on('admin:setScenario', (id) => {
     if (!scenarios[id]) return;
     activeScenarioId = id;
+    activateGame();
     io.emit('scenario:change', id);
   });
 
   socket.on('admin:reloadScenarios', () => {
     scenarios = scenarioLoader.loadAll();
     if (!scenarios[activeScenarioId]) activeScenarioId = Object.keys(scenarios)[0];
+    // Oyun kurallarını yeni config ile yeniden kur (kayıt dosyadan geri yüklenir)
+    stopAllGames();
+    gameInstances.clear();
+    activateGame();
     io.emit('hello', {
       active: activeScenarioId,
       scenarios: Object.values(scenarios).map(({ id, name, description }) => ({ id, name, description })),
@@ -266,7 +252,26 @@ io.on('connection', (socket) => {
     io.emit('scenario:change', activeScenarioId);
   });
 
+  // Sahneyi sıfırla: yalnızca GÖRSEL sahne yeniden kurulur; kalıcı oyun verisi (rütbeler, puanlar) silinmez.
   socket.on('admin:reset', () => io.emit('scene:reset'));
+
+  // --- Oyun: istemci kendi senaryosunun güncel durumunu ister
+  socket.on('game:sync', (req) => {
+    const g = getGame(req && req.scenario);
+    if (g) socket.emit('game:state', g.snapshot());
+  });
+
+  // --- Oyun yönetimi (test paneli): rütbe ver, taç giydir, taht boşalt, oyuncu sil, tüm veriyi sıfırla
+  socket.on('admin:game', (req) => {
+    const reply = (res) => socket.emit('game:admin-result', res);
+    if (!ALLOW_REMOTE_ADMIN && !isLocalSocket(socket)) return reply({ ok: false, message: 'Bu işlem yalnızca sunucu bilgisayarından yapılabilir.' });
+    const g = getGame(activeScenarioId);
+    if (!g) return reply({ ok: false, message: 'Aktif senaryoda oyun yok.' });
+    if (!req || typeof req.action !== 'string') return reply({ ok: false, message: 'Geçersiz istek.' });
+    const res = g.admin(req.action, req.payload || {});
+    if (req.action === 'wipe' && res.ok) io.emit('game:state', g.snapshot());
+    reply(res);
+  });
   socket.on('admin:connect', (username) => connectTikTok(username));
   socket.on('admin:disconnect', () => disconnectTikTok());
 });
@@ -281,8 +286,11 @@ server.listen(PORT, () => {
   console.log(`  OBS Tarayıcı Kaynağı URL'si  : http://localhost:${PORT}/?obs=1`);
   console.log(`  Aktif senaryo                : ${activeScenarioId}`);
   console.log('');
+  activateGame();
   if (AUTO_USERNAME) connectTikTok(AUTO_USERNAME);
 });
 
 process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e && e.message ? e.message : e));
-process.on('SIGINT', async () => { await disconnectTikTok(true); process.exit(0); });
+const shutdown = async () => { stopAllGames(); await disconnectTikTok(true); process.exit(0); }; // oyun verisini diske yazıp çık
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

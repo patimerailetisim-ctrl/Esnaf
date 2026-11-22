@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="370" viewBox="0 0 340 370">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0a6"/><stop offset="0.5" stop-color="#d4a72c"/><stop offset="1" stop-color="#8a6512"/></linearGradient>
+    <linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3263f"/><stop offset="1" stop-color="#6d1325"/></linearGradient>
+    <linearGradient id="st" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e9c8"/><stop offset="1" stop-color="#cdb582"/></linearGradient>
+  </defs>
+  <!-- tepelik / sayvan -->
+  <path d="M40 62 Q170 -22 300 62 L292 80 L48 80 Z" fill="url(#r)" stroke="url(#g)" stroke-width="5"/>
+  <g fill="url(#g)"><circle cx="170" cy="14" r="9"/><path d="M158 24 L182 24 L170 -6 Z"/></g>
+  <g fill="#d4a72c"><path d="M48 80 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 q8 20 16 0 L292 80 Z" opacity=".9"/></g>
+  <!-- direkler -->
+  <rect x="44" y="78" width="16" height="236" rx="6" fill="url(#g)"/><rect x="280" y="78" width="16" height="236" rx="6" fill="url(#g)"/>
+  <!-- arka sırt -->
+  <path d="M70 312 L70 130 Q70 84 170 72 Q270 84 270 130 L270 312 Z" fill="url(#r)" stroke="url(#g)" stroke-width="6"/>
+  <path d="M92 300 L92 138 Q92 104 170 94 Q248 104 248 138 L248 300 Z" fill="none" stroke="#f2d27a" stroke-width="2" opacity=".7"/>
+  <g fill="#f2d27a" opacity=".55"><path d="M170 120 l14 20 l-14 20 l-14 -20 z"/><path d="M170 190 l14 20 l-14 20 l-14 -20 z"/><path d="M170 260 l14 20 l-14 20 l-14 -20 z"/></g>
+  <circle cx="170" cy="112" r="9" fill="#2fa8b8" stroke="url(#g)" stroke-width="3"/>
+  <!-- kolçaklar -->
+  <rect x="58" y="244" width="38" height="70" rx="10" fill="url(#g)"/><rect x="244" y="244" width="38" height="70" rx="10" fill="url(#g)"/>
+  <!-- minder -->
+  <rect x="84" y="296" width="172" height="34" rx="14" fill="#1f6f78" stroke="url(#g)" stroke-width="4"/>
+  <g fill="#f2d27a"><circle cx="110" cy="313" r="3"/><circle cx="140" cy="313" r="3"/><circle cx="170" cy="313" r="3"/><circle cx="200" cy="313" r="3"/><circle cx="230" cy="313" r="3"/></g>
+  <!-- basamaklar -->
+  <rect x="50" y="330" width="240" height="18" rx="4" fill="url(#st)" stroke="url(#g)" stroke-width="3"/>
+  <rect x="30" y="348" width="280" height="22" rx="4" fill="url(#st)" stroke="url(#g)" stroke-width="3"/>
+  <path d="M140 330 L200 330 L216 370 L124 370 Z" fill="url(#r)"/>
+</svg>

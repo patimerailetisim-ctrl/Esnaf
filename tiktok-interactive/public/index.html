@@ -72,6 +72,33 @@
       </div>
     </section>
 
+    <!-- Oyun içeren senaryolarda (örn. Osmanlı) görünür -->
+    <section id="game-section" hidden>
+      <h2>🎮 Oyun: <span id="game-title"></span></h2>
+      <div class="hint" id="game-throne"></div>
+      <h2>Oyun Hediyeleri (seçili test kullanıcısı)</h2>
+      <div id="game-gifts" class="grid"></div>
+      <h2>Oyun Komutları</h2>
+      <div id="game-cmds" class="grid"></div>
+      <div class="row"><button id="game-join10">10 Kişi !katıl</button><button id="game-join50">50 Kişi !katıl</button></div>
+      <h2>Yönetici (seçili oyuncu)</h2>
+      <div class="hint" id="game-target">Hedef: Test Kullanıcısı kutusundaki ad veya listeden seçilen oyuncu</div>
+      <div class="row"><select id="game-rank"></select><button id="game-setrank">Rütbe Ver</button></div>
+      <div class="grid">
+        <button id="game-crown">👑 Taç Giydir</button>
+        <button id="game-vacate">Tahtı Boşalt</button>
+        <button id="game-points">+100 Puan</button>
+        <button id="game-remove">Oyuncuyu Sil</button>
+      </div>
+      <div class="row"><button id="game-wipe" class="warn">⚠ Tüm Oyun Verisini Sıfırla (kalıcı)</button></div>
+      <div id="game-result" class="status idle" hidden></div>
+      <h2>Kullanıcı Listesi <small id="game-total"></small></h2>
+      <div id="game-users" class="utable"></div>
+      <h2>Rütbe Tablosu</h2>
+      <div id="game-ranks" class="rtable"></div>
+      <p class="hint" id="game-disclaimer"></p>
+    </section>
+
     <section>
       <h2>Hediye Gönder</h2>
       <div class="row">
@@ -130,6 +157,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/engine.js"></script>
+  <script src="js/rankgame-view.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

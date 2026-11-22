@@ -161,6 +161,7 @@ class AudioEngine {
     const stepDur = () => 60 / (this.musicCfg.baseBpm * this.tempo) / 2; // sekizlik nota
     while (this.nextTime < this.ctx.currentTime + 0.14) {
       if (this.musicCfg.synth === 'space') this._stepSpace(this.step, this.nextTime, stepDur());
+      else if (this.musicCfg.synth === 'mehter') this._stepMehter(this.step, this.nextTime, stepDur());
       else this._stepHalay(this.step, this.nextTime, stepDur());
       this.nextTime += stepDur();
       this.step = (this.step + 1) % 32;
@@ -191,6 +192,40 @@ class AudioEngine {
       if (this.tempo > 1.5) this._zurna(t, scale[n] * 2, dur * 1.2, 0.07); // kalabalıkta üst oktav katmanı
     }
     if (this.tempo > 1.3 && bar % 2 === 1) this._tek(t + dur / 2, 0.15); // ekstra ritim
+  }
+
+  // Mehter marşı: kös (bas davul) + davul + zil + zurna (Hicaz dizisi)
+  _stepMehter(step, t, dur) {
+    const bar = step % 8;
+    if (bar === 0 || bar === 4) this._dum(t, bar === 0 ? 1.1 : 0.9);        // kös
+    if (bar === 2 || bar === 6) this._tek(t, 0.7);                           // davul
+    if (bar % 2 === 1) this._cymbal(t, 0.16);                                // zil
+    if (bar === 0) this._bass(t, 73.42, dur * 7, 0.35);
+    if (bar === 4) this._bass(t, 110.0, dur * 3.5, 0.28);
+
+    const scale = [293.66, 311.13, 369.99, 392.0, 440.0, 466.16, 523.25, 587.33];
+    const melody = [
+      4, -1, 4, 5, 4, -1, 2, -1,
+      3, -1, 3, 4, 3, -1, 1, -1,
+      2, -1, 2, 3, 2, -1, 1, 0,
+      1, -1, 2, 1, 0, -1, 0, -1,
+    ];
+    const n = melody[step];
+    if (n >= 0) {
+      this._zurna(t, scale[n], dur * 1.5, 0.19);
+      if (this.tempo > 1.15) this._zurna(t, scale[n] * 2, dur * 1.1, 0.06);
+    }
+  }
+
+  _cymbal(t, vel = 0.2, dest = this.musicGain) {
+    const s = this.ctx.createBufferSource();
+    s.buffer = this.noiseBuf;
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 6500;
+    const g = this.ctx.createGain();
+    this._env(g, t, 0.002, vel, 0.14);
+    s.connect(hp).connect(g).connect(dest);
+    s.start(t, Math.random()); s.stop(t + 0.16);
   }
 
   // Uzay ambiyansı
@@ -357,6 +392,28 @@ class AudioEngine {
       case 'rocket':
         this._noise({ type: 'lowpass', f0: 200, f1: 2200, dur: 1.4, gain: 0.7 * v, attack: 0.3 });
         this._tone({ type: 'sawtooth', f0: 70, f1: 220, dur: 1.3, gain: 0.25 * v });
+        break;
+      case 'gong':
+        [[110, 2.8, 0.5], [166, 2.4, 0.3], [233, 2.0, 0.22], [311, 1.6, 0.15]].forEach(([f, d, g]) => this._tone({ f0: f, dur: d, gain: g * v, attack: 0.01 }));
+        this._noise({ type: 'bandpass', f0: 800, q: 0.5, dur: 0.5, gain: 0.25 * v });
+        break;
+      case 'fanfare': { // taç giyme: davul çalımı + zurna/boru fanfarı + zil
+        const seq = [[293.66, 0, 0.22], [293.66, 0.26, 0.2], [440, 0.52, 0.22], [587.33, 0.8, 0.5], [739.99, 1.4, 0.22], [880, 1.66, 1.0]];
+        seq.forEach(([f, d, l]) => {
+          this._tone({ type: 'sawtooth', f0: f, dur: l + 0.15, gain: 0.2 * v, delay: d });
+          this._tone({ type: 'square', f0: f / 2, dur: l + 0.15, gain: 0.1 * v, delay: d });
+        });
+        for (let i = 0; i < 20; i++) this._noise({ type: 'highpass', f0: 3200, dur: 0.07, gain: 0.12 * v, delay: i * 0.07, attack: 0.002 });
+        this._noise({ type: 'highpass', f0: 5200, dur: 1.6, gain: 0.45 * v, delay: 1.66, attack: 0.005 });
+        this._tone({ f0: 90, f1: 38, dur: 0.9, gain: 0.9 * v, delay: 1.66 });
+        break;
+      }
+      case 'fanfareShort':
+        [[392, 0, 0.18], [523.25, 0.2, 0.18], [659.25, 0.4, 0.5]].forEach(([f, d, l]) => {
+          this._tone({ type: 'sawtooth', f0: f, dur: l + 0.1, gain: 0.2 * v, delay: d });
+          this._tone({ type: 'square', f0: f / 2, dur: l + 0.1, gain: 0.08 * v, delay: d });
+        });
+        this._noise({ type: 'highpass', f0: 5000, dur: 0.9, gain: 0.3 * v, delay: 0.4 });
         break;
       default:
         this._tone({ f0: 600, f1: 900, dur: 0.12, gain: 0.4 * v });

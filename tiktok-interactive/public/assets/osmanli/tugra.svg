@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="105" viewBox="0 0 340 210">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0a6"/><stop offset="0.5" stop-color="#e0b93a"/><stop offset="1" stop-color="#a9801a"/></linearGradient></defs>
+  <!-- Stilize tuğra: gerçek bir hattın kopyası değil, dekoratif bir motiftir -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#3a2a06" stroke-width="13" opacity=".55" transform="translate(3,4)">
+      <path d="M40 150 Q170 214 300 150"/><path d="M62 128 Q170 176 278 128"/>
+      <path d="M140 150 L140 26 M170 150 L170 14 M200 150 L200 26"/>
+      <ellipse cx="76" cy="96" rx="40" ry="26"/><ellipse cx="264" cy="96" rx="40" ry="26"/>
+    </g>
+    <g stroke="url(#g)" stroke-width="10">
+      <path d="M40 150 Q170 214 300 150"/><path d="M62 128 Q170 176 278 128"/>
+      <path d="M140 150 L140 26 M170 150 L170 14 M200 150 L200 26"/>
+      <ellipse cx="76" cy="96" rx="40" ry="26"/><ellipse cx="264" cy="96" rx="40" ry="26"/>
+      <path d="M116 96 Q140 80 140 60 M224 96 Q200 80 200 60"/>
+    </g>
+    <g stroke="#17294a" stroke-width="3"><path d="M52 150 Q170 205 288 150" opacity=".5"/></g>
+  </g>
+  <g fill="url(#g)"><circle cx="140" cy="20" r="7"/><circle cx="170" cy="8" r="8"/><circle cx="200" cy="20" r="7"/><circle cx="170" cy="190" r="6"/></g>
+</svg>

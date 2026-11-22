@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0a6"/><stop offset="0.5" stop-color="#d4a72c"/><stop offset="1" stop-color="#8a6512"/></linearGradient>
+    <g id="corner">
+      <path d="M0 0 H150 Q150 22 128 22 H44 Q22 22 22 44 V128 Q22 150 0 150 Z" fill="url(#g)" opacity=".95"/>
+      <path d="M34 34 H120 M34 34 V120" stroke="#7b1e3a" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="58" cy="58" r="14" fill="#7b1e3a" stroke="#fff0a6" stroke-width="3"/>
+      <path d="M58 48 l3 7 8 .4 -6 5 2 8 -7 -4.5 -7 4.5 2 -8 -6 -5 8 -.4 z" fill="#fff0a6"/>
+    </g>
+  </defs>
+  <rect x="9" y="9" width="1062" height="1902" rx="10" fill="none" stroke="url(#g)" stroke-width="12"/>
+  <rect x="30" y="30" width="1020" height="1860" rx="6" fill="none" stroke="#7b1e3a" stroke-width="4" opacity=".9"/>
+  <rect x="38" y="38" width="1004" height="1844" rx="4" fill="none" stroke="#f2d27a" stroke-width="2" opacity=".8"/>
+  <use href="#corner" x="9" y="9"/>
+  <use href="#corner" x="1071" y="9" transform="scale(-1,1) translate(-2142,0)"/>
+  <use href="#corner" x="9" y="1911" transform="scale(1,-1) translate(0,-3822)"/>
+  <use href="#corner" x="1071" y="1911" transform="scale(-1,-1) translate(-2142,-3822)"/>
+  <g fill="url(#g)" stroke="#7b1e3a" stroke-width="2">
+    <path d="M540 9 l22 14 l-22 14 l-22 -14 z"/><path d="M540 1883 l22 14 l-22 14 l-22 -14 z"/>
+    <path d="M9 960 l14 22 l14 -22 l-14 -22 z"/><path d="M1043 960 l14 22 l14 -22 l-14 -22 z"/>
+  </g>
+</svg>

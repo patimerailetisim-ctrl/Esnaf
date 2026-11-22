@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="640" viewBox="0 0 1040 640">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e9c8"/><stop offset="1" stop-color="#dcc590"/></linearGradient>
+    <linearGradient id="dome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4fb3bf"/><stop offset="0.55" stop-color="#1f6f78"/><stop offset="1" stop-color="#0f3f4a"/></linearGradient>
+    <linearGradient id="domeB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7da2d6"/><stop offset="0.6" stop-color="#2d3a6b"/><stop offset="1" stop-color="#1a2146"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0a6"/><stop offset="0.5" stop-color="#d4a72c"/><stop offset="1" stop-color="#8a6512"/></linearGradient>
+    <linearGradient id="iwan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2a5a"/><stop offset="1" stop-color="#0c1331"/></linearGradient>
+    <linearGradient id="tower" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e7d4a2"/><stop offset="0.5" stop-color="#fbf1d4"/><stop offset="1" stop-color="#cdb582"/></linearGradient>
+    <pattern id="tile" width="26" height="26" patternUnits="userSpaceOnUse">
+      <rect width="26" height="26" fill="#1f6f78"/><path d="M13 2 L24 13 L13 24 L2 13 Z" fill="none" stroke="#f3e5c0" stroke-width="2"/><circle cx="13" cy="13" r="3" fill="#d4a72c"/>
+    </pattern>
+    <g id="crescent"><circle cx="0" cy="0" r="11" fill="url(#gold)"/><circle cx="4" cy="-1" r="9" fill="#17294a" opacity="0"/><path d="M-5 -9 A11 11 0 1 0 -5 9 A8.5 8.5 0 1 1 -5 -9Z" fill="#fff0a6"/></g>
+    <g id="win"><path d="M0 40 L0 12 Q0 0 9 0 Q18 0 18 12 L18 40 Z" fill="#162552" stroke="#8a6512" stroke-width="2.5"/><path d="M9 8 L9 36" stroke="#d4a72c" stroke-width="1.5" opacity=".7"/></g>
+    <g id="smallDome"><rect x="-34" y="0" width="68" height="26" fill="url(#wall)" stroke="#a98a4c" stroke-width="2"/><path d="M-36 0 Q-36 -52 0 -58 Q36 -52 36 0 Z" fill="url(#dome)" stroke="#0f3f4a" stroke-width="2"/><path d="M0 -58 L0 -72" stroke="#d4a72c" stroke-width="4"/><circle cx="0" cy="-76" r="5" fill="url(#gold)"/></g>
+    <g id="minaret">
+      <path d="M-14 0 L-10 -380 L10 -380 L14 0 Z" fill="url(#tower)" stroke="#a98a4c" stroke-width="2"/>
+      <rect x="-24" y="-250" width="48" height="12" rx="4" fill="url(#gold)"/><rect x="-22" y="-262" width="44" height="14" fill="#f6e9c8" stroke="#a98a4c" stroke-width="2"/>
+      <rect x="-20" y="-352" width="40" height="11" rx="4" fill="url(#gold)"/>
+      <path d="M-12 -352 L0 -440 L12 -352 Z" fill="url(#dome)" stroke="#0f3f4a" stroke-width="2"/>
+      <path d="M-6 -190 L-6 -230 M6 -190 L6 -230 M-6 -300 L-6 -335 M6 -300 L6 -335" stroke="#8a6512" stroke-width="2"/>
+      <circle cx="0" cy="-448" r="4" fill="url(#gold)"/>
+    </g>
+  </defs>
+
+  <!-- zemin gölgesi -->
+  <ellipse cx="520" cy="624" rx="500" ry="22" fill="#6b4a1e" opacity=".28"/>
+
+  <!-- minareler -->
+  <use href="#minaret" x="150" y="540"/><use href="#minaret" x="890" y="540"/>
+  <use href="#crescent" x="150" y="86" transform="translate(0,0)"/><use href="#crescent" x="890" y="86"/>
+
+  <!-- yan kanatlar -->
+  <rect x="40" y="400" width="250" height="150" fill="url(#wall)" stroke="#a98a4c" stroke-width="3"/>
+  <rect x="750" y="400" width="250" height="150" fill="url(#wall)" stroke="#a98a4c" stroke-width="3"/>
+  <rect x="40" y="400" width="250" height="16" fill="url(#tile)"/><rect x="750" y="400" width="250" height="16" fill="url(#tile)"/>
+  <use href="#smallDome" x="110" y="400"/><use href="#smallDome" x="220" y="400"/>
+  <use href="#smallDome" x="820" y="400"/><use href="#smallDome" x="930" y="400"/>
+  <g>
+    <use href="#win" x="70" y="440"/><use href="#win" x="112" y="440"/><use href="#win" x="154" y="440"/><use href="#win" x="196" y="440"/><use href="#win" x="238" y="440"/>
+    <use href="#win" x="780" y="440"/><use href="#win" x="822" y="440"/><use href="#win" x="864" y="440"/><use href="#win" x="906" y="440"/><use href="#win" x="948" y="440"/>
+  </g>
+
+  <!-- ana salon -->
+  <rect x="270" y="300" width="500" height="250" fill="url(#wall)" stroke="#a98a4c" stroke-width="3"/>
+  <rect x="270" y="300" width="500" height="20" fill="url(#tile)"/>
+  <rect x="270" y="520" width="500" height="30" fill="url(#tile)"/>
+
+  <!-- yan kubbeler -->
+  <g transform="translate(330,300)"><rect x="-44" y="-30" width="88" height="30" fill="url(#wall)" stroke="#a98a4c" stroke-width="2"/><path d="M-46 -30 Q-46 -110 0 -118 Q46 -110 46 -30 Z" fill="url(#domeB)" stroke="#1a2146" stroke-width="2"/><path d="M0 -118 L0 -136" stroke="#d4a72c" stroke-width="4"/><circle cx="0" cy="-140" r="6" fill="url(#gold)"/></g>
+  <g transform="translate(710,300)"><rect x="-44" y="-30" width="88" height="30" fill="url(#wall)" stroke="#a98a4c" stroke-width="2"/><path d="M-46 -30 Q-46 -110 0 -118 Q46 -110 46 -30 Z" fill="url(#domeB)" stroke="#1a2146" stroke-width="2"/><path d="M0 -118 L0 -136" stroke="#d4a72c" stroke-width="4"/><circle cx="0" cy="-140" r="6" fill="url(#gold)"/></g>
+
+  <!-- merkez kubbe -->
+  <rect x="410" y="238" width="220" height="64" fill="url(#wall)" stroke="#a98a4c" stroke-width="3"/>
+  <g stroke="#8a6512" stroke-width="2"><path d="M435 246 L435 300 M470 246 L470 300 M505 246 L505 300 M540 246 L540 300 M575 246 L575 300 M610 246 L610 300" opacity=".5"/></g>
+  <path d="M400 240 Q400 110 520 92 Q640 110 640 240 Z" fill="url(#dome)" stroke="#0f3f4a" stroke-width="3"/>
+  <path d="M520 92 Q470 150 462 240 M520 92 Q570 150 578 240 M520 92 Q420 160 420 240 M520 92 Q620 160 620 240" fill="none" stroke="#bfe9ee" stroke-width="2" opacity=".35"/>
+  <path d="M520 92 L520 52" stroke="#d4a72c" stroke-width="6"/>
+  <circle cx="520" cy="46" r="8" fill="url(#gold)"/>
+  <use href="#crescent" x="520" y="24"/>
+
+  <!-- tuğra levhası (üstüne tuğra yerleştirilir) -->
+  <rect x="425" y="300" width="190" height="105" rx="26" fill="#17294a" stroke="url(#gold)" stroke-width="6"/>
+  <rect x="435" y="310" width="170" height="85" rx="20" fill="none" stroke="#d4a72c" stroke-width="1.5" opacity=".6"/>
+
+  <!-- iwan (giriş kemeri) -->
+  <path d="M440 550 L440 440 Q440 405 520 395 Q600 405 600 440 L600 550 Z" fill="url(#iwan)" stroke="url(#gold)" stroke-width="6"/>
+  <g fill="#d4a72c" opacity=".55"><path d="M455 420 L470 440 L485 420 Z M488 418 L503 438 L518 418 Z M521 418 L536 438 L551 418 Z M554 420 L569 440 L584 420 Z"/></g>
+
+  <!-- salon pencereleri -->
+  <use href="#win" x="295" y="350"/><use href="#win" x="335" y="350"/><use href="#win" x="375" y="350"/>
+  <use href="#win" x="647" y="350"/><use href="#win" x="687" y="350"/><use href="#win" x="727" y="350"/>
+  <use href="#win" x="295" y="440"/><use href="#win" x="335" y="440"/><use href="#win" x="375" y="440"/>
+  <use href="#win" x="647" y="440"/><use href="#win" x="687" y="440"/><use href="#win" x="727" y="440"/>
+
+  <!-- teras duvarı + kemerler -->
+  <rect x="20" y="550" width="1000" height="74" fill="url(#wall)" stroke="#a98a4c" stroke-width="3"/>
+  <g fill="#c9b27a" stroke="#a98a4c" stroke-width="2">
+    <path d="M40 624 L40 590 Q40 570 62 570 Q84 570 84 590 L84 624 Z"/><path d="M110 624 L110 590 Q110 570 132 570 Q154 570 154 590 L154 624 Z"/>
+    <path d="M180 624 L180 590 Q180 570 202 570 Q224 570 224 590 L224 624 Z"/><path d="M250 624 L250 590 Q250 570 272 570 Q294 570 294 590 L294 624 Z"/>
+    <path d="M320 624 L320 590 Q320 570 342 570 Q364 570 364 590 L364 624 Z"/><path d="M390 624 L390 590 Q390 570 412 570 Q434 570 434 590 L434 624 Z"/>
+    <path d="M606 624 L606 590 Q606 570 628 570 Q650 570 650 590 L650 624 Z"/><path d="M676 624 L676 590 Q676 570 698 570 Q720 570 720 590 L720 624 Z"/>
+    <path d="M746 624 L746 590 Q746 570 768 570 Q790 570 790 590 L790 624 Z"/><path d="M816 624 L816 590 Q816 570 838 570 Q860 570 860 590 L860 624 Z"/>
+    <path d="M886 624 L886 590 Q886 570 908 570 Q930 570 930 590 L930 624 Z"/><path d="M956 624 L956 590 Q956 570 978 570 Q1000 570 1000 590 L1000 624 Z"/>
+  </g>
+  <rect x="20" y="550" width="1000" height="10" fill="url(#gold)"/>
+</svg>

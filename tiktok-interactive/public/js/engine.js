@@ -72,6 +72,7 @@
       this.particles = 0;
       this._audioTick = 0;
       this._sendTick = 0;
+      this.gameView = null; // sunucu taraflı oyun içeren senaryolar için görünüm (rankgame-view.js)
       this._reset();
       requestAnimationFrame((t) => this._loop(t));
     }
@@ -93,6 +94,7 @@
     }
 
     async loadScenario(sc) {
+      if (this.gameView) { this.gameView.destroy(); this.gameView = null; }
       this.sc = sc;
       this._reset();
       const { world, bg, hud, banners, feed, fx, camera } = this.el;
@@ -104,6 +106,8 @@
       this._buildHud(sc);
       this._buildRings(sc);
       this._buildEntities(sc);
+      // Oyun içeren senaryo (örn. Osmanlı): görünüm katmanını kur. Diğer senaryolar etkilenmez.
+      if (sc.game && window.RankGameView) this.gameView = new window.RankGameView(this, sc);
       for (const [k, v] of Object.entries(sc.counters || {})) this.counters[k] = v;
       this._refreshHud(true);
       this._applyMappings();
@@ -131,6 +135,7 @@
       bg.style.display = this.options.transparent ? 'none' : 'block';
       bg.style.background = '';
       if (bgCfg.type === 'color') bg.style.background = bgCfg.color || '#000';
+      else if (bgCfg.type === 'css') bg.style.background = bgCfg.css; // ham CSS arka plan (çok katmanlı gradyanlar)
       else if (bgCfg.type === 'image') bg.style.cssText += `;background:#000 url("${bgCfg.image}") center/cover no-repeat;`;
       else if (bgCfg.type === 'video') {
         const v = document.createElement('video');
@@ -560,6 +565,11 @@
     }
 
     // ---------------------------------------------------------------- AKSİYONLAR
+    /** Dış modüllerin (oyun görünümü) aynı aksiyonları kullanabilmesi için herkese açık kapı */
+    runAction(type, a, ev = {}) {
+      this._action(ACTION_ALIASES[type] || type, a, ev);
+    }
+
     _action(type, a, ev) {
       switch (type) {
         case 'spawn_character':
@@ -734,6 +744,7 @@
           return { dx: 0, dy: 0, rot: 0, sx: p, sy: p };
         }
         case 'spin': return { dx: 0, dy: 0, rot: (t * 120) % 360, sx: 1, sy: 1 };
+        case 'sway': return { dx: 0, dy: 0, rot: Math.sin(t * 1.7 + off * 2.4) * 3.2, sx: 1, sy: 1 }; // bayrak/sancak dalgalanması
         default: return { dx: 0, dy: 0, rot: 0, sx: 1, sy: 1 };
       }
     }

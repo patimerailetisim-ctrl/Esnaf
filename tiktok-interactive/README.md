@@ -14,20 +14,29 @@ tiktok-interactive/
 ├── package.json
 ├── server.js                 ← Sunucu: TikTok'a bağlanır, Socket.io ile olayları yayar
 ├── README.md                 ← Bu rehber
+├── lib/events.js             ← TikTok olaylarını normalize eder (hediye combo çift sayımı önlenir)
+├── games/                    ← Sunucu taraflı oyun modülleri (yalnızca `game` bölümü olan senaryolar)
+│   ├── index.js              ← Oyun tipi kayıt defteri
+│   └── rankgame.js           ← Rütbe/taht oyunu: puan, rütbe, taht, komutlar, ekonomi, kalıcı kayıt
+├── data/                     ← Kalıcı oyun kayıtları (osmanli.json ...) — otomatik oluşur
+├── tests/                    ← Otomatik testler (npm test)
 ├── scenarios/
 │   ├── index.js              ← Senaryo yükleyici (klasördeki .js dosyalarını otomatik bulur)
 │   ├── halay.js              ← Varsayılan senaryo: Halay Modu
-│   └── uzay.js               ← Çalışan 2. senaryo + YENİ SENARYO ŞABLONU (roket)
+│   ├── uzay.js               ← Çalışan 2. senaryo + YENİ SENARYO ŞABLONU (roket)
+│   └── osmanli.js            ← OSMANLI: TAHT MÜCADELESİ (tüm oyun kuralları bu dosyada)
 └── public/                   ← Tarayıcının/OBS'in açtığı her şey
     ├── index.html            ← Sahne + sağdaki gizlenebilir Test Paneli
     ├── style.css
     ├── app.js                ← Socket bağlantısı, ölçekleme, test paneli
     ├── js/
     │   ├── engine.js         ← Senaryo Motoru (tetikleyici/aksiyon/sayaç/kamera)
-    │   └── audio.js          ← Ses motoru (MP3 yoksa yerleşik synth müzik/efekt)
+    │   ├── audio.js          ← Ses motoru (MP3 yoksa yerleşik synth müzik/efekt, mehter dahil)
+    │   └── rankgame-view.js  ← Rütbe oyunu görünümü (karakterler, taç giyme, Sadrazam girişi)
     └── assets/
         ├── halay/            ← leader.svg, dancer.svg (+ buraya halay.mp3, join.mp3 ... koyabilirsin)
-        └── uzay/             ← rocket.svg, astronaut.svg, planet.svg
+        ├── uzay/             ← rocket.svg, astronaut.svg, planet.svg
+        └── osmanli/          ← palace, throne, sancak, tugra, hazine, ordu, frame (.svg); mehter.mp3 vb. buraya
 ```
 
 ## 2) Kurulum (bir kerelik)
@@ -156,6 +165,66 @@ Metinlerde: `{nickname}` `{uniqueId}` `{gift}` `{count}` `{diamonds}` `{text}` `
 - Müzik: `public/assets/halay/halay.mp3` dosyasını koy → otomatik kullanılır (yoksa yerleşik synth halay ritmi çalar). Tempo arttıkça MP3'ün hızı da artar.
 - Efektler: `join.mp3`, `big.mp3`, `mega.mp3`, `like.mp3`, `jump.mp3` aynı mantıkla.
 - Halaycı gövdesinin kafa yeri boş bırakılmıştır; profil fotoğrafı oraya yuvarlak olarak yerleşir.
+
+## 6b) OSMANLI: TAHT MÜCADELESİ
+
+Halay ve Uzay'dan bağımsız bir senaryodur (`scenarios/osmanli.js`). Diğerlerinden farkı: izleyicilerin **rütbesi, puanı ve tahtın sahibi
+sunucuda tutulur ve diske kaydedilir** (`data/osmanli.json`), yani sunucuyu kapatıp açsan da kaybolmaz.
+Sahneyi seçmek için test panelinde **Senaryo → "OSMANLI: TAHT MÜCADELESİ"** seç (veya `SCENARIO=osmanli npm start`).
+
+> Rütbeler **oyunlaştırma amaçlıdır**; tarihsel makamların birebir hiyerarşik sıralaması olduklarını iddia etmez.
+
+### Nasıl oynanır?
+| İzleyici ne yapar | Ne olur |
+|---|---|
+| Yoruma **!katıl** yazar | Köylü olarak oyuna girer (ücretsiz). Tekrar yazınca çoğalmaz. |
+| Yorum yapar / takip eder / paylaşır / beğenir | Küçük puan kazanır, nüfus-üretim-hazine büyür, şehirler kazanılır |
+| **!rütbe** | Ekranda rütbe kartı: rütbe, puan, sıra, sonraki rütbe |
+| **!isim Yeni Ad** | Ekranda görünen adı değiştirir (temizlenir, en çok 16 karakter, 2 dk'da bir) |
+| **!meslek çiftçi / esnaf / asker** | Meslek seçer (yeterli puan gerekir); üretim veya ordu gücüne katkı verir |
+| **!ordu** / **!hazine** | Ordu gücü ve hazine özeti kartı |
+| Hediye gönderir | Elmas değerine göre puan ve **rütbe** kazanır; en büyük hediye **Padişah** yapar |
+
+TikTok'a sohbetten cevap yazılamadığı için tüm yanıtlar **ekranda kart olarak** görünür.
+
+### Rütbe sıralaması (aşağıdan yukarıya)
+Köylü → Çiftçi → Esnaf → Asker → Yeniçeri → Onbaşı → Çavuş → Sipahi → Subaşı → Kaptan-ı Derya → Sancak Beyi → Beylerbeyi → Paşa → Kubbealtı Veziri → **Sadrazam** → **Şehzade** → **Padişah**
+
+> ⚠ İstek metninde liste (Sadrazam < Şehzade < Padişah) ile "Padişah'ın bir altı Sadrazam" cümlesi birbirini tutmuyordu. **Listedeki sıra** uygulandı.
+> Sadrazam'ı Padişah'ın hemen altına almak için `scenarios/osmanli.js` içinde **üç şeyi** değiştir (testle doğrulandı):
+> 1. `ranks` listesinde `sadrazam` kaydını `sehzade` kaydının **ardına** taşı (… Kubbealtı → Şehzade → Sadrazam → Padişah).
+> 2. `giftRankGrants` içinde `sadrazam` ile `sehzade` eşiklerinin rütbe adlarını yer değiştir (5000💎 → `sehzade`, 15000💎 → `sadrazam`).
+> 3. İstersen `throne.demoteTo` / `throne.fallbackRank` değerini `'sadrazam'` yap.
+> Kod değişikliği gerekmez.
+
+### Hediye sistemi (hepsi `scenarios/osmanli.js` → `game` içinde, kodda sabit eşik yok)
+- **`points.perDiamond`**: 1 elmas (coin) kaç puan? (varsayılan 10 → Rose = 10 puan). Tek hediyeye özel puan için `points.giftOverrides: { Rose: 15 }`.
+- **Puanla terfi**: her `ranks` kaydının `minPoints` değeri. `auto: false` olan rütbelere (Sadrazam, Şehzade, Padişah) puanla gelinmez.
+- **`giftRankGrants`**: *tek bir olaydaki* (combo toplamı dahil) elmas değeri `minDiamonds`'e ulaşırsa o rütbe hemen kazanılır. Örnek: 5💎 Çiftçi, 1000💎 Beylerbeyi, 5000💎 Sadrazam, 15000💎 Şehzade, 29999💎 (Lion) **Padişah**.
+- Rütbe hediyeyle **asla düşmez**. Rose ve küçük hediyeler yalnızca yavaş gelişim sağlar.
+
+### Oyun dengesi
+- **Tek aktif Padişah.** Taht, rütbeden ayrı tutulur (`throne` durumu ayrı kaydedilir); yeni Padişah gelince eskisi `throne.demoteTo` rütbesine (varsayılan Şehzade; Sadrazam yazabilirsin) iner.
+- **Taç koruma süresi** (`throne.cooldownSec`, varsayılan 120 sn): bu sürede kimse tahta geçemez; en büyük hediyeyi gönderen bile `throne.fallbackRank` (Şehzade) kazanır.
+- **Devralma bedeli** (`throne.overtakeFactor`): tahtı almak için tek hediye, mevcut Padişah'ın taç değeri x çarpan kadar olmalı. Padişah kendi kendini tekrar taçlandıramaz.
+- Hiçbir hediye **başka kullanıcının karakterini silmez**. Kalabalık ekranda en çok `view.zones[].max` kişi çizilir (taşanlar "+N daha" olarak gösterilir) ama kayıtları durur.
+- Yorum puanı bekleme süreli (`commentCooldownSec`), komutlarda spam koruması (`cooldowns`) vardır.
+
+### Test panelinden oynamak (yayına bağlanmadan)
+`http://localhost:3000/?panel=1` → senaryoyu seç → **"🎮 Oyun"** bölümü açılır:
+1. **Test Kullanıcısı** kutusuna bir ad yaz (örn. `ahmet`) → **Oyun Komutları → !katıl** (veya "50 Kişi !katıl").
+2. **Oyun Hediyeleri**: 🌹 Rose'dan 🪐 Universe'e kadar; her biri o adla gönderilir. Rütbe animasyonlarını izle.
+3. **Sadrazam** girişi için `Sports Car` (7000💎), **taç giyme** için `Lion` (29999💎) gönder.
+4. Aynı anda ikinci biriyle `Universe` gönder → önce **taht koruma** kartını gör; 2 dk sonra (veya yönetici düğmesiyle tahtı boşaltarak) devralmayı dene.
+5. **Yönetici** düğmeleri: seçili oyuncuya rütbe ver, taç giydir, tahtı boşalt, +100 puan, oyuncuyu sil.
+6. **Kullanıcı Listesi** (satıra tıklayınca o oyuncu seçilir) ve **Rütbe Tablosu** panelde canlı görünür.
+7. **Sahneyi Sıfırla** yalnızca görseli yeniden kurar, kalıcı veriyi **silmez**. Veriyi silmek için "⚠ Tüm Oyun Verisini Sıfırla" (onay için SIFIRLA yazılır).
+
+### Güvenlik ve kayıt notları
+- Oyun verisini değiştiren işlemler (yönetici düğmeleri, sahte olaylar) varsayılan olarak **yalnızca sunucunun çalıştığı bilgisayardan** kabul edilir. Başka cihazdan test için `ALLOW_REMOTE_ADMIN=1 npm start`.
+- Kayıt klasörü: `data/` (değiştirmek için `DATA_DIR=...`). Yazma atomiktir; bozuk dosya silinmez, `.bozuk-...` adıyla kenara alınır; son iyi kayıt `osmanli.json.bak` olarak tutulur.
+- Olaylar **aktif senaryoya** işlenir. OBS URL'sine `&scenario=osmanli` eklemek yalnızca *görüntülenen* senaryoyu seçer; sunucudaki aktif senaryo Osmanlı değilse olaylar oyuna işlenmez. Önce panelden Osmanlı'yı seç.
+- `npm test` oyun kurallarını (taht, rütbe, komutlar, kalıcılık, combo) otomatik sınar.
 
 ## 7) Sık karşılaşılan sorunlar
 

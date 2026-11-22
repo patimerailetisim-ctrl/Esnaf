@@ -52,6 +52,12 @@
       const sel = document.getElementById('scenario-select');
       if (sel) sel.value = id;
       buildCommandButtons(sc);
+      setupGamePanel(sc);
+      if (sc.game) {
+        // Sunucudaki kalıcı oyun durumunu iste; önbellekte varsa hemen çiz
+        if (gameStates[sc.id] && engine.gameView) engine.gameView.onState(gameStates[sc.id]);
+        socket.emit('game:sync', { scenario: sc.id });
+      }
       console.log('[sahne] senaryo yüklendi:', sc.name);
     } catch (err) {
       console.error(err);
@@ -73,6 +79,22 @@
     engine.handleEvent(ev);
   });
   socket.on('live:status', setStatus);
+
+  // ---------------------------------------------------------------- oyun (sunucu taraflı) olayları
+  const gameStates = {}; // senaryo id -> son anlık durum
+  let currentScenario = null;
+  socket.on('connect', () => { if (currentScenario && currentScenario.game) socket.emit('game:sync', { scenario: currentScenario.id }); });
+  socket.on('game:state', (st) => {
+    gameStates[st.scenario] = st;
+    if (engine.gameView) engine.gameView.onState(st);
+    if (currentScenario && currentScenario.id === st.scenario) renderGamePanel(st);
+  });
+  socket.on('game:fx', (fx) => { audio.unlock(); if (engine.gameView) engine.gameView.onFx(fx); });
+  socket.on('game:admin-result', (res) => {
+    const box = document.getElementById('game-result');
+    if (!box) return;
+    box.hidden = false; box.textContent = res.message; box.className = 'status ' + (res.ok ? 'connected' : 'error');
+  });
 
   // ---------------------------------------------------------------- ses kilidi
   const hint = document.getElementById('audio-hint');
@@ -201,6 +223,111 @@
       grid.appendChild(b);
     }
   }
+
+  // ---------------------------------------------------------------- OYUN PANELİ (Osmanlı vb.)
+  let selectedUser = null; // listeden seçilen oyuncu (id)
+
+  function setupGamePanel(sc) {
+    currentScenario = sc;
+    const sec = $('game-section');
+    sec.hidden = !sc.game;
+    if (!sc.game) return;
+    const g = sc.game;
+    $('game-title').textContent = sc.name;
+    $('game-disclaimer').textContent = g.disclaimer || '';
+
+    // test hediyeleri
+    const gg = $('game-gifts'); gg.innerHTML = '';
+    for (const t of g.testGifts || []) {
+      const b = document.createElement('button');
+      b.innerHTML = `${t.icon || '🎁'} ${t.name}<small>${t.diamonds.toLocaleString('tr-TR')} 💎</small>`;
+      b.addEventListener('click', () => sendGift(t));
+      gg.appendChild(b);
+    }
+    // komutlar
+    const cg = $('game-cmds'); cg.innerHTML = '';
+    const cmds = [];
+    const first = (k) => [].concat(g.commands[k] || [])[0];
+    cmds.push(first('join'), first('rank'), `${first('name')} Test Ad ${Math.floor(Math.random() * 90 + 10)}`);
+    for (const j of Object.values(g.professions || {})) cmds.push(`${first('job')} ${j.names[0]}`);
+    cmds.push(first('army'), first('treasury'));
+    for (const c of cmds.filter(Boolean)) {
+      const b = document.createElement('button');
+      b.textContent = c;
+      b.addEventListener('click', () => sendComment(c));
+      cg.appendChild(b);
+    }
+    // rütbe seçici + rütbe tablosu
+    const sel = $('game-rank'); sel.innerHTML = '';
+    const tbl = $('game-ranks'); tbl.innerHTML = '';
+    const grants = {};
+    for (const gr of g.giftRankGrants || []) grants[gr.rank] = Math.min(grants[gr.rank] ?? Infinity, gr.minDiamonds);
+    g.ranks.forEach((r, i) => {
+      const o = document.createElement('option'); o.value = r.id; o.textContent = `${i + 1}. ${r.icon} ${r.name}`; sel.appendChild(o);
+      const row = document.createElement('div'); row.className = 'rrow';
+      const via = [r.auto !== false ? `${r.minPoints.toLocaleString('tr-TR')} puan` : null, grants[r.id] !== undefined ? `tek hediye ${grants[r.id].toLocaleString('tr-TR')}💎` : null].filter(Boolean).join(' · ');
+      row.innerHTML = `<span class="rn">${i + 1}</span><span class="ri">${r.icon}</span><span class="rt">${r.name}</span><span class="rv">${via}</span>`;
+      tbl.appendChild(row);
+    });
+    selectedUser = null;
+    if (gameStates[sc.id]) renderGamePanel(gameStates[sc.id]);
+  }
+
+  function renderGamePanel(st) {
+    if (!currentScenario || !currentScenario.game) return;
+    const ranks = new Map(currentScenario.game.ranks.map((r) => [r.id, r]));
+    $('game-total').textContent = `(${st.total} oyuncu)`;
+    const th = st.throne;
+    $('game-throne').textContent = th.holder
+      ? `👑 Padişah: ${th.holder.name} (taç değeri ${th.crownValue.toLocaleString('tr-TR')} 💎) · koruma: ${th.cooldownLeft} sn`
+      : '👑 Taht boş';
+    const box = $('game-users');
+    box.innerHTML = '';
+    st.users.slice(0, 80).forEach((u, i) => {
+      const r = ranks.get(u.rank);
+      const row = document.createElement('div');
+      row.className = 'urow' + (selectedUser === u.id ? ' sel' : '');
+      row.innerHTML = `<span class="un">${i + 1}</span><img><span class="ut"><b></b><small></small></span><span class="up"></span>`;
+      const img = row.querySelector('img'); img.src = u.avatar; img.onerror = () => { img.style.visibility = 'hidden'; };
+      row.querySelector('b').textContent = u.name;
+      row.querySelector('small').textContent = `${r.icon} ${r.name}${u.job ? ' · ' + u.job : ''}`;
+      row.querySelector('.up').textContent = u.points.toLocaleString('tr-TR');
+      row.addEventListener('click', () => {
+        selectedUser = u.id;
+        if (u.id.startsWith('test_')) $('fake-name').value = u.uniqueId; // test kullanıcısıysa onun adına olay gönder
+        renderGamePanel(st);
+        $('game-target').textContent = `Hedef: ${u.name} (${r.name})`;
+      });
+      box.appendChild(row);
+    });
+  }
+
+  const adminTarget = () => selectedUser || (($('fake-name').value.trim()) ? 'test_' + $('fake-name').value.trim().toLowerCase() : null);
+  function gameAdmin(action, payload) { socket.emit('admin:game', { action, payload }); }
+  function needTarget() {
+    const t = adminTarget();
+    if (!t) { const b = $('game-result'); b.hidden = false; b.className = 'status error'; b.textContent = 'Önce listeden bir oyuncu seç veya Test Kullanıcısı kutusuna ad yaz (önce !katıl ile ekle).'; }
+    return t;
+  }
+  $('game-setrank').addEventListener('click', () => { const t = needTarget(); if (t) gameAdmin('setRank', { user: t, rank: $('game-rank').value }); });
+  $('game-crown').addEventListener('click', () => { const t = needTarget(); if (t) gameAdmin('crown', { user: t }); });
+  $('game-points').addEventListener('click', () => { const t = needTarget(); if (t) gameAdmin('addPoints', { user: t, points: 100 }); });
+  $('game-remove').addEventListener('click', () => { const t = needTarget(); if (t) { gameAdmin('removeUser', { user: t }); selectedUser = null; } });
+  $('game-vacate').addEventListener('click', () => gameAdmin('vacateThrone'));
+  $('game-wipe').addEventListener('click', () => {
+    const ans = window.prompt('Tüm oyuncular, rütbeler ve hazine KALICI olarak silinecek.\nOnaylamak için SIFIRLA yaz:');
+    if (ans === 'SIFIRLA') gameAdmin('wipe', { confirm: 'SIFIRLA' });
+  });
+  function joinMany(n) {
+    let i = 0;
+    const t = setInterval(() => {
+      const id = ++uid;
+      send({ type: 'comment', user: { id: 'test_' + id, uniqueId: 'kisi' + id, nickname: FIRST[id % FIRST.length] }, text: '!katıl' });
+      if (++i >= n) clearInterval(t);
+    }, 80);
+  }
+  $('game-join10').addEventListener('click', () => joinMany(10));
+  $('game-join50').addEventListener('click', () => joinMany(50));
 
   // ---------------------------------------------------------------- toplu / otomatik test
   function burstUsers(n) {
